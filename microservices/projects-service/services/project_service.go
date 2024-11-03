@@ -1,13 +1,26 @@
 package services
 
-import "projects_module/domain"
+import (
+	"github.com/google/uuid"
+	"projects_module/domain"
+)
 
 type ProjectService struct {
-	conns domain.ProjectRepository
+	repo domain.ProjectRepository
 }
 
-func NewConnectionService(conns domain.ProjectRepository) (ProjectService, error) {
+func NewConnectionService(repo domain.ProjectRepository) (ProjectService, error) {
 	return ProjectService{
-		conns: conns,
+		repo: repo,
 	}, nil
+}
+
+func (s ProjectService) Create(p domain.Project) (domain.Project, error) {
+	p.Id = uuid.New()
+	project, err := s.repo.Create(p)
+	if err != nil {
+		return domain.Project{}, err
+	}
+
+	return project, nil
 }

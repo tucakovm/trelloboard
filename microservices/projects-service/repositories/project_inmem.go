@@ -19,13 +19,19 @@ type projectsDAO struct {
 	MaxMembers     int32
 }
 
-func NewConnectionInMem() (domain.ProjectRepository, error) {
+func NewProjectInMem() (domain.ProjectRepository, error) {
 	return &projectsInMemRepository{
 		projects: make([]projectsDAO, 0),
 	}, nil
 }
 
 func (c projectsInMemRepository) Create(project domain.Project) (domain.Project, error) {
-	//TODO implement me
-	panic("implement me")
+	c.projects = append(c.projects, projectsDAO{
+		Id:             project.Id,
+		Name:           project.Name,
+		CompletionDate: project.CompletionDate,
+		MinMembers:     project.MinMembers,
+		MaxMembers:     project.MaxMembers,
+	})
+	return project, nil
 }
