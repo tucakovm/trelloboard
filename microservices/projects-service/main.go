@@ -3,6 +3,7 @@ package main
 import (
 	"log"
 	"net/http"
+	"projects_module/config"
 	h "projects_module/handlers"
 	"projects_module/repositories"
 	"projects_module/services"
@@ -12,7 +13,7 @@ import (
 )
 
 func main() {
-	//serverConfig := config.GetConfig()
+	cfg := config.GetConfig()
 
 	repoProject, err := repositories.NewProjectInMem()
 	handleErr(err)
@@ -37,11 +38,10 @@ func main() {
 	srv := &http.Server{
 
 		Handler: corsHandler(r), // Apply CORS handler to router
-		Addr:    ":8000",        // Use the desired port
+		Addr:    cfg.Address,    // Use the desired port
 	}
 
 	// Start the server
-	log.Println("Server is running on port 8000")
 	log.Fatal(srv.ListenAndServe())
 }
 
