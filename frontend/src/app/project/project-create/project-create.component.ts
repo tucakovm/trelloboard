@@ -38,7 +38,7 @@ export class ProjectCreateComponent{
   onSubmit(): void {
     if (this.projectForm.valid) {
       const projectData: Project = this.projectForm.value;
-      let submittedProject: Project = new Project(null,projectData.name,projectData.completionDate,projectData.minMembers,projectData.maxMembers,null,null);
+      let submittedProject: Project = new Project(projectData.Name,projectData.CompletionDate,projectData.MinMembers,projectData.MaxMembers);
       console.log('Submitted Project Data:', submittedProject);
       this.projectService.createProject(submittedProject).subscribe({
         next: (response) => {
