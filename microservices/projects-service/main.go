@@ -12,6 +12,8 @@ import (
 )
 
 func main() {
+	//serverConfig := config.GetConfig()
+
 	repoProject, err := repositories.NewProjectInMem()
 	handleErr(err)
 
@@ -33,6 +35,7 @@ func main() {
 
 	// Create the HTTP server with CORS handler
 	srv := &http.Server{
+
 		Handler: corsHandler(r), // Apply CORS handler to router
 		Addr:    ":8000",        // Use the desired port
 	}
