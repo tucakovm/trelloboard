@@ -87,8 +87,7 @@ func VerifyHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
-
-	// Send a success response
+	
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte("User verified and saved successfully"))
 }
