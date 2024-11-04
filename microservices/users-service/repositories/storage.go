@@ -21,6 +21,15 @@ func GetUserByEmail(email string) (*models.User, error) {
 	return nil, errors.New("user not found")
 }
 
+func GetUserByUsername(username string) (*models.User, error) {
+	for _, user := range users {
+		if user.Username == username {
+			return &user, nil
+		}
+	}
+	return nil, errors.New("user not found")
+}
+
 func ActivateUser(email string) error {
 	for i, user := range users {
 		if user.Email == email {

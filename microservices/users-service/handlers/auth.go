@@ -3,6 +3,8 @@ package handlers
 import (
 	"encoding/json"
 	"net/http"
+	"users_module/models"
+	"users_module/repositories"
 	"users_module/services"
 )
 
@@ -32,12 +34,37 @@ func RegisterHandler(w http.ResponseWriter, r *http.Request) {
 
 func VerifyHandler(w http.ResponseWriter, r *http.Request) {
 	var req VerifyRequest
-	json.NewDecoder(r.Body).Decode(&req)
-	err := services.VerifyUser(req.Email, req.Code)
+	err := json.NewDecoder(r.Body).Decode(&req)
+	if err != nil {
+		http.Error(w, "Invalid request payload", http.StatusBadRequest)
+		return
+	}
+
+	err = services.VerifyUser(req.Email, req.Code)
 	if err != nil {
 		http.Error(w, "Verification failed", http.StatusBadRequest)
 		return
 	}
+	user, err := repositories.GetUserByEmail(req.Email)
+	if err != nil {
+		user = &models.User{
+			Email:    req.Email,
+			IsActive: true,
+		}
+		err = repositories.SaveUser(*user)
+		if err != nil {
+			http.Error(w, "Failed to save user", http.StatusInternalServerError)
+			return
+		}
+	} else {
+		err = repositories.ActivateUser(req.Email)
+		if err != nil {
+			http.Error(w, "Failed to activate user", http.StatusInternalServerError)
+			return
+		}
+	}
+
+	// Send a success response
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte("User verified successfully"))
+	w.Write([]byte("User verified and saved successfully"))
 }

@@ -2,12 +2,19 @@ package services
 
 import (
 	"errors"
+	"log"
 	"users_module/models"
 	"users_module/repositories"
 	"users_module/utils"
 )
 
 func RegisterUser(firstName, lastName, username, email string) error {
+	existingUser, _ := repositories.GetUserByUsername(username)
+	if existingUser != nil {
+		log.Println("username already taken")
+		return errors.New("username already taken")
+	}
+
 	code := utils.GenerateCode()
 	user := models.User{
 		FirstName: firstName,
@@ -17,10 +24,12 @@ func RegisterUser(firstName, lastName, username, email string) error {
 		IsActive:  false,
 		Code:      code,
 	}
+
 	err := repositories.SaveUser(user)
 	if err != nil {
 		return err
 	}
+
 	return SendVerificationEmail(email, code)
 }
 
