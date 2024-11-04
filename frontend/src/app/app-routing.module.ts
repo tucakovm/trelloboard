@@ -3,11 +3,13 @@ import { RouterModule, Routes } from '@angular/router';
 import { RegisterComponent } from './register/register.component';
 import { VerifyComponent } from './verify/verify.component';
 import { ProjectCreateComponent } from './project/project-create/project-create.component';
+import { TasksComponent } from './tasks/tasks.component';
 
 const routes: Routes = [
   { path: 'register', component: RegisterComponent },
   { path: 'verify', component: VerifyComponent },
   { path: 'add-project', component: ProjectCreateComponent },
+  { path: "add-task", component: TasksComponent},
   { path: 'register', redirectTo: '/register', pathMatch: 'full' },
 ];
 @NgModule({
