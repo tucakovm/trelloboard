@@ -4,10 +4,10 @@
 
     <!-- Project Name -->
     <div class="form-group mb-3 row">
-      <label for="name" class="col-sm-3 col-form-label">Project Name:</label>
+      <label for="Name" class="col-sm-3 col-form-label">Project Name:</label>
       <div class="col-sm-9">
-        <input id="name" formControlName="name" type="text" class="form-control" />
-        <div *ngIf="projectForm.get('name')?.invalid && projectForm.get('name')?.touched" class="text-danger mt-1">
+        <input id="Name" formControlName="Name" type="text" class="form-control" />
+        <div *ngIf="projectForm.get('Name')?.invalid && projectForm.get('Name')?.touched" class="text-danger mt-1">
           Project name must be at least 3 characters long.
         </div>
       </div>
@@ -15,10 +15,10 @@
 
      <!-- Completion Date -->
      <div class="form-group mb-3 row">
-      <label for="completionDate" class="col-sm-3 col-form-label">Completion Date:</label>
+      <label for="CompletionDate" class="col-sm-3 col-form-label">Completion Date:</label>
       <div class="col-sm-9">
-        <input id="completionDate" formControlName="completionDate" type="date" class="form-control" />
-        <div *ngIf="projectForm.get('completionDate')?.invalid && projectForm.get('completionDate')?.touched" class="text-danger mt-1">
+        <input id="CompletionDate" formControlName="CompletionDate" type="date" class="form-control" />
+        <div *ngIf="projectForm.get('CompletionDate')?.invalid && projectForm.get('CompletionDate')?.touched" class="text-danger mt-1">
           Completion Date is required.
         </div>
       </div>
@@ -26,10 +26,10 @@
 
     <!-- Min Members -->
     <div class="form-group mb-3 row">
-      <label for="minMembers" class="col-sm-3 col-form-label">Min Members:</label>
+      <label for="MinMembers" class="col-sm-3 col-form-label">Min Members:</label>
       <div class="col-sm-9">
-        <input id="minMembers" formControlName="minMembers" type="number" class="form-control" />
-        <div *ngIf="projectForm.get('minMembers')?.invalid && projectForm.get('minMembers')?.touched" class="text-danger mt-1">
+        <input id="MinMembers" formControlName="MinMembers" type="number" class="form-control" />
+        <div *ngIf="projectForm.get('MinMembers')?.invalid && projectForm.get('MinMembers')?.touched" class="text-danger mt-1">
           Min Members must be greater than 0.
         </div>
       </div>
@@ -37,13 +37,13 @@
 
     <!-- Max Members -->
     <div class="form-group mb-3 row">
-      <label for="maxMembers" class="col-sm-3 col-form-label">Max Members:</label>
+      <label for="MaxMembers" class="col-sm-3 col-form-label">Max Members:</label>
       <div class="col-sm-9">
-        <input id="maxMembers" formControlName="maxMembers" type="number" class="form-control" />
+        <input id="MaxMembers" formControlName="MaxMembers" type="number" class="form-control" />
         <div *ngIf="projectForm.hasError('maxLessThanOrEqualMin')" class="text-danger mt-1">
           Max Members must be greater than Min Members.
         </div>
-        <div *ngIf="projectForm.get('maxMembers')?.invalid && projectForm.get('maxMembers')?.touched" class="text-danger mt-1">
+        <div *ngIf="projectForm.get('MaxMembers')?.invalid && projectForm.get('MaxMembers')?.touched" class="text-danger mt-1">
           Max Members must be greater than 0.
         </div>
       </div>

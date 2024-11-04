@@ -15,10 +15,10 @@ export class ProjectCreateComponent{
   constructor(private fb: FormBuilder, private projectService:ProjectService) {
     this.projectForm = this.fb.group(
       {
-        name: ['', [Validators.required, Validators.minLength(3)]],
-        completionDate: [null, Validators.required],
-        minMembers: [0, [Validators.required, Validators.min(1)]],
-        maxMembers: [0, [Validators.required, Validators.min(1)]]
+        Name: ['', [Validators.required, Validators.minLength(3)]],
+        CompletionDate: [null, Validators.required],
+        MinMembers: [0, [Validators.required, Validators.min(1)]],
+        MaxMembers: [0, [Validators.required, Validators.min(1)]]
       },
       { validators: this.maxGreaterThanMinValidator } // Dodajemo validator na formu
     );
@@ -26,8 +26,8 @@ export class ProjectCreateComponent{
 
   // Prilagođena validacija
   maxGreaterThanMinValidator(control: AbstractControl): { [key: string]: boolean } | null {
-    const minMembers = control.get('minMembers')?.value;
-    const maxMembers = control.get('maxMembers')?.value;
+    const minMembers = control.get('MinMembers')?.value;
+    const maxMembers = control.get('MaxMembers')?.value;
 
     if (minMembers !== null && maxMembers !== null && maxMembers <= minMembers) {
       return { maxLessThanOrEqualMin: true }; // Greška ako maxMembers nije veći od minMembers
@@ -38,20 +38,32 @@ export class ProjectCreateComponent{
   onSubmit(): void {
     if (this.projectForm.valid) {
       const projectData: Project = this.projectForm.value;
-      let submittedProject: Project = new Project(projectData.Name,projectData.CompletionDate,projectData.MinMembers,projectData.MaxMembers);
+      
+      let completionDate = new Date(projectData.CompletionDate);
+      completionDate.setHours(0, 0, 0);
+
+      let submittedProject: Project = new Project(
+        projectData.Name,
+        completionDate,
+        projectData.MinMembers,
+        projectData.MaxMembers
+      );
+  
       console.log('Submitted Project Data:', submittedProject);
+  
       this.projectService.createProject(submittedProject).subscribe({
         next: (response) => {
-            console.log('Project created successfully:', response);
+          console.log('Project created successfully:', response);
         },
         error: (error) => {
-            console.error('Error creating project:', error);
+          console.error('Error creating project:', error);
         },
         complete: () => {
-            // console.log('Project creation process completed.');
+          // console.log('Project creation process completed.');
         }
-    });
+      });
     }
   }
+  
 }
 

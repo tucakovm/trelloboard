@@ -11,8 +11,8 @@ type Project struct {
 	CompletionDate time.Time
 	MinMembers     int32
 	MaxMembers     int32
-	Manager        User
-	Members        []User
+	//Manager        User
+	//Members        []User
 }
 
 type ProjectRepository interface {
