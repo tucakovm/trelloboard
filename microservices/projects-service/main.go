@@ -4,14 +4,13 @@ import (
 	"github.com/gorilla/mux"
 	"log"
 	"net/http"
-	"projects_module/config"
 	"projects_module/handlers"
 	"projects_module/repositories"
 	"projects_module/services"
 )
 
 func main() {
-	serverConfig := config.GetConfig()
+	//serverConfig := config.GetConfig()
 
 	repoProject, err := repositories.NewProjectInMem()
 	handleErr(err)
@@ -28,7 +27,7 @@ func main() {
 
 	srv := &http.Server{
 		Handler: r,
-		Addr:    serverConfig.Address,
+		Addr:    ":8000",
 	}
 	log.Fatal(srv.ListenAndServe())
 }
