@@ -1,35 +1,44 @@
 package main
 
 import (
-	"github.com/gorilla/mux"
 	"log"
 	"net/http"
-	"projects_module/config"
-	"projects_module/handlers"
+	h "projects_module/handlers"
 	"projects_module/repositories"
 	"projects_module/services"
+
+	"github.com/gorilla/handlers"
+	"github.com/gorilla/mux"
 )
 
 func main() {
-	serverConfig := config.GetConfig()
-
 	repoProject, err := repositories.NewProjectInMem()
 	handleErr(err)
 
 	serviceProject, err := services.NewConnectionService(repoProject)
 	handleErr(err)
 
-	handlerProject, err := handlers.NewConnectionHandler(serviceProject)
+	handlerProject, err := h.NewConnectionHandler(serviceProject)
 	handleErr(err)
 
 	r := mux.NewRouter()
+	r.HandleFunc("/api/projects", handlerProject.Create).Methods(http.MethodPost)
 
-	r.HandleFunc("/api/project", handlerProject.Create).Methods(http.MethodPost)
+	// Define CORS options
+	corsHandler := handlers.CORS(
+		handlers.AllowedOrigins([]string{"http://localhost:4200"}), // Set the correct origin
+		handlers.AllowedMethods([]string{"GET", "POST", "OPTIONS"}),
+		handlers.AllowedHeaders([]string{"Content-Type", "Authorization"}),
+	)
 
+	// Create the HTTP server with CORS handler
 	srv := &http.Server{
-		Handler: r,
-		Addr:    serverConfig.Address,
+		Handler: corsHandler(r), // Apply CORS handler to router
+		Addr:    ":8000",        // Use the desired port
 	}
+
+	// Start the server
+	log.Println("Server is running on port 8000")
 	log.Fatal(srv.ListenAndServe())
 }
 
