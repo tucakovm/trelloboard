@@ -1,0 +1,12 @@
+<div class="verify-form">
+  <h2>Email Verification</h2>
+  <form [formGroup]="verifyForm" (ngSubmit)="onSubmit()">
+    <label for="email">Email</label>
+    <input type="email" id="email" formControlName="email" />
+
+    <label for="code">Verification Code</label>
+    <input type="text" id="code" formControlName="code" />
+
+    <button type="submit">Verify</button>
+  </form>
+</div>

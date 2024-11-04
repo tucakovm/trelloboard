@@ -48,6 +48,16 @@ func RegisterHandler(w http.ResponseWriter, r *http.Request) {
 
 func VerifyHandler(w http.ResponseWriter, r *http.Request) {
 	var req VerifyRequest
+
+	w.Header().Set("Access-Control-Allow-Origin", "http://localhost:4200")
+	w.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS")
+	w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+
+	if r.Method == http.MethodOptions {
+		w.WriteHeader(http.StatusNoContent)
+		return
+	}
+
 	err := json.NewDecoder(r.Body).Decode(&req)
 	if err != nil {
 		http.Error(w, "Invalid request payload", http.StatusBadRequest)
