@@ -20,7 +20,6 @@ func LoadConfig() (*Config, error) {
 		SMTPPassword: os.Getenv("SMTP_PASSWORD"),
 	}
 
-	// Check for missing required variables
 	if config.SMTPHost == "" || config.SMTPPort == "" || config.SMTPUser == "" || config.SMTPPassword == "" {
 		return nil, fmt.Errorf("missing required SMTP configuration environment variables")
 	}

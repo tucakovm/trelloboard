@@ -10,6 +10,11 @@ import (
 
 func RegisterUser(firstName, lastName, username, email string) error {
 	existingUser, _ := repositories.GetUserByUsername(username)
+	log.Println("username:", username)
+	log.Println("existingUser:", existingUser)
+	log.Println("firstName:", firstName)
+	log.Println("lastName:", lastName)
+	log.Println("email:", email)
 	if existingUser != nil {
 		log.Println("username already taken")
 		return errors.New("username already taken")

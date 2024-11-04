@@ -2,6 +2,7 @@ package repositories
 
 import (
 	"errors"
+	"log"
 	"users_module/models"
 )
 
@@ -26,6 +27,8 @@ func GetUserByUsername(username string) (*models.User, error) {
 		if user.Username == username {
 			return &user, nil
 		}
+
+		log.Println(user.Username)
 	}
 	return nil, errors.New("user not found")
 }

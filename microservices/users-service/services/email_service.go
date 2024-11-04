@@ -16,6 +16,8 @@ func SendVerificationEmail(email, code string) error {
 	log.Println(cfg.SMTPPassword)
 	if err != nil {
 		log.Println("Failed to send email:", err)
+		log.Println("user email:", []string{email})
+		log.Println()
 		return err
 	}
 	return nil
