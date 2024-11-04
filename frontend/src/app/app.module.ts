@@ -6,11 +6,13 @@ import { AppComponent } from './app.component';
 import { ProjectCreateComponent } from './project/project-create/project-create.component';
 import { ReactiveFormsModule } from '@angular/forms';
 import { HttpClientModule } from '@angular/common/http';
+import { TasksComponent } from './tasks/tasks.component';
 
 @NgModule({
   declarations: [
     AppComponent,
-    ProjectCreateComponent
+    ProjectCreateComponent,
+    TasksComponent
   ],
   imports: [
     BrowserModule,
