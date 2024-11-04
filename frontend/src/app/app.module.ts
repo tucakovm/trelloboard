@@ -7,6 +7,7 @@ import { ReactiveFormsModule } from '@angular/forms';
 import { HttpClientModule } from '@angular/common/http';
 import { RegisterComponent } from './register/register.component';
 import { VerifyComponent } from './verify/verify.component';
+import { TasksComponent } from './tasks/tasks.component';
 
 @NgModule({
   declarations: [
@@ -14,6 +15,7 @@ import { VerifyComponent } from './verify/verify.component';
     ProjectCreateComponent,
     RegisterComponent,
     VerifyComponent,
+    TasksComponent
   ],
   imports: [
     BrowserModule,
