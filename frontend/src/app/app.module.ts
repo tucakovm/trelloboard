@@ -8,6 +8,7 @@ import { HttpClientModule } from '@angular/common/http';
 import { RegisterComponent } from './register/register.component';
 import { VerifyComponent } from './verify/verify.component';
 import { TasksComponent } from './tasks/tasks.component';
+import { ProjectAllComponent } from './project/project-all/project-all.component';
 
 @NgModule({
   declarations: [
@@ -15,7 +16,8 @@ import { TasksComponent } from './tasks/tasks.component';
     ProjectCreateComponent,
     RegisterComponent,
     VerifyComponent,
-    TasksComponent
+    TasksComponent,
+    ProjectAllComponent
   ],
   imports: [
     BrowserModule,
