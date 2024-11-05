@@ -1,14 +1,14 @@
 import { User } from "./user";
 
 export class Project {
-    Id:number
+    Id:number|null
     Name: string;
     CompletionDate: Date;  
     MinMembers: number;
     MaxMembers: number;
 
     constructor(
-        id:number,
+        id:number|null,
         name: string,
         completionDate: Date,
         minMembers: number,

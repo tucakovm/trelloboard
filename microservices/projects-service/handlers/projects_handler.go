@@ -40,7 +40,7 @@ func (c *ProjectHandler) renderJSON(w http.ResponseWriter, v interface{}, code i
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(code)
+	//w.WriteHeader(code)
 	w.Write(js)
 }
 

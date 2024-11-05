@@ -27,7 +27,7 @@ func (c TaskHandler) decodeBodyProject(r io.Reader) (*domain.Task, error) {
 	return &rt, nil
 }
 
-func (c *TaskHandler) renderJSON(w http.ResponseWriter, v interface{}) {
+func (c *TaskHandler) renderJSON(w http.ResponseWriter, v interface{}, code int) {
 	js, err := json.Marshal(v)
 
 	if err != nil {
@@ -36,6 +36,7 @@ func (c *TaskHandler) renderJSON(w http.ResponseWriter, v interface{}) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(code)
 	w.Write(js)
 }
 
@@ -47,12 +48,12 @@ func (h TaskHandler) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, err = h.service.Create(*task)
+	t, err := h.service.Create(*task)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	w.WriteHeader(http.StatusCreated)
-	w.Write([]byte("Task created"))
+
+	h.renderJSON(w, t, http.StatusCreated)
 
 }

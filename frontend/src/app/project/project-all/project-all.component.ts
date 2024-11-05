@@ -21,14 +21,17 @@ export class ProjectAllComponent implements OnInit{
     });
   }
 
-  deleteProject(id: number): void {
-    this.projectService.deleteProjectById(id).subscribe({
-      next:(response) => {
-        console.log('Project deleted successfully:', response);
-      },
-      error: (error) => {
-        console.error('Error deleting project:', error);
-      },
-    })
+  deleteProject(id: number|null): void {
+    if (id != null){
+      this.projectService.deleteProjectById(id).subscribe({
+        next:(response) => {
+          console.log('Project deleted successfully:', response);
+          this.getAllProjects()
+        },
+        error: (error) => {
+          console.error('Error deleting project:', error);
+        },
+      })
+    }
   }
 }

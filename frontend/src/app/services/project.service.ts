@@ -21,6 +21,6 @@ export class ProjectService{
     }
 
     deleteProjectById(id:number): Observable<void>{
-      return this.http.delete<void>(`${this.apiUrl}/project/${id}`)
+      return this.http.delete<void>(`${this.apiUrl}/projects/${id}`)
     }
 }

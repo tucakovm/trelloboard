@@ -49,11 +49,12 @@ func main() {
 	r := mux.NewRouter()
 	r.HandleFunc("/api/projects", handlerProject.Create).Methods(http.MethodPost)
 	r.HandleFunc("/api/projects", handlerProject.GetAll).Methods(http.MethodGet)
+	r.HandleFunc("/api/projects/{id}", handlerProject.Delete).Methods(http.MethodDelete)
 
 	// Define CORS options
 	corsHandler := handlers.CORS(
 		handlers.AllowedOrigins([]string{"http://localhost:4200"}), // Set the correct origin
-		handlers.AllowedMethods([]string{"GET", "POST", "OPTIONS"}),
+		handlers.AllowedMethods([]string{"GET", "POST", "DELETE"}),
 		handlers.AllowedHeaders([]string{"Content-Type", "Authorization"}),
 	)
 
