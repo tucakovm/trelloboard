@@ -1,9 +1,10 @@
-import { NgModule } from '@angular/core';
+import { Component, NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
 import { RegisterComponent } from './register/register.component';
 import { VerifyComponent } from './verify/verify.component';
 import { ProjectCreateComponent } from './project/project-create/project-create.component';
 import { TasksComponent } from './tasks/tasks.component';
+import { ProjectAllComponent } from './project/project-all/project-all.component';
 
 const routes: Routes = [
   { path: 'register', component: RegisterComponent },
@@ -11,6 +12,7 @@ const routes: Routes = [
   { path: 'add-project', component: ProjectCreateComponent },
   { path: "add-task", component: TasksComponent},
   { path: 'register', redirectTo: '/register', pathMatch: 'full' },
+  { path: "all-projects", component: ProjectAllComponent},
 ];
 @NgModule({
   imports: [RouterModule.forRoot(routes)],
