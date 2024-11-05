@@ -24,3 +24,11 @@ func (s ProjectService) Create(p domain.Project) (domain.Project, error) {
 
 	return project, nil
 }
+
+func (s ProjectService) GetAll() ([]domain.Project, error) {
+	return s.repo.GetAll()
+}
+
+func (s ProjectService) Delete(id string) error {
+	return s.repo.Delete(id)
+}

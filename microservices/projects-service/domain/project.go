@@ -17,4 +17,6 @@ type Project struct {
 
 type ProjectRepository interface {
 	Create(project Project) (Project, error)
+	GetAll() ([]Project, error)
+	Delete(id string) error
 }

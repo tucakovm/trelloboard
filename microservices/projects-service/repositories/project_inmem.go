@@ -5,16 +5,30 @@ import (
 )
 
 type projectsInMemRepository struct {
-	projects []domain.Project
+	projects map[string]domain.Project // Using a map with string keys (IDs)
 }
 
 func NewProjectInMem() (domain.ProjectRepository, error) {
 	return &projectsInMemRepository{
-		projects: make([]domain.Project, 0),
+		projects: make(map[string]domain.Project),
 	}, nil
 }
 
 func (c projectsInMemRepository) Create(project domain.Project) (domain.Project, error) {
-	c.projects = append(c.projects, project)
+	mapId := project.Id.String()
+	c.projects[mapId] = project
 	return project, nil
+}
+
+func (c projectsInMemRepository) GetAll() ([]domain.Project, error) {
+	var projects []domain.Project
+	for _, project := range c.projects {
+		projects = append(projects, project)
+	}
+	return projects, nil
+}
+
+func (c projectsInMemRepository) Delete(id string) error {
+	delete(c.projects, id)
+	return nil
 }

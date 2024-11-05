@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"github.com/gorilla/mux"
 	"io"
 	"log"
 	"net/http"
@@ -59,5 +60,29 @@ func (h ProjectHandler) Create(w http.ResponseWriter, r *http.Request) {
 	}
 
 	h.renderJSON(w, prj, http.StatusCreated)
-	log.Println(prj)
+}
+
+func (h ProjectHandler) GetAll(rw http.ResponseWriter, r *http.Request) {
+	allProducts, err := h.service.GetAll()
+
+	if err != nil {
+		http.Error(rw, "Database exception", http.StatusInternalServerError)
+	}
+
+	rw.WriteHeader(http.StatusOK)
+	h.renderJSON(rw, allProducts, http.StatusOK)
+
+}
+
+func (h ProjectHandler) Delete(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	id := vars["id"]
+
+	err := h.service.Delete(id)
+	if err != nil {
+		http.Error(w, "Failed to delete config", http.StatusInternalServerError)
+		return
+	}
+
+	h.renderJSON(w, "Project deleted", http.StatusOK)
 }

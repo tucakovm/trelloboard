@@ -1,12 +1,15 @@
 package main
 
 import (
+	"github.com/google/uuid"
 	"log"
 	"net/http"
 	"projects_module/config"
+	"projects_module/domain"
 	h "projects_module/handlers"
 	"projects_module/repositories"
 	"projects_module/services"
+	"time"
 
 	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
@@ -18,6 +21,25 @@ func main() {
 	repoProject, err := repositories.NewProjectInMem()
 	handleErr(err)
 
+	prj1 := domain.Project{
+		Id:             uuid.New(),
+		Name:           "prj1",
+		CompletionDate: time.Time{},
+		MinMembers:     2,
+		MaxMembers:     3,
+	}
+
+	prj2 := domain.Project{
+		Id:             uuid.New(),
+		Name:           "prj2",
+		CompletionDate: time.Time{},
+		MinMembers:     2,
+		MaxMembers:     3,
+	}
+
+	repoProject.Create(prj1)
+	repoProject.Create(prj2)
+
 	serviceProject, err := services.NewConnectionService(repoProject)
 	handleErr(err)
 
@@ -26,6 +48,7 @@ func main() {
 
 	r := mux.NewRouter()
 	r.HandleFunc("/api/projects", handlerProject.Create).Methods(http.MethodPost)
+	r.HandleFunc("/api/projects", handlerProject.GetAll).Methods(http.MethodGet)
 
 	// Define CORS options
 	corsHandler := handlers.CORS(
