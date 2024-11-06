@@ -1,0 +1,95 @@
+version: "3.1"
+
+services:
+
+  projects_server:
+    image: project-service
+    build:
+      context: ./projects-service/
+      dockerfile: Dockerfile
+    restart: always
+    container_name: "projects-server"
+    hostname: "projects-server"
+    ports:
+      # <port_on_local>:<port_in_machine>
+      - 8001:8001
+    environment:
+      - MONGO_DB_URI=mongodb://root:pass@mongo:27017
+    depends_on:
+      mongo:
+        condition: service_healthy
+
+  tasks_server:
+    image: tasks-service
+    build:
+      context: ./tasks-service/
+      dockerfile: Dockerfile
+    restart: always
+    container_name: "tasks-server"
+    hostname: "tasks-server"
+    ports:
+      # <port_on_local>:<port_in_machine>
+      - 8002:8002
+    environment:
+      - MONGO_DB_URI=mongodb://root:pass@mongo:27017
+    depends_on:
+      mongo:
+        condition: service_healthy
+
+  users_server:
+    image: users-service
+    build:
+      context: ./users-service/
+      dockerfile: Dockerfile
+    restart: always
+    container_name: "users-server"
+    hostname: "users-server"
+    ports:
+      # <port_on_local>:<port_in_machine>
+      - 8003:8003
+    environment:
+      - MONGO_DB_URI=mongodb://root:pass@mongo:27017
+    depends_on:
+      mongo:
+        condition: service_healthy
+
+  # NoSQL: MongoDB
+  mongo:
+    image: mongo
+    restart: always
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: pass
+      MONGO_INITDB_DATABASE: mongoDemo
+    # Docker healtcheck - checks if database is "alive"
+    healthcheck:
+      test: echo 'db.runCommand("ping").ok'
+      interval: 10s
+      timeout: 10s
+      retries: 10
+    volumes:
+      - mongo_store:/data/db
+
+  # NoSQL: MognoExpress
+  mongo-express:
+    image: mongo-express
+    restart: always
+    environment:
+      # hostname of mongo databse
+      - ME_CONFIG_MONGODB_SERVER=mongo
+      - ME_CONFIG_MONGODB_ADMINUSERNAME=root
+      - ME_CONFIG_MONGODB_ADMINPASSWORD=pass
+      - ME_CONFIG_BASICAUTH_USERNAME=admin
+      - ME_CONFIG_BASICAUTH_PASSWORD=admin
+    depends_on:
+      - mongo
+    ports:
+      - "8081:8081"
+    volumes:
+      - mongo_express_data:/data/db
+
+volumes:
+  mongo_store:
+  mongo_express_data:
