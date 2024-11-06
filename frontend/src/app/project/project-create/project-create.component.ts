@@ -43,7 +43,6 @@ export class ProjectCreateComponent{
       completionDate.setHours(0, 0, 0);
 
       let submittedProject: Project = new Project(
-        null,
         projectData.Name,
         completionDate,
         projectData.MinMembers,

@@ -7,7 +7,7 @@ import { Task } from "../model/task";
 })
 export class TaskService {
 
-  private apiUrl = "http://localhost:8001/api" 
+  private apiUrl = "http://localhost:8002/api" 
   constructor(private http:HttpClient){
 
     }

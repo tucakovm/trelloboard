@@ -5,7 +5,6 @@ import (
 	"github.com/gorilla/handlers"
 	"log"
 	"net/http"
-	"tasks-service/config"
 	h "tasks-service/handlers"
 	"tasks-service/repository"
 	"tasks-service/service"
@@ -14,7 +13,7 @@ import (
 )
 
 func main() {
-	cfg := config.GetConfig()
+	//cfg := config.GetConfig()
 
 	repoTask, err := repository.NewTaskInMem()
 	handleErr(err)
@@ -37,7 +36,7 @@ func main() {
 	srv := &http.Server{
 
 		Handler: corsHandler(r), // Apply CORS handler to router
-		Addr:    cfg.Address,    // Use the desired port
+		Addr:    ":8002",        // Use the desired port
 	}
 
 	log.Println("Server is running on port 8001")

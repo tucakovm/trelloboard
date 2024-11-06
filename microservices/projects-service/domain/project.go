@@ -1,18 +1,18 @@
 package domain
 
 import (
-	"github.com/google/uuid"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"time"
 )
 
 type Project struct {
-	Id             uuid.UUID
-	Name           string
-	CompletionDate time.Time
-	MinMembers     int32
-	MaxMembers     int32
+	Id             primitive.ObjectID `bson:"_id,omitempty" json:"id"`
+	Name           string             `bson:"name" json:"name"`
+	CompletionDate time.Time          `bson:"completionDate" json:"completionDate"`
+	MinMembers     int32              `bson:"minMembers" json:"minMembers"`
+	MaxMembers     int32              `bson:"maxMembers" json:"maxMembers"`
 	//Manager        User
 	//Members        []User
 }
 
-type Projects *[]Project
+type Projects []*Project

@@ -2,11 +2,9 @@ package main
 
 import (
 	"context"
-	"github.com/google/uuid"
 	"log"
 	"net/http"
 	"os"
-	"projects_module/config"
 	"projects_module/domain"
 	h "projects_module/handlers"
 	"projects_module/repositories"
@@ -18,7 +16,7 @@ import (
 )
 
 func main() {
-	cfg := config.GetConfig()
+	//cfg := config.GetConfig()
 
 	// Initialize context
 	timeoutContext, cancel := context.WithTimeout(context.Background(), 30*time.Second)
@@ -37,7 +35,6 @@ func main() {
 	handleErr(err)
 
 	prj1 := domain.Project{
-		Id:             uuid.New(),
 		Name:           "prj1",
 		CompletionDate: time.Time{},
 		MinMembers:     2,
@@ -45,7 +42,6 @@ func main() {
 	}
 
 	prj2 := domain.Project{
-		Id:             uuid.New(),
 		Name:           "prj2",
 		CompletionDate: time.Time{},
 		MinMembers:     2,
@@ -69,7 +65,7 @@ func main() {
 	// Define CORS options
 	corsHandler := handlers.CORS(
 		handlers.AllowedOrigins([]string{"http://localhost:4200"}), // Set the correct origin
-		handlers.AllowedMethods([]string{"GET", "POST", "DELETE"}),
+		handlers.AllowedMethods([]string{"GET", "POST", "DELETE", "OPTIONS"}),
 		handlers.AllowedHeaders([]string{"Content-Type", "Authorization"}),
 	)
 
@@ -77,7 +73,7 @@ func main() {
 	srv := &http.Server{
 
 		Handler: corsHandler(r), // Apply CORS handler to router
-		Addr:    cfg.Address,    // Use the desired port
+		Addr:    ":8001",        // Use the desired port
 	}
 
 	// Start the server

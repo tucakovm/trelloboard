@@ -1,7 +1,6 @@
 package services
 
 import (
-	"github.com/google/uuid"
 	"projects_module/domain"
 	"projects_module/repositories"
 )
@@ -17,7 +16,6 @@ func NewConnectionService(repo repositories.ProjectRepo) (ProjectService, error)
 }
 
 func (s ProjectService) Create(p *domain.Project) error {
-	p.Id = uuid.New()
 	s.repo.Create(p)
 
 	return nil

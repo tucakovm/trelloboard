@@ -47,7 +47,10 @@ func (c *ProjectHandler) renderJSON(w http.ResponseWriter, v interface{}, code i
 }
 
 func (h ProjectHandler) Create(w http.ResponseWriter, r *http.Request) {
-
+	if r.Method == http.MethodOptions {
+		w.WriteHeader(http.StatusNoContent)
+		return
+	}
 	//project, err := h.decodeBodyProject(r.Body)
 	project := r.Context().Value(KeyProduct{}).(*domain.Project)
 	log.Println(project)
@@ -58,18 +61,34 @@ func (h ProjectHandler) Create(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h ProjectHandler) GetAll(rw http.ResponseWriter, r *http.Request) {
-	allProducts, err := h.service.GetAll()
-
-	if err != nil {
-		http.Error(rw, "Database exception", http.StatusInternalServerError)
+	if r.Method == http.MethodOptions {
+		rw.WriteHeader(http.StatusNoContent)
+		return
 	}
 
-	rw.WriteHeader(http.StatusOK)
-	h.renderJSON(rw, allProducts, http.StatusOK)
+	// Call the service to get all projects
+	allProducts, err := h.service.GetAll()
+	if err != nil {
+		http.Error(rw, "Database exception", http.StatusInternalServerError)
+		return
+	}
 
+	// Marshal and write the response
+	rw.Header().Set("Content-Type", "application/json")
+	rw.WriteHeader(http.StatusOK)
+	jsonData, err := json.Marshal(allProducts)
+	if err != nil {
+		http.Error(rw, "Error marshalling data", http.StatusInternalServerError)
+		return
+	}
+	rw.Write(jsonData)
 }
 
 func (h ProjectHandler) Delete(w http.ResponseWriter, r *http.Request) {
+	if r.Method == http.MethodOptions {
+		w.WriteHeader(http.StatusNoContent)
+		return
+	}
 	vars := mux.Vars(r)
 	id := vars["id"]
 

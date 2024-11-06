@@ -41,7 +41,10 @@ func (c *TaskHandler) renderJSON(w http.ResponseWriter, v interface{}, code int)
 }
 
 func (h TaskHandler) Create(w http.ResponseWriter, r *http.Request) {
-
+	if r.Method == http.MethodOptions {
+		w.WriteHeader(http.StatusNoContent)
+		return
+	}
 	task, err := h.decodeBodyProject(r.Body)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)

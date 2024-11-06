@@ -7,7 +7,7 @@ import { Project } from "../model/project";
     providedIn: 'root'
   })
 export class ProjectService{
-    private apiUrl = "http://localhost:8000/api" 
+    private apiUrl = "http://localhost:8001/api" 
     constructor(private http:HttpClient){}
 
     createProject(project: Project): Observable<Project> {

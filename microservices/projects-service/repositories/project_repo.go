@@ -53,12 +53,13 @@ func (pr *ProjectRepo) getCollection() *mongo.Collection {
 func New(ctx context.Context, logger *log.Logger) (*ProjectRepo, error) {
 	dburi := os.Getenv("MONGO_DB_URI")
 
-	client, err := mongo.NewClient(options.Client().ApplyURI(dburi))
+	client, err := mongo.Connect(ctx, options.Client().ApplyURI(dburi))
 	if err != nil {
 		return nil, err
 	}
 
-	err = client.Connect(ctx)
+	// Optionally, check if the connection is valid by pinging the database
+	err = client.Ping(ctx, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -86,15 +87,17 @@ func (pr *ProjectRepo) GetAll() (domain.Projects, error) {
 	// Initialise context (after 5 seconds timeout, abort operation)
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-
+	log.Println("test1")
 	projectsCollection := pr.getCollection()
 
 	var project domain.Projects
+	log.Println("test2")
 	patientsCursor, err := projectsCollection.Find(ctx, bson.M{})
 	if err != nil {
 		log.Println(err)
 		return nil, err
 	}
+	log.Println("test3")
 	if err = patientsCursor.All(ctx, &project); err != nil {
 		log.Println(err)
 		return nil, err
