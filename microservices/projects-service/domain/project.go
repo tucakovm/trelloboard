@@ -15,8 +15,4 @@ type Project struct {
 	//Members        []User
 }
 
-type ProjectRepository interface {
-	Create(project Project) (Project, error)
-	GetAll() ([]Project, error)
-	Delete(id string) error
-}
+type Projects *[]Project
