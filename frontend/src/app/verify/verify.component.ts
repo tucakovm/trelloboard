@@ -28,10 +28,11 @@ export class VerifyComponent {
       });
 
       this.http
-        .post('http://localhost:8080/verify', formData, { headers })
+        .post('http://localhost:8003/verify', formData, { headers })
         .subscribe(
           (response) => {
             console.log('Verification successful', response);
+            this.verifyForm.reset(); // Optionally reset the form on success
           },
           (error) => {
             console.error('Verification failed', error);

@@ -26,8 +26,8 @@ func registerHandler(w http.ResponseWriter, r *http.Request) {
 func main() {
 	http.HandleFunc("/register", handlers.RegisterHandler)
 	http.HandleFunc("/verify", handlers.VerifyHandler)
-	http.ListenAndServe(":8080", nil)
-	log.Println("Server running on http://localhost:8080")
-	//log.Fatal(http.ListenAndServe(":8080", nil))
+	//http.ListenAndServe(":8080", nil)
+	log.Println("Server running on http://localhost:8003")
+	log.Fatal(http.ListenAndServe(":8003", nil))
 
 }
