@@ -10,6 +10,8 @@ import (
 	"projects_module/services"
 )
 
+type KeyProduct struct{}
+
 type ProjectHandler struct {
 	service services.ProjectService
 }
@@ -40,24 +42,17 @@ func (c *ProjectHandler) renderJSON(w http.ResponseWriter, v interface{}, code i
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	//w.WriteHeader(code)
+	w.WriteHeader(code)
 	w.Write(js)
 }
 
 func (h ProjectHandler) Create(w http.ResponseWriter, r *http.Request) {
 
-	project, err := h.decodeBodyProject(r.Body)
+	//project, err := h.decodeBodyProject(r.Body)
+	project := r.Context().Value(KeyProduct{}).(*domain.Project)
 	log.Println(project)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
 
-	prj, err := h.service.Create(*project)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
+	prj := h.service.Create(project)
 
 	h.renderJSON(w, prj, http.StatusCreated)
 }

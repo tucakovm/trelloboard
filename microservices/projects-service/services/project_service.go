@@ -3,29 +3,27 @@ package services
 import (
 	"github.com/google/uuid"
 	"projects_module/domain"
+	"projects_module/repositories"
 )
 
 type ProjectService struct {
-	repo domain.ProjectRepository
+	repo repositories.ProjectRepo
 }
 
-func NewConnectionService(repo domain.ProjectRepository) (ProjectService, error) {
+func NewConnectionService(repo repositories.ProjectRepo) (ProjectService, error) {
 	return ProjectService{
 		repo: repo,
 	}, nil
 }
 
-func (s ProjectService) Create(p domain.Project) (domain.Project, error) {
+func (s ProjectService) Create(p *domain.Project) error {
 	p.Id = uuid.New()
-	project, err := s.repo.Create(p)
-	if err != nil {
-		return domain.Project{}, err
-	}
+	s.repo.Create(p)
 
-	return project, nil
+	return nil
 }
 
-func (s ProjectService) GetAll() ([]domain.Project, error) {
+func (s ProjectService) GetAll() (domain.Projects, error) {
 	return s.repo.GetAll()
 }
 
