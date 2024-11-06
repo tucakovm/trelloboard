@@ -1,11 +1,18 @@
 version: "3.1"
 
 services:
+  angular:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: angular
+    ports:
+      - 4200:4200
 
   projects_server:
     image: project-service
     build:
-      context: ./projects-service/
+      context: microservices/projects-service
       dockerfile: Dockerfile
     restart: always
     container_name: "projects-server"
@@ -22,7 +29,7 @@ services:
   tasks_server:
     image: tasks-service
     build:
-      context: ./tasks-service/
+      context: microservices/tasks-service
       dockerfile: Dockerfile
     restart: always
     container_name: "tasks-server"
@@ -39,7 +46,7 @@ services:
   users_server:
     image: users-service
     build:
-      context: ./users-service/
+      context: microservices/users-service
       dockerfile: Dockerfile
     restart: always
     container_name: "users-server"

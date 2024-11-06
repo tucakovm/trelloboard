@@ -4,13 +4,10 @@ import (
 	"context"
 	"fmt"
 	"go.mongodb.org/mongo-driver/bson"
-	_ "go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
-	_ "go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.mongodb.org/mongo-driver/mongo/readpref"
-	_ "go.mongodb.org/mongo-driver/mongo/readpref"
 	"log"
 	"os"
 	"projects_module/domain"
@@ -48,8 +45,8 @@ func (pr *ProjectRepo) Ping() {
 }
 
 func (pr *ProjectRepo) getCollection() *mongo.Collection {
-	patientDatabase := pr.cli.Database("mongoDemo")
-	patientsCollection := patientDatabase.Collection("projects")
+	projectsDatabase := pr.cli.Database("mongoDemo")
+	patientsCollection := projectsDatabase.Collection("projects")
 	return patientsCollection
 }
 
@@ -74,9 +71,9 @@ func New(ctx context.Context, logger *log.Logger) (*ProjectRepo, error) {
 func (pr *ProjectRepo) Create(project *domain.Project) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	patientsCollection := pr.getCollection()
+	projectsCollection := pr.getCollection()
 
-	result, err := patientsCollection.InsertOne(ctx, &project)
+	result, err := projectsCollection.InsertOne(ctx, &project)
 	if err != nil {
 		log.Println(err)
 		return err
@@ -90,10 +87,10 @@ func (pr *ProjectRepo) GetAll() (domain.Projects, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	patientsCollection := pr.getCollection()
+	projectsCollection := pr.getCollection()
 
 	var project domain.Projects
-	patientsCursor, err := patientsCollection.Find(ctx, bson.M{})
+	patientsCursor, err := projectsCollection.Find(ctx, bson.M{})
 	if err != nil {
 		log.Println(err)
 		return nil, err
@@ -108,11 +105,11 @@ func (pr *ProjectRepo) GetAll() (domain.Projects, error) {
 func (pr *ProjectRepo) Delete(id string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	patientsCollection := pr.getCollection()
+	projectsCollection := pr.getCollection()
 
 	objID, _ := primitive.ObjectIDFromHex(id)
 	filter := bson.D{{Key: "_id", Value: objID}}
-	result, err := patientsCollection.DeleteOne(ctx, filter)
+	result, err := projectsCollection.DeleteOne(ctx, filter)
 	if err != nil {
 		log.Println(err)
 		return err

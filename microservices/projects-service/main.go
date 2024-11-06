@@ -1,9 +1,11 @@
 package main
 
 import (
+	"context"
 	"github.com/google/uuid"
 	"log"
 	"net/http"
+	"os"
 	"projects_module/config"
 	"projects_module/domain"
 	h "projects_module/handlers"
@@ -18,7 +20,20 @@ import (
 func main() {
 	cfg := config.GetConfig()
 
-	repoProject, err := repositories.NewProjectInMem()
+	// Initialize context
+	timeoutContext, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	//Initialize the logger we are going to use, with prefix and datetime for every log
+	logger := log.New(os.Stdout, "[project-api] ", log.LstdFlags)
+	storeLogger := log.New(os.Stdout, "[project-store] ", log.LstdFlags)
+
+	// NoSQL: Initialize Product Repository store
+	repoProject, err := repositories.New(timeoutContext, storeLogger)
+	if err != nil {
+		logger.Fatal(err)
+	}
+	defer repoProject.Disconnect(timeoutContext)
 	handleErr(err)
 
 	prj1 := domain.Project{
@@ -37,10 +52,10 @@ func main() {
 		MaxMembers:     3,
 	}
 
-	repoProject.Create(prj1)
-	repoProject.Create(prj2)
+	repoProject.Create(&prj1)
+	repoProject.Create(&prj2)
 
-	serviceProject, err := services.NewConnectionService(repoProject)
+	serviceProject, err := services.NewConnectionService(*repoProject)
 	handleErr(err)
 
 	handlerProject, err := h.NewConnectionHandler(serviceProject)
