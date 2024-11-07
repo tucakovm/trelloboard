@@ -2,25 +2,28 @@ package service
 
 import (
 	"github.com/google/uuid"
+	"log"
 	"tasks-service/domain"
+	"tasks-service/repository"
 )
 
 type TaskService struct {
-	repo domain.TasksRepository
+	repo *repository.TaskRepo
 }
 
-func NewTaskService(repo domain.TasksRepository) (TaskService, error) {
-	return TaskService{
-		repo: repo,
-	}, nil
+func NewTaskService(repo *repository.TaskRepo) *TaskService {
+	return &TaskService{repo: repo}
 }
 
-func (s TaskService) Create(t domain.Task) (domain.Task, error) {
-	t.Id = uuid.New()
-	task, err := s.repo.Create(t)
-	if err != nil {
-		return domain.Task{}, err
-	}
+func (s *TaskService) CreateTask(task domain.Task) (domain.Task, error) {
+	log.Println("pokrenut create task u servisu")
+	return s.repo.Create(task)
+}
 
-	return task, nil
+func (s *TaskService) GetAllTasks() ([]domain.Task, error) {
+	return s.repo.GetAll()
+}
+
+func (s *TaskService) DeleteTask(id uuid.UUID) error {
+	return s.repo.Delete(id)
 }

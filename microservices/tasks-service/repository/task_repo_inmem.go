@@ -10,11 +10,16 @@ type tasksInMemRepository struct {
 }
 
 func (t tasksInMemRepository) Create(task domain.Task) (domain.Task, error) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (t tasksInMemRepository) CreateInMem(task domain.Task) (domain.Task, error) {
 	if task.Status != domain.Pending {
 		task.Status = domain.Pending
 	}
 	t.tasks = append(t.tasks, tasksDAO{
-		Id:          task.Id,
+		//Id:          task.Id,
 		Name:        task.Name,
 		Description: task.Description,
 		Status:      task.Status,

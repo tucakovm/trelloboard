@@ -3,9 +3,9 @@ package domain
 type Status int
 
 const (
-	Pending Status = iota
-	Working
-	Done
+	Pending Status = 0
+	Working Status = 1
+	Done    Status = 2
 )
 
 func (s Status) String() string {

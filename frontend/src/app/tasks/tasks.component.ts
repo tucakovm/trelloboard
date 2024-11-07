@@ -19,11 +19,11 @@ export class TasksComponent {
         Name: ['', [Validators.required, Validators.minLength(3)]],
         Description:['',[Validators.required, Validators.minLength(10)]]
       },
-      
+
     );
   }
 
-  
+
   onSubmit(): void {
     if (this.taskForm.valid) {
       const taskData: Task = this.taskForm.value;
@@ -35,17 +35,12 @@ export class TasksComponent {
             console.log('Task created successfully:', response);
         },
         error: (error) => {
-            console.error('Error creating project:', error);
+            console.error('Error creating task:', error);
         },
         complete: () => {
-            
+
         }
     });
     }
   }
-
-  
-
-
-
 }

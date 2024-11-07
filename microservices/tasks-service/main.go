@@ -1,46 +1,57 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"github.com/gorilla/handlers"
+	"github.com/gorilla/mux"
 	"log"
 	"net/http"
 	h "tasks-service/handlers"
 	"tasks-service/repository"
-	"tasks-service/service"
-
-	"github.com/gorilla/mux"
 )
 
 func main() {
-	//cfg := config.GetConfig()
+	// Set up context for MongoDB connection
+	ctx := context.Background()
 
-	repoTask, err := repository.NewTaskInMem()
-	handleErr(err)
+	// Initialize MongoDB repository
+	repo, err := repository.NewTaskRepo(ctx)
+	if err != nil {
+		log.Fatalf("Failed to initialize task repository: %v", err)
+	}
+	defer repo.Cli.Disconnect(ctx) // Ensure the database connection is closed when done
 
-	serviceTask, err := service.NewTaskService(repoTask)
-	handleErr(err)
+	// Initialize task service
+	//taskService := service.NewTaskService(repo)
 
-	handlerTask, err := h.NewConnectionHandler(serviceTask)
-	handleErr(err)
+	// Initialize task handler
+	taskRepo := &repository.TaskRepo{}
+	taskHandler := h.NewTaskHandler(taskRepo)
 
+	// Set up router
 	r := mux.NewRouter()
-	r.HandleFunc("/api/tasks", handlerTask.Create).Methods(http.MethodPost)
+	r.HandleFunc("/api/tasks", taskHandler.Create).Methods(http.MethodPost)
+	r.HandleFunc("/api/tasks", taskHandler.GetAll).Methods(http.MethodGet)
+	r.HandleFunc("/api/tasks", taskHandler.Delete).Methods(http.MethodDelete)
 
+	// Set up CORS
 	corsHandler := handlers.CORS(
-		handlers.AllowedOrigins([]string{"http://localhost:4200"}), // Set the correct origin
-		handlers.AllowedMethods([]string{"GET", "POST", "OPTIONS"}),
+		handlers.AllowedOrigins([]string{"http://localhost:4200"}), // Adjust as needed
+		handlers.AllowedMethods([]string{"GET", "POST", "DELETE", "OPTIONS"}),
 		handlers.AllowedHeaders([]string{"Content-Type", "Authorization"}),
 	)
 
+	// Start the server
 	srv := &http.Server{
-
-		Handler: corsHandler(r), // Apply CORS handler to router
-		Addr:    ":8002",        // Use the desired port
+		Handler: corsHandler(r),
+		Addr:    ":8002", // Use the desired port
 	}
 
-	log.Println("Server is running on port 8001")
-	log.Fatal(srv.ListenAndServe())
+	log.Println("Server is running on port 8002")
+	if err := srv.ListenAndServe(); err != nil {
+		log.Fatalf("Failed to start server: %v", err)
+	}
 
 	fmt.Println("Welcome to the Tasks Service!")
 }

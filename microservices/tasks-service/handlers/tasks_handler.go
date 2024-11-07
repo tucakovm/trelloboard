@@ -2,34 +2,35 @@ package handlers
 
 import (
 	"encoding/json"
+	"github.com/google/uuid"
 	"io"
+	"log"
 	"net/http"
 	"tasks-service/domain"
-	"tasks-service/service"
+	"tasks-service/repository"
 )
 
 type TaskHandler struct {
-	service service.TaskService
+	repo *repository.TaskRepo // Use a pointer here
 }
 
-func NewConnectionHandler(conn service.TaskService) (TaskHandler, error) {
-	return TaskHandler{service: conn}, nil
+func NewTaskHandler(repo *repository.TaskRepo) *TaskHandler { // Accept pointer in constructor
+	return &TaskHandler{repo: repo}
 }
 
-func (c TaskHandler) decodeBodyProject(r io.Reader) (*domain.Task, error) {
+func (h *TaskHandler) decodeBodyTask(r io.Reader) (*domain.Task, error) {
 	dec := json.NewDecoder(r)
 	dec.DisallowUnknownFields()
 
-	var rt domain.Task
-	if err := dec.Decode(&rt); err != nil {
+	var task domain.Task
+	if err := dec.Decode(&task); err != nil {
 		return nil, err
 	}
-	return &rt, nil
+	return &task, nil
 }
 
-func (c *TaskHandler) renderJSON(w http.ResponseWriter, v interface{}, code int) {
+func (h *TaskHandler) renderJSON(w http.ResponseWriter, v interface{}, code int) {
 	js, err := json.Marshal(v)
-
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -40,23 +41,59 @@ func (c *TaskHandler) renderJSON(w http.ResponseWriter, v interface{}, code int)
 	w.Write(js)
 }
 
-func (h TaskHandler) Create(w http.ResponseWriter, r *http.Request) {
+func (h *TaskHandler) Create(w http.ResponseWriter, r *http.Request) {
+	log.Println("aaaaaaaa")
 	if r.Method == http.MethodOptions {
 		w.WriteHeader(http.StatusNoContent)
+		log.Println("options proso")
 		return
 	}
-	task, err := h.decodeBodyProject(r.Body)
+	log.Println("proso options")
+
+	task, err := h.decodeBodyTask(r.Body)
 	if err != nil {
+		log.Println("greska u dekodiranju bodya")
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
+	log.Println("dekodiran body")
 
-	t, err := h.service.Create(*task)
+	//task.Id = uuid.New()
+
+	createdTask, err := h.repo.Create(*task)
+	log.Println("pokrenut create task u handleru")
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		log.Println("greska u kreairanju taska u repo")
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	log.Println("ide gas")
+
+	h.renderJSON(w, createdTask, http.StatusCreated)
+}
+
+func (h *TaskHandler) GetAll(w http.ResponseWriter, r *http.Request) {
+	tasks, err := h.repo.GetAll()
+	if err != nil {
+		http.Error(w, "Failed to retrieve tasks", http.StatusInternalServerError)
 		return
 	}
 
-	h.renderJSON(w, t, http.StatusCreated)
+	h.renderJSON(w, tasks, http.StatusOK)
+}
 
+func (h *TaskHandler) Delete(w http.ResponseWriter, r *http.Request) {
+	idStr := r.URL.Query().Get("id")
+	id, err := uuid.Parse(idStr)
+	if err != nil {
+		http.Error(w, "Invalid ID", http.StatusBadRequest)
+		return
+	}
+
+	if err := h.repo.Delete(id); err != nil {
+		http.Error(w, "Failed to delete task", http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
 }
