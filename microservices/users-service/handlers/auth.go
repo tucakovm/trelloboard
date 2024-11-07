@@ -3,8 +3,6 @@ package handlers
 import (
 	"encoding/json"
 	"net/http"
-	"users_module/models"
-	"users_module/repositories"
 	"users_module/services"
 )
 
@@ -68,29 +66,10 @@ func VerifyHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = services.VerifyUser(req.Email, req.Code)
+	err = services.VerifyAndActivateUser(req.Email, req.Code)
 	if err != nil {
-		http.Error(w, `{"error": "Verification failed"}`, http.StatusBadRequest)
+		http.Error(w, `{"error": "Verification or activation failed"}`, http.StatusBadRequest)
 		return
-	}
-
-	user, err := repositories.GetUserByEmail(req.Email)
-	if err != nil {
-		user = &models.User{
-			Email:    req.Email,
-			IsActive: true,
-		}
-		err = repositories.SaveUser(*user)
-		if err != nil {
-			http.Error(w, `{"error": "Failed to save user"}`, http.StatusInternalServerError)
-			return
-		}
-	} else {
-		err = repositories.ActivateUser(req.Email)
-		if err != nil {
-			http.Error(w, `{"error": "Failed to activate user"}`, http.StatusInternalServerError)
-			return
-		}
 	}
 
 	w.WriteHeader(http.StatusOK)

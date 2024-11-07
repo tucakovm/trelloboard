@@ -1,33 +1,31 @@
 package main
 
 import (
+	"context"
 	"log"
 	"net/http"
 	"users_module/handlers"
+	"users_module/repositories"
 )
 
-func registerHandler(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Access-Control-Allow-Origin", "http://localhost:4200")
-	w.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS")
-	w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
-
-	if r.Method == http.MethodOptions {
-		w.WriteHeader(http.StatusNoContent)
-		return
-	}
-
-	if r.Method == http.MethodPost {
-		w.Write([]byte("User registered successfully"))
-	} else {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-	}
-}
-
 func main() {
-	http.HandleFunc("/register", handlers.RegisterHandler)
-	http.HandleFunc("/verify", handlers.VerifyHandler)
-	//http.ListenAndServe(":8080", nil)
+	ctx := context.Background()
+
+	// Initialize the UserRepo (MongoDB client)
+	_, err := repositories.NewUserRepo(ctx)
+	if err != nil {
+		log.Fatalf("Could not create UserRepo: %v", err)
+	}
+
+	// Pass TaskRepo to handlers
+	http.HandleFunc("/register", func(w http.ResponseWriter, r *http.Request) {
+		handlers.RegisterHandler(w, r)
+	})
+	http.HandleFunc("/verify", func(w http.ResponseWriter, r *http.Request) {
+		handlers.VerifyHandler(w, r)
+	})
+
+	// Start server
 	log.Println("Server running on http://localhost:8003")
 	log.Fatal(http.ListenAndServe(":8003", nil))
-
 }

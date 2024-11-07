@@ -9,7 +9,8 @@ import (
 )
 
 func RegisterUser(firstName, lastName, username, email string) error {
-	existingUser, _ := repositories.GetUserByUsername(username)
+	repo := repositories.TaskRepo{}
+	existingUser, _ := repo.GetUserByUsername(username)
 	log.Println("username:", username)
 	log.Println("existingUser:", existingUser)
 	log.Println("firstName:", firstName)
@@ -30,7 +31,7 @@ func RegisterUser(firstName, lastName, username, email string) error {
 		Code:      code,
 	}
 
-	err := repositories.SaveUser(user)
+	err := repo.SaveUser(user)
 	if err != nil {
 		return err
 	}
@@ -39,12 +40,36 @@ func RegisterUser(firstName, lastName, username, email string) error {
 }
 
 func VerifyUser(email, code string) error {
-	user, err := repositories.GetUserByEmail(email)
+	repo := repositories.TaskRepo{}
+	user, err := repo.GetUserByEmail(email)
 	if err != nil {
 		return err
 	}
 	if user.Code != code && code != "123456" {
 		return errors.New("invalid verification code")
 	}
-	return repositories.ActivateUser(email)
+	return repo.ActivateUser(email)
+}
+
+func VerifyAndActivateUser(email, code string) error {
+	repo := repositories.TaskRepo{}
+	if err := VerifyUser(email, code); err != nil {
+		return errors.New("verification failed")
+	}
+
+	user, err := repo.GetUserByEmail(email)
+	if err != nil && !errors.Is(err, repositories.ErrUserNotFound) {
+		return err
+	}
+
+	if user == nil {
+		// User not found, create new
+		user = &models.User{
+			Email:    email,
+			IsActive: true,
+		}
+		return repo.ActivateUser(email)
+	}
+
+	return repo.ActivateUser(email)
 }
