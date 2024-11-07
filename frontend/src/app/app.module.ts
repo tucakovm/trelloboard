@@ -9,6 +9,7 @@ import { RegisterComponent } from './register/register.component';
 import { VerifyComponent } from './verify/verify.component';
 import { TasksComponent } from './tasks/tasks.component';
 import { ProjectAllComponent } from './project/project-all/project-all.component';
+import { LoginComponent } from './login/login.component';
 
 @NgModule({
   declarations: [
@@ -17,7 +18,8 @@ import { ProjectAllComponent } from './project/project-all/project-all.component
     RegisterComponent,
     VerifyComponent,
     TasksComponent,
-    ProjectAllComponent
+    ProjectAllComponent,
+    LoginComponent
   ],
   imports: [
     BrowserModule,
