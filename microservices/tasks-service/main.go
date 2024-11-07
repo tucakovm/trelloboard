@@ -20,14 +20,14 @@ func main() {
 	if err != nil {
 		log.Fatalf("Failed to initialize task repository: %v", err)
 	}
-	defer repo.Cli.Disconnect(ctx) // Ensure the database connection is closed when done
+	//defer repo.Cli.Disconnect(ctx) // Ensure the database connection is closed when done
 
 	// Initialize task service
 	//taskService := service.NewTaskService(repo)
 
 	// Initialize task handler
-	taskRepo := &repository.TaskRepo{}
-	taskHandler := h.NewTaskHandler(taskRepo)
+	//taskRepo := &repository.TaskRepo{}
+	taskHandler := h.NewTaskHandler(repo)
 
 	// Set up router
 	r := mux.NewRouter()
