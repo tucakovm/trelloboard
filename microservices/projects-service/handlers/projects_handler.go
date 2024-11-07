@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"context"
 	"encoding/json"
 	"github.com/gorilla/mux"
 	"io"
@@ -16,9 +17,9 @@ type ProjectHandler struct {
 	service services.ProjectService
 }
 
-func NewConnectionHandler(conns services.ProjectService) (ProjectHandler, error) {
+func NewConnectionHandler(service services.ProjectService) (ProjectHandler, error) {
 	return ProjectHandler{
-		service: conns,
+		service: service,
 	}, nil
 }
 
@@ -55,9 +56,9 @@ func (h ProjectHandler) Create(w http.ResponseWriter, r *http.Request) {
 	project := r.Context().Value(KeyProduct{}).(*domain.Project)
 	log.Println(project)
 
-	prj := h.service.Create(project)
+	h.service.Create(project)
 
-	h.renderJSON(w, prj, http.StatusCreated)
+	h.renderJSON(w, domain.Projects{}, http.StatusCreated)
 }
 
 func (h ProjectHandler) GetAll(rw http.ResponseWriter, r *http.Request) {
@@ -99,4 +100,21 @@ func (h ProjectHandler) Delete(w http.ResponseWriter, r *http.Request) {
 	}
 
 	h.renderJSON(w, "Project deleted", http.StatusOK)
+}
+
+func (h ProjectHandler) MiddlewarePatientDeserialization(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(rw http.ResponseWriter, h *http.Request) {
+		project := &domain.Project{}
+		err := project.FromJSON(h.Body)
+		if err != nil {
+			http.Error(rw, "Unable to decode json", http.StatusBadRequest)
+			log.Fatal(err)
+			return
+		}
+
+		ctx := context.WithValue(h.Context(), KeyProduct{}, project)
+		h = h.WithContext(ctx)
+
+		next.ServeHTTP(rw, h)
+	})
 }

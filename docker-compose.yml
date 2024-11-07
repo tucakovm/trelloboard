@@ -54,8 +54,13 @@ services:
     ports:
       # <port_on_local>:<port_in_machine>
       - 8003:8003
+      - 587:587
     environment:
       - MONGO_DB_URI=mongodb://root:pass@mongo:27017
+      - SMTP_HOST=smtp.gmail.com
+      - SMTP_PASSWORD=yxduddpfdnrwozfp
+      - SMTP_PORT=587
+      - SMTP_USER=nocapteam101@gmail.com
     depends_on:
       mongo:
         condition: service_healthy

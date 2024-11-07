@@ -51,14 +51,18 @@ func main() {
 	repoProject.Create(&prj1)
 	repoProject.Create(&prj2)
 
-	serviceProject, err := services.NewConnectionService(*repoProject)
+	serviceProject, err := services.NewProjectService(*repoProject)
 	handleErr(err)
 
 	handlerProject, err := h.NewConnectionHandler(serviceProject)
 	handleErr(err)
 
 	r := mux.NewRouter()
-	r.HandleFunc("/api/projects", handlerProject.Create).Methods(http.MethodPost)
+
+	prjRouter := r.Methods(http.MethodPost).Subrouter()
+	prjRouter.HandleFunc("/api/projects", handlerProject.Create)
+	prjRouter.Use(handlerProject.MiddlewarePatientDeserialization)
+
 	r.HandleFunc("/api/projects", handlerProject.GetAll).Methods(http.MethodGet)
 	r.HandleFunc("/api/projects/{id}", handlerProject.Delete).Methods(http.MethodDelete)
 

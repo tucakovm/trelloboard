@@ -1,7 +1,9 @@
 package domain
 
 import (
+	"encoding/json"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"io"
 	"time"
 )
 
@@ -16,3 +18,13 @@ type Project struct {
 }
 
 type Projects []*Project
+
+func (p *Project) ToJSON(w io.Writer) error {
+	e := json.NewEncoder(w)
+	return e.Encode(p)
+}
+
+func (p *Project) FromJSON(r io.Reader) error {
+	d := json.NewDecoder(r)
+	return d.Decode(p)
+}

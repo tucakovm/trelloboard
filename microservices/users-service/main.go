@@ -2,30 +2,63 @@ package main
 
 import (
 	"context"
+	"github.com/gorilla/handlers"
+	"github.com/gorilla/mux"
 	"log"
 	"net/http"
-	"users_module/handlers"
+	"os"
+	"time"
+	h "users_module/handlers"
 	"users_module/repositories"
+	"users_module/services"
 )
 
 func main() {
-	ctx := context.Background()
+	timeoutContext, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
 
-	// Initialize the UserRepo (MongoDB client)
-	_, err := repositories.NewUserRepo(ctx)
+	//Initialize the logger we are going to use, with prefix and datetime for every log
+	logger := log.New(os.Stdout, "[user-api] ", log.LstdFlags)
+	//storeLogger := log.New(os.Stdout, "[user-store] ", log.LstdFlags)
+
+	// NoSQL: Initialize Product Repository store
+	repoUser, err := repositories.NewUserRepo(timeoutContext)
 	if err != nil {
-		log.Fatalf("Could not create UserRepo: %v", err)
+		logger.Fatal(err)
+	}
+	defer repoUser.Disconnect(timeoutContext)
+	handleErr(err)
+
+	serviceUser, err := services.NewUserService(*repoUser)
+	handleErr(err)
+
+	handlerUser, err := h.NewUserHandler(serviceUser)
+	handleErr(err)
+
+	r := mux.NewRouter()
+	r.HandleFunc("/register", handlerUser.RegisterHandler).Methods(http.MethodPost)
+	r.HandleFunc("/verify", handlerUser.VerifyHandler).Methods(http.MethodPost)
+
+	// Define CORS options
+	corsHandler := handlers.CORS(
+		handlers.AllowedOrigins([]string{"http://localhost:4200"}), // Set the correct origin
+		handlers.AllowedMethods([]string{"GET", "POST", "DELETE", "OPTIONS"}),
+		handlers.AllowedHeaders([]string{"Content-Type", "Authorization"}),
+	)
+
+	// Create the HTTP server with CORS handler
+	srv := &http.Server{
+
+		Handler: corsHandler(r), // Apply CORS handler to router
+		Addr:    ":8003",        // Use the desired port
 	}
 
-	// Pass TaskRepo to handlers
-	http.HandleFunc("/register", func(w http.ResponseWriter, r *http.Request) {
-		handlers.RegisterHandler(w, r)
-	})
-	http.HandleFunc("/verify", func(w http.ResponseWriter, r *http.Request) {
-		handlers.VerifyHandler(w, r)
-	})
+	// Start the server
+	log.Fatal(srv.ListenAndServe())
+}
 
-	// Start server
-	log.Println("Server running on http://localhost:8003")
-	log.Fatal(http.ListenAndServe(":8003", nil))
+func handleErr(err error) {
+	if err != nil {
+		log.Fatalln(err)
+	}
 }

@@ -17,11 +17,11 @@ import (
 
 var ErrUserNotFound = errors.New("user not found")
 
-type TaskRepo struct {
+type UserRepo struct {
 	Cli *mongo.Client
 }
 
-func NewUserRepo(ctx context.Context) (*TaskRepo, error) {
+func NewUserRepo(ctx context.Context) (*UserRepo, error) {
 	dburi := os.Getenv("MONGO_DB_URI")
 	if dburi == "" {
 		return nil, fmt.Errorf("MONGO_DB_URI is not set")
@@ -44,7 +44,7 @@ func NewUserRepo(ctx context.Context) (*TaskRepo, error) {
 		log.Printf("Failed to insert initial tasks: %v", err)
 	}
 
-	return &TaskRepo{Cli: client}, nil
+	return &UserRepo{Cli: client}, nil
 }
 
 func insertInitialUsers(client *mongo.Client) error {
@@ -92,7 +92,7 @@ func insertInitialUsers(client *mongo.Client) error {
 	return nil
 }
 
-func (tr *TaskRepo) getCollection() *mongo.Collection {
+func (tr *UserRepo) getCollection() *mongo.Collection {
 	if tr.Cli == nil {
 		log.Println("Mongo client is nil!")
 		return nil
@@ -106,7 +106,7 @@ func (tr *TaskRepo) getCollection() *mongo.Collection {
 	return tr.Cli.Database("mongoDemo").Collection("users")
 }
 
-func (tr *TaskRepo) SaveUser(user models.User) error {
+func (tr *UserRepo) SaveUser(user models.User) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
@@ -127,7 +127,7 @@ func (tr *TaskRepo) SaveUser(user models.User) error {
 	log.Println("User saved successfully:", user)
 	return nil
 }
-func (tr *TaskRepo) GetUserByUsername(username string) (*models.User, error) {
+func (tr *UserRepo) GetUserByUsername(username string) (*models.User, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
@@ -140,12 +140,12 @@ func (tr *TaskRepo) GetUserByUsername(username string) (*models.User, error) {
 	err := collection.FindOne(ctx, bson.M{"username": username}).Decode(&user)
 	if err != nil {
 		log.Println("User not found with username:", username)
-		return nil, ErrUserNotFound
+		return nil, err
 	}
 
 	return &user, nil
 }
-func (tr *TaskRepo) GetUserByEmail(email string) (*models.User, error) {
+func (tr *UserRepo) GetUserByEmail(email string) (*models.User, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
@@ -164,7 +164,7 @@ func (tr *TaskRepo) GetUserByEmail(email string) (*models.User, error) {
 	return &user, nil
 }
 
-func (tr *TaskRepo) ActivateUser(email string) error {
+func (tr *UserRepo) ActivateUser(email string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
@@ -174,7 +174,7 @@ func (tr *TaskRepo) ActivateUser(email string) error {
 	}
 
 	filter := bson.M{"email": email}
-	update := bson.M{"$set": bson.M{"isactive": true}}
+	update := bson.M{"$set": bson.M{"is_active": true}}
 
 	_, err := collection.UpdateOne(ctx, filter, update)
 	if err != nil {
@@ -185,7 +185,7 @@ func (tr *TaskRepo) ActivateUser(email string) error {
 	log.Printf("User with email %s activated successfully", email)
 	return nil
 }
-func (tr *TaskRepo) GetAll() ([]models.User, error) {
+func (tr *UserRepo) GetAll() ([]models.User, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
@@ -219,7 +219,7 @@ func (tr *TaskRepo) GetAll() ([]models.User, error) {
 	return tasks, nil
 }
 
-func (tr *TaskRepo) Delete(id uuid.UUID) error {
+func (tr *UserRepo) Delete(id uuid.UUID) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
@@ -241,5 +241,13 @@ func (tr *TaskRepo) Delete(id uuid.UUID) error {
 	}
 
 	log.Printf("User with ID %s deleted successfully", id)
+	return nil
+}
+
+func (pr *UserRepo) Disconnect(ctx context.Context) error {
+	err := pr.Cli.Disconnect(ctx)
+	if err != nil {
+		return err
+	}
 	return nil
 }

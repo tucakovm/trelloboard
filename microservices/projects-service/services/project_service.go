@@ -9,16 +9,14 @@ type ProjectService struct {
 	repo repositories.ProjectRepo
 }
 
-func NewConnectionService(repo repositories.ProjectRepo) (ProjectService, error) {
+func NewProjectService(repo repositories.ProjectRepo) (ProjectService, error) {
 	return ProjectService{
 		repo: repo,
 	}, nil
 }
 
 func (s ProjectService) Create(p *domain.Project) error {
-	s.repo.Create(p)
-
-	return nil
+	return s.repo.Create(p)
 }
 
 func (s ProjectService) GetAll() (domain.Projects, error) {

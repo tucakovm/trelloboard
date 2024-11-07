@@ -6,6 +6,16 @@ import (
 	"users_module/services"
 )
 
+type UserHandler struct {
+	service services.UserService
+}
+
+func NewUserHandler(service services.UserService) (UserHandler, error) {
+	return UserHandler{
+		service: service,
+	}, nil
+}
+
 type RegisterRequest struct {
 	FirstName string `json:"first_name"`
 	LastName  string `json:"last_name"`
@@ -18,7 +28,7 @@ type VerifyRequest struct {
 	Code  string `json:"code"`
 }
 
-func RegisterHandler(w http.ResponseWriter, r *http.Request) {
+func (h UserHandler) RegisterHandler(w http.ResponseWriter, r *http.Request) {
 	var req RegisterRequest
 
 	w.Header().Set("Access-Control-Allow-Origin", "http://localhost:4200")
@@ -37,7 +47,7 @@ func RegisterHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = services.RegisterUser(req.FirstName, req.LastName, req.Username, req.Email)
+	err = h.service.RegisterUser(req.FirstName, req.LastName, req.Username, req.Email)
 	if err != nil {
 		http.Error(w, `{"error": "Registration failed"}`, http.StatusInternalServerError)
 		return
@@ -47,7 +57,7 @@ func RegisterHandler(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(map[string]string{"message": "Verification email sent"})
 }
 
-func VerifyHandler(w http.ResponseWriter, r *http.Request) {
+func (h UserHandler) VerifyHandler(w http.ResponseWriter, r *http.Request) {
 	var req VerifyRequest
 
 	w.Header().Set("Access-Control-Allow-Origin", "http://localhost:4200")
@@ -66,7 +76,7 @@ func VerifyHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = services.VerifyAndActivateUser(req.Email, req.Code)
+	err = h.service.VerifyAndActivateUser(req.Email, req.Code)
 	if err != nil {
 		http.Error(w, `{"error": "Verification or activation failed"}`, http.StatusBadRequest)
 		return
