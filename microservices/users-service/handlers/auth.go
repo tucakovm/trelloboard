@@ -21,6 +21,12 @@ type RegisterRequest struct {
 	LastName  string `json:"last_name"`
 	Username  string `json:"username"`
 	Email     string `json:"email"`
+	Password  string `json:"password"`
+}
+
+type LoginRequest struct {
+	Username string `json:"username"`
+	Password string `json:"password"`
 }
 
 type VerifyRequest struct {
@@ -47,7 +53,7 @@ func (h UserHandler) RegisterHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = h.service.RegisterUser(req.FirstName, req.LastName, req.Username, req.Email)
+	err = h.service.RegisterUser(req.FirstName, req.LastName, req.Username, req.Email, req.Password)
 	if err != nil {
 		http.Error(w, `{"error": "Registration failed"}`, http.StatusInternalServerError)
 		return
@@ -55,6 +61,41 @@ func (h UserHandler) RegisterHandler(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(map[string]string{"message": "Verification email sent"})
+}
+
+func (h UserHandler) LoginUser(w http.ResponseWriter, r *http.Request) {
+	var req LoginRequest
+
+	w.Header().Set("Access-Control-Allow-Origin", "http://localhost:4200")
+	w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+	w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+	w.Header().Set("Content-Type", "application/json")
+
+	if r.Method == http.MethodOptions {
+		w.WriteHeader(http.StatusNoContent)
+		return
+	}
+
+	err := json.NewDecoder(r.Body).Decode(&req)
+	if err != nil {
+		http.Error(w, `{"error": "Invalid request payload"}`, http.StatusBadRequest)
+	}
+
+	// Pokušaj dohvatanja korisnika
+	user, err := h.service.GetUserByUsername(req.Username)
+	if err != nil {
+		http.Error(w, `{"error": "User not found"}`, http.StatusUnauthorized)
+		return
+	}
+
+	// Provera lozinke
+	if user.Password != req.Password { // assuming Password is an exported field
+		http.Error(w, `{"error": "Invalid username or password"}`, http.StatusUnauthorized)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(map[string]string{"message": "Login successful"})
 }
 
 func (h UserHandler) VerifyHandler(w http.ResponseWriter, r *http.Request) {

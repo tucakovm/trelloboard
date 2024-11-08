@@ -4,15 +4,16 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log"
+	"os"
+	"time"
+	"users_module/models"
+
 	"github.com/google/uuid"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
-	"log"
-	"os"
-	"time"
-	"users_module/models"
 )
 
 var ErrUserNotFound = errors.New("user not found")
@@ -67,6 +68,7 @@ func insertInitialUsers(client *mongo.Client) error {
 			LastName:  "Johnson",
 			Username:  "alicej",
 			Email:     "alice.johnson@example.com",
+			Password:  "sifra123",
 			IsActive:  true,
 			Code:      "A123",
 		},
@@ -76,6 +78,7 @@ func insertInitialUsers(client *mongo.Client) error {
 			LastName:  "Smith",
 			Username:  "bobsmith",
 			Email:     "bob.smith@example.com",
+			Password:  "sifra12345",
 			IsActive:  false,
 			Code:      "B456",
 		},

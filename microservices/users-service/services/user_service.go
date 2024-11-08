@@ -17,7 +17,7 @@ func NewUserService(repo repositories.UserRepo) (UserService, error) {
 	}, nil
 }
 
-func (s UserService) RegisterUser(firstName, lastName, username, email string) error {
+func (s UserService) RegisterUser(firstName, lastName, username, email, password string) error {
 	existingUser, _ := s.repo.GetUserByUsername(username)
 	//log.Println("username:", username)
 	//log.Println("existingUser:", existingUser)
@@ -34,6 +34,7 @@ func (s UserService) RegisterUser(firstName, lastName, username, email string) e
 		LastName:  lastName,
 		Username:  username,
 		Email:     email,
+		Password:  password,
 		IsActive:  false,
 		Code:      code,
 	}
@@ -55,6 +56,14 @@ func (s UserService) VerifyUser(email, code string) error {
 		return errors.New("invalid verification code")
 	}
 	return s.repo.ActivateUser(email)
+}
+
+func (s UserService) GetUserByUsername(username string) (*models.User, error) {
+	user, err := s.repo.GetUserByUsername(username)
+	if err != nil {
+		return nil, err
+	}
+	return user, nil
 }
 
 func (s UserService) VerifyAndActivateUser(email, code string) error {

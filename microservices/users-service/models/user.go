@@ -9,6 +9,7 @@ type User struct {
 	LastName  string             `bson:"last_name" json:"last_name"`
 	Username  string             `bson:"username" json:"username"`
 	Email     string             `bson:"email" json:"email"`
+	Password  string             `bson:"password" json:"password"`
 	IsActive  bool               `bson:"is_active" json:"is_active"`
 	Code      string             `bson:"code" json:"code"`
 }

@@ -2,8 +2,6 @@ package main
 
 import (
 	"context"
-	"github.com/gorilla/handlers"
-	"github.com/gorilla/mux"
 	"log"
 	"net/http"
 	"os"
@@ -11,6 +9,9 @@ import (
 	h "users_module/handlers"
 	"users_module/repositories"
 	"users_module/services"
+
+	"github.com/gorilla/handlers"
+	"github.com/gorilla/mux"
 )
 
 func main() {
@@ -38,6 +39,7 @@ func main() {
 	r := mux.NewRouter()
 	r.HandleFunc("/register", handlerUser.RegisterHandler).Methods(http.MethodPost)
 	r.HandleFunc("/verify", handlerUser.VerifyHandler).Methods(http.MethodPost)
+	r.HandleFunc("/login", handlerUser.LoginUser).Methods(http.MethodPost)
 
 	// Define CORS options
 	corsHandler := handlers.CORS(
