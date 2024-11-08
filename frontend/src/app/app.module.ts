@@ -10,6 +10,8 @@ import { VerifyComponent } from './verify/verify.component';
 import { TasksComponent } from './tasks/tasks.component';
 import { ProjectAllComponent } from './project/project-all/project-all.component';
 import { LoginComponent } from './login/login.component';
+import { JwtHelperService, JWT_OPTIONS } from '@auth0/angular-jwt'; // Import JwtHelperService
+
 
 @NgModule({
   declarations: [
@@ -27,7 +29,10 @@ import { LoginComponent } from './login/login.component';
     ReactiveFormsModule,
     HttpClientModule,
   ],
-  providers: [],
+  providers: [
+    { provide: JWT_OPTIONS, useValue: JWT_OPTIONS }, // This is necessary for JwtHelperService to work
+    JwtHelperService, // Add JwtHelperService here
+  ],
   bootstrap: [AppComponent],
 })
 export class AppModule {}

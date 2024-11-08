@@ -98,9 +98,16 @@ func (h UserHandler) LoginUser(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, `{"error": "Invalid username or password"}`, http.StatusUnauthorized)
 		return
 	}
-
+	token, err := GenerateJWT(user)
+	if err != nil {
+		http.Error(w, `{"error": "Error generating token"}`, http.StatusInternalServerError)
+		return
+	}
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(map[string]string{"message": "Login successful"})
+	json.NewEncoder(w).Encode(map[string]string{
+		"message": "Login successful",
+		"token":   token,
+	})
 }
 
 func (h UserHandler) VerifyHandler(w http.ResponseWriter, r *http.Request) {
@@ -132,7 +139,7 @@ func (h UserHandler) VerifyHandler(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(map[string]string{"message": "User verified and saved successfully"})
 }
 
-func GenerateJWT(user models.User) (string, error) {
+func GenerateJWT(user *models.User) (string, error) {
 	var secretKey = []byte("tajni_kljuc")
 	// Kreiraj claims (podatke koji se šalju u tokenu)
 	claims := jwt.MapClaims{

@@ -1,9 +1,10 @@
-import { Component } from '@angular/core';
+import { Component ,Inject} from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { LoginService } from '../services/login.service';
 import { LoggedUser } from '../model/LoggedUser';
 import { Observer } from 'rxjs';
 import { Router } from '@angular/router';
+import { AuthService } from '../services/auth.service';
 
 @Component({
   selector: 'app-login',
@@ -16,7 +17,7 @@ export class LoginComponent {
   errorOccurred: boolean = false;
   errorMessage: string = ''; 
   
-  constructor(private loginService:LoginService,private fb:FormBuilder,private router:Router){
+  constructor(private loginService:LoginService,private fb:FormBuilder,private router:Router,private authService:AuthService){
     this.taskForm = this.fb.group({
       username : ['',[Validators.required, Validators.minLength(4)]],
       password : ['',[Validators.required,Validators.minLength(4)]]
@@ -29,8 +30,12 @@ export class LoginComponent {
       const observer: Observer<any> = {
         next: (res:any) => {
           console.log('Login success, resp:', res);
-          // localStorage.setItem("jwt", res.accessToken);
-          // this.router.navigate(['']);
+          localStorage.setItem("jwt", res.token);
+          let token = this.authService.getDecodedToken();
+          console.log("dekodovani token" + token);
+          console.log("dekodovani token", JSON.stringify(token)); // Convert token object to string
+          console.log("Role from token:", token?.user_role); 
+          this.router.navigate(['']);
         },
         error: (error:any) => {
           this.errorOccurred = true;
