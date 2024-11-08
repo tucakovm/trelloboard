@@ -2,8 +2,13 @@ package handlers
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
+	"time"
+	"users_module/models"
 	"users_module/services"
+
+	"github.com/golang-jwt/jwt/v4"
 )
 
 type UserHandler struct {
@@ -125,4 +130,25 @@ func (h UserHandler) VerifyHandler(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(map[string]string{"message": "User verified and saved successfully"})
+}
+
+func GenerateJWT(user models.User) (string, error) {
+	var secretKey = []byte("tajni_kljuc")
+	// Kreiraj claims (podatke koji se šalju u tokenu)
+	claims := jwt.MapClaims{
+		"user_role": user.Role,
+		"username":  user.Username,
+		"exp":       time.Now().Add(time.Hour * 24).Unix(), // Tokom od 24 sata
+	}
+
+	// Kreiraj token sa HMAC algoritmom i našim claims
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+
+	// Potpiši token sa tajnim ključem
+	signedToken, err := token.SignedString(secretKey)
+	if err != nil {
+		return "", err
+	}
+	fmt.Println(signedToken)
+	return signedToken, nil
 }

@@ -12,4 +12,5 @@ type User struct {
 	Password  string             `bson:"password" json:"password"`
 	IsActive  bool               `bson:"is_active" json:"is_active"`
 	Code      string             `bson:"code" json:"code"`
+	Role      string             `bson:"role" json:"role"`
 }

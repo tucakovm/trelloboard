@@ -71,6 +71,7 @@ func insertInitialUsers(client *mongo.Client) error {
 			Password:  "sifra123",
 			IsActive:  true,
 			Code:      "A123",
+			Role:      "User",
 		},
 		models.User{
 			Id:        primitive.NewObjectID(),
@@ -81,6 +82,7 @@ func insertInitialUsers(client *mongo.Client) error {
 			Password:  "sifra12345",
 			IsActive:  false,
 			Code:      "B456",
+			Role:      "Admin",
 		},
 	}
 
