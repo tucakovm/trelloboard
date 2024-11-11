@@ -1,34 +1,57 @@
 <div class="container mt-5">
-    <form [formGroup]="taskForm" (ngSubmit)="onSubmit()" class="p-4 border rounded bg-light">
-      <h2 class="text-center mb-4">Create Task</h2>
-  
-      <!-- Task Name -->
-      <div class="form-group mb-3 row">
-        <label for="name" class="col-sm-3 col-form-label">Task Name:</label>
-        <div class="col-sm-9">
-          <input id="name" formControlName="Name" type="text" class="form-control" />
-          <div *ngIf="taskForm.get('name')?.invalid && taskForm.get('name')?.touched" class="text-danger mt-1">
-            Task name must be at least 3 characters long.
-          </div>
-        </div>
-      </div>
+  <form
+    [formGroup]="taskForm"
+    (ngSubmit)="onSubmit()"
+    class="p-4 border rounded bg-light"
+  >
+    <h2 class="text-center mb-4">Create Task</h2>
 
-      <div class="form-group mb-3 row">
-        <label for="description" class="col-sm-3 col-form-label">Task Description:</label>
-        <div class="col-sm-9">
-          <input id="description" formControlName="Description" type="text" class="form-control" />
-          <div *ngIf="taskForm.get('description')?.invalid && taskForm.get('description')?.touched" class="text-danger mt-1">
-            Task description must be at least 10 characters long.
-          </div>
+    <div class="form-group mb-3 row">
+      <label for="name" class="col-sm-3 col-form-label">Task Name:</label>
+      <div class="col-sm-9">
+        <input
+          id="name"
+          formControlName="Name"
+          type="text"
+          class="form-control"
+        />
+        <div
+          *ngIf="taskForm.get('name')?.invalid && taskForm.get('name')?.touched"
+          class="text-danger mt-1"
+        >
+          Task name must be at least 3 characters long.
         </div>
       </div>
-  
-      
-  
-      
-      
-      
-      <button type="submit" class="btn btn-success mt-3" [disabled]="!taskForm.valid">Submit</button>
-    </form>
-  </div>
-  
+    </div>
+
+    <div class="form-group mb-3 row">
+      <label for="description" class="col-sm-3 col-form-label"
+        >Task Description:</label
+      >
+      <div class="col-sm-9">
+        <input
+          id="description"
+          formControlName="Description"
+          type="text"
+          class="form-control"
+        />
+        <div
+          *ngIf="
+            taskForm.get('description')?.invalid &&
+            taskForm.get('description')?.touched
+          "
+          class="text-danger mt-1"
+        >
+          Task description must be at least 10 characters long.
+        </div>
+      </div>
+    </div>
+    <button
+      type="submit"
+      class="btn btn-success mt-3"
+      [disabled]="!taskForm.valid"
+    >
+      Submit
+    </button>
+  </form>
+</div>

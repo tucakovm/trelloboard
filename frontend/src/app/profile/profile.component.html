@@ -1,33 +1,58 @@
 <div class="container mt-5">
-    <div class="card shadow-lg">
-      <div class="card-header bg-primary text-white">
-        <h3>User Profile</h3>
-      </div>
-      <div class="card-body">
-        <div class="row mb-3">
-          <div class="col-md-6">
-            <label for="firstName" class="form-label">First Name:</label>
-            <input type="text" id="firstName" class="form-control" [(ngModel)]="user.firstName" readonly>
-          </div>
-          <div class="col-md-6">
-            <label for="lastName" class="form-label">Last Name:</label>
-            <input type="text" id="lastName" class="form-control" [(ngModel)]="user.lastName" readonly>
-          </div>
+  <div class="card shadow-lg">
+    <div class="card-header bg-primary text-white">
+      <h3>User Profile</h3>
+    </div>
+    <div class="card-body">
+      <div class="row mb-3">
+        <div class="col-md-6">
+          <label for="firstName" class="form-label">First Name:</label>
+          <input
+            type="text"
+            id="firstName"
+            class="form-control"
+            [(ngModel)]="user.firstName"
+            readonly
+          />
         </div>
-        <div class="row mb-3">
-          <div class="col-md-6">
-            <label for="username" class="form-label">Username:</label>
-            <input type="text" id="username" class="form-control" [(ngModel)]="user.username" readonly>
-          </div>
-          <div class="col-md-6">
-            <label for="email" class="form-label">Email:</label>
-            <input type="email" id="email" class="form-control" [(ngModel)]="user.email" readonly>
-          </div>
+        <div class="col-md-6">
+          <label for="lastName" class="form-label">Last Name:</label>
+          <input
+            type="text"
+            id="lastName"
+            class="form-control"
+            [(ngModel)]="user.lastName"
+            readonly
+          />
         </div>
       </div>
-      <div class="card-footer text-center">
-        <button class="btn btn-danger" (click)="deleteProfile()">Delete Profile</button>
+      <div class="row mb-3">
+        <div class="col-md-6">
+          <label for="username" class="form-label">Username:</label>
+          <input
+            type="text"
+            id="username"
+            class="form-control"
+            [(ngModel)]="user.username"
+            readonly
+          />
+        </div>
+        <div class="col-md-6">
+          <label for="email" class="form-label">Email:</label>
+          <input
+            type="email"
+            id="email"
+            class="form-control"
+            [(ngModel)]="user.email"
+            readonly
+          />
+        </div>
       </div>
     </div>
+    <div class="card-footer text-center">
+      <button class="btn btn-danger" (click)="deleteProfile()">
+        Delete Profile
+      </button>
+    </div>
   </div>
-  
+</div>

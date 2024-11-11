@@ -3,17 +3,33 @@
   <form [formGroup]="verifyForm" (ngSubmit)="onSubmit()">
     <label for="email">Email</label>
     <input type="email" id="email" formControlName="email" />
-    <div *ngIf="verifyForm.get('email')?.invalid && verifyForm.get('email')?.touched">
-      <small *ngIf="verifyForm.get('email')?.errors?.['required']">Email is required.</small>
-      <small *ngIf="verifyForm.get('email')?.errors?.['email']">Please enter a valid email address.</small>
+    <div
+      *ngIf="
+        verifyForm.get('email')?.invalid && verifyForm.get('email')?.touched
+      "
+    >
+      <small *ngIf="verifyForm.get('email')?.errors?.['required']"
+        >Email is required.</small
+      >
+      <small *ngIf="verifyForm.get('email')?.errors?.['email']"
+        >Please enter a valid email address.</small
+      >
     </div>
 
     <label for="code">Verification Code</label>
     <input type="text" id="code" formControlName="code" />
-    <div *ngIf="verifyForm.get('code')?.invalid && verifyForm.get('code')?.touched">
-      <small *ngIf="verifyForm.get('code')?.errors?.['required']">Verification code is required.</small>
-      <small *ngIf="verifyForm.get('code')?.errors?.['minlength']">Code must be 6 characters long.</small>
-      <small *ngIf="verifyForm.get('code')?.errors?.['maxlength']">Code must be 6 characters long.</small>
+    <div
+      *ngIf="verifyForm.get('code')?.invalid && verifyForm.get('code')?.touched"
+    >
+      <small *ngIf="verifyForm.get('code')?.errors?.['required']"
+        >Verification code is required.</small
+      >
+      <small *ngIf="verifyForm.get('code')?.errors?.['minlength']"
+        >Code must be 6 characters long.</small
+      >
+      <small *ngIf="verifyForm.get('code')?.errors?.['maxlength']"
+        >Code must be 6 characters long.</small
+      >
     </div>
 
     <button type="submit" [disabled]="verifyForm.invalid">Verify</button>

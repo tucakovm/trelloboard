@@ -2,6 +2,7 @@ package services
 
 import (
 	"errors"
+	"log"
 	"users_module/models"
 	"users_module/repositories"
 	"users_module/utils"
@@ -17,13 +18,14 @@ func NewUserService(repo repositories.UserRepo) (UserService, error) {
 	}, nil
 }
 
-func (s UserService) RegisterUser(firstName, lastName, username, email, password string) error {
+func (s UserService) RegisterUser(firstName, lastName, username, email, password, role string) error {
 	existingUser, _ := s.repo.GetUserByUsername(username)
 	//log.Println("username:", username)
 	//log.Println("existingUser:", existingUser)
 	//log.Println("firstName:", firstName)
 	//log.Println("lastName:", lastName)
 	//log.Println("email:", email)
+	log.Println("role:", role)
 	if existingUser != nil {
 		return errors.New("username already taken")
 	}
@@ -37,6 +39,7 @@ func (s UserService) RegisterUser(firstName, lastName, username, email, password
 		Password:  password,
 		IsActive:  false,
 		Code:      code,
+		Role:      role,
 	}
 
 	err := s.repo.SaveUser(user)

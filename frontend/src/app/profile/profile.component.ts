@@ -6,24 +6,26 @@ import { UserService } from '../services/user.service';
 @Component({
   selector: 'app-profile',
   templateUrl: './profile.component.html',
-  styleUrl: './profile.component.css'
+  styleUrl: './profile.component.css',
 })
-
-
-export class ProfileComponent implements OnInit{
-  constructor(private authService:AuthService,private userService:UserService){}
+export class ProfileComponent implements OnInit {
+  constructor(
+    private authService: AuthService,
+    private userService: UserService
+  ) {}
   user: User = {
     id: 0,
     username: '',
     password: '',
     firstName: '',
     lastName: '',
-    email: ''
+    email: '',
+    role: '',
   };
 
   ngOnInit(): void {
-    this.getUser()
-}
+    this.getUser();
+  }
 
   getUser() {
     const username = this.authService.getUserName();
@@ -36,7 +38,6 @@ export class ProfileComponent implements OnInit{
       }
     );
   }
-  
 
   deleteProfile() {
     if (confirm('Are you sure you want to delete your profile?')) {

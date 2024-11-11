@@ -1,40 +1,86 @@
+<link
+  href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css"
+  rel="stylesheet"
+/>
 <div class="container mt-5">
-    <div class="row justify-content-center">
-      <div class="col-md-6">
-        <div class="card">
-          <div class="card-body">
-            <h3 class="text-center mb-4">Login</h3>
-            <form [formGroup]="taskForm" (ngSubmit)="onSubmit()" class="needs-validation" novalidate>
-  
-              <div class="mb-3">
-                <label for="username" class="form-label">Username</label>
-                <input type="text" id="username" formControlName="username" class="form-control" 
-                       [ngClass]="{'is-invalid': taskForm.get('username')?.invalid && taskForm.get('username')?.touched}">
-                <div *ngIf="taskForm.get('username')?.invalid && taskForm.get('username')?.touched" class="invalid-feedback">
-                  Please provide a valid username with at least 4 characters.
-                </div>
+  <div class="row justify-content-center">
+    <div class="col-md-6">
+      <div class="card">
+        <div class="card-body">
+          <h3 class="text-center mb-4">Login</h3>
+          <form
+            [formGroup]="taskForm"
+            (ngSubmit)="onSubmit()"
+            class="needs-validation"
+            novalidate
+          >
+            <div class="mb-3">
+              <label for="username" class="form-label">Username</label>
+              <input
+                type="text"
+                id="username"
+                formControlName="username"
+                class="form-control"
+                [ngClass]="{
+                  'is-invalid':
+                    taskForm.get('username')?.invalid &&
+                    taskForm.get('username')?.touched
+                }"
+              />
+              <div
+                *ngIf="
+                  taskForm.get('username')?.invalid &&
+                  taskForm.get('username')?.touched
+                "
+                class="invalid-feedback"
+              >
+                Please provide a valid username with at least 4 characters.
               </div>
-  
-              <div class="mb-3">
-                <label for="password" class="form-label">Password</label>
-                <input type="password" id="password" formControlName="password" class="form-control" 
-                       [ngClass]="{'is-invalid': taskForm.get('password')?.invalid && taskForm.get('password')?.touched}">
-                <div *ngIf="taskForm.get('password')?.invalid && taskForm.get('password')?.touched" class="invalid-feedback">
-                  Please provide a password with at least 4 characters.
-                </div>
-              </div>
-  
-              <div class="d-grid">
-                <button type="submit" class="btn btn-primary" [disabled]="taskForm.invalid">Submit</button>
-              </div>
-            </form>
-  
-            <div *ngIf="errorOccurred" class="alert alert-danger mt-3 text-center">
-              {{ errorMessage }}
             </div>
+
+            <div class="mb-3">
+              <label for="password" class="form-label">Password</label>
+              <input
+                type="password"
+                id="password"
+                formControlName="password"
+                class="form-control"
+                [ngClass]="{
+                  'is-invalid':
+                    taskForm.get('password')?.invalid &&
+                    taskForm.get('password')?.touched
+                }"
+              />
+              <div
+                *ngIf="
+                  taskForm.get('password')?.invalid &&
+                  taskForm.get('password')?.touched
+                "
+                class="invalid-feedback"
+              >
+                Please provide a password with at least 4 characters.
+              </div>
+            </div>
+
+            <div class="d-grid">
+              <button
+                type="submit"
+                class="btn btn-primary"
+                [disabled]="taskForm.invalid"
+              >
+                Submit
+              </button>
+            </div>
+          </form>
+
+          <div
+            *ngIf="errorOccurred"
+            class="alert alert-danger mt-3 text-center"
+          >
+            {{ errorMessage }}
           </div>
         </div>
       </div>
     </div>
   </div>
-  
+</div>

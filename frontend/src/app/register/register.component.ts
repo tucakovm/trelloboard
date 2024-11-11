@@ -18,7 +18,8 @@ export class RegisterComponent {
       last_name: ['', [Validators.required, Validators.minLength(2)]],
       username: ['', [Validators.required, Validators.minLength(4)]],
       email: ['', [Validators.required, Validators.email]],
-      password: ['', [Validators.required, Validators.minLength(6)]]
+      password: ['', [Validators.required, Validators.minLength(6)]],
+      role: ['', [Validators.required]],
     });
   }
 
@@ -35,7 +36,8 @@ export class RegisterComponent {
         .post('http://localhost:8003/register', formData, { headers })
         .subscribe(
           (response) => {
-            this.successMessage = 'Registration successful! Verification email sent.';
+            this.successMessage =
+              'Registration successful! Verification email sent.';
             this.errorMessage = null;
             this.registerForm.reset();
             console.log('Registration successful', response);
