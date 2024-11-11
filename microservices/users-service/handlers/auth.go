@@ -3,6 +3,7 @@ package handlers
 import (
 	"encoding/json"
 	"fmt"
+	"golang.org/x/crypto/bcrypt"
 	"net/http"
 	"time"
 	"users_module/models"
@@ -57,8 +58,13 @@ func (h UserHandler) RegisterHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, `{"error": "Invalid request payload"}`, http.StatusBadRequest)
 		return
 	}
+	password, _ := HashPassword(req.Password)
+	if err != nil {
+		http.Error(w, `{"error": "Failed to hash password"}`, http.StatusInternalServerError)
+		return
+	}
 
-	err = h.service.RegisterUser(req.FirstName, req.LastName, req.Username, req.Email, req.Password)
+	err = h.service.RegisterUser(req.FirstName, req.LastName, req.Username, req.Email, password)
 	if err != nil {
 		http.Error(w, `{"error": "Registration failed"}`, http.StatusInternalServerError)
 		return
@@ -93,9 +99,8 @@ func (h UserHandler) LoginUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Provera lozinke
-	if user.Password != req.Password { // assuming Password is an exported field
-		http.Error(w, `{"error": "Invalid username or password"}`, http.StatusUnauthorized)
+	if !CheckPassword(user.Password, req.Password) {
+		http.Error(w, `{"error": "Invalid username or password"}`, http.StatusInternalServerError)
 		return
 	}
 	token, err := GenerateJWT(user)
@@ -158,4 +163,16 @@ func GenerateJWT(user *models.User) (string, error) {
 	}
 	fmt.Println(signedToken)
 	return signedToken, nil
+}
+
+func HashPassword(password string) (string, error) {
+	hashedBytes, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	if err != nil {
+		return "", err
+	}
+	return string(hashedBytes), nil
+}
+func CheckPassword(hashedPassword, password string) bool {
+	err := bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(password))
+	return err == nil
 }
