@@ -56,6 +56,10 @@ func (h ProjectHandler) Create(w http.ResponseWriter, r *http.Request) {
 	project := r.Context().Value(KeyProduct{}).(*domain.Project)
 	log.Println(project)
 
+	if project.Manager.Role != "Manager" {
+		http.Error(w, "", http.StatusUnauthorized)
+	}
+
 	h.service.Create(project)
 
 	h.renderJSON(w, domain.Projects{}, http.StatusCreated)
@@ -102,7 +106,7 @@ func (h ProjectHandler) Delete(w http.ResponseWriter, r *http.Request) {
 	h.renderJSON(w, "Project deleted", http.StatusOK)
 }
 
-func (h ProjectHandler) MiddlewarePatientDeserialization(next http.Handler) http.Handler {
+func (h ProjectHandler) MiddlewareProjectDeserialization(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(rw http.ResponseWriter, h *http.Request) {
 		project := &domain.Project{}
 		err := project.FromJSON(h.Body)

@@ -40,6 +40,8 @@ func main() {
 	r.HandleFunc("/register", handlerUser.RegisterHandler).Methods(http.MethodPost)
 	r.HandleFunc("/verify", handlerUser.VerifyHandler).Methods(http.MethodPost)
 	r.HandleFunc("/login", handlerUser.LoginUser).Methods(http.MethodPost)
+	r.HandleFunc("/user/{username}", handlerUser.GetUserByUsername).Methods(http.MethodGet)
+	r.HandleFunc("/user/{username}", handlerUser.DeleteUserByUsername).Methods(http.MethodDelete)
 
 	// Define CORS options
 	corsHandler := handlers.CORS(

@@ -3,14 +3,15 @@ import { BrowserModule } from '@angular/platform-browser';
 import { AppRoutingModule } from './app-routing.module';
 import { AppComponent } from './app.component';
 import { ProjectCreateComponent } from './project/project-create/project-create.component';
-import { ReactiveFormsModule } from '@angular/forms';
+import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { HttpClientModule } from '@angular/common/http';
 import { RegisterComponent } from './register/register.component';
 import { VerifyComponent } from './verify/verify.component';
 import { TasksComponent } from './tasks/tasks.component';
 import { ProjectAllComponent } from './project/project-all/project-all.component';
 import { LoginComponent } from './login/login.component';
-import { JwtHelperService, JWT_OPTIONS } from '@auth0/angular-jwt'; // Import JwtHelperService
+import { JwtHelperService, JWT_OPTIONS } from '@auth0/angular-jwt';
+import { ProfileComponent } from './profile/profile.component'; // Import JwtHelperService
 
 
 @NgModule({
@@ -21,13 +22,15 @@ import { JwtHelperService, JWT_OPTIONS } from '@auth0/angular-jwt'; // Import Jw
     VerifyComponent,
     TasksComponent,
     ProjectAllComponent,
-    LoginComponent
+    LoginComponent,
+    ProfileComponent
   ],
   imports: [
     BrowserModule,
     AppRoutingModule,
     ReactiveFormsModule,
     HttpClientModule,
+    FormsModule,
   ],
   providers: [
     { provide: JWT_OPTIONS, useValue: JWT_OPTIONS }, // This is necessary for JwtHelperService to work

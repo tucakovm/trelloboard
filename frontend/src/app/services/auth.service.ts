@@ -35,8 +35,16 @@ export class AuthService {
 
   getUserRoles() {
     const decodedToken = this.getDecodedToken();
-    if (decodedToken && decodedToken.role) {
-      return decodedToken.role.authority;
+    if (decodedToken && decodedToken.user_role) {
+      return decodedToken.user_role;
+    }
+    return null;
+  }
+
+  getUserName() {
+    const decodedToken = this.getDecodedToken();
+    if (decodedToken && decodedToken.username) {
+      return decodedToken.username;
     }
     return null;
   }

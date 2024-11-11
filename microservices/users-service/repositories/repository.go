@@ -9,7 +9,6 @@ import (
 	"time"
 	"users_module/models"
 
-	"github.com/google/uuid"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -71,7 +70,7 @@ func insertInitialUsers(client *mongo.Client) error {
 			Password:  "sifra123",
 			IsActive:  true,
 			Code:      "A123",
-			Role:      "User",
+			Role:      "Manager",
 		},
 		models.User{
 			Id:        primitive.NewObjectID(),
@@ -82,7 +81,7 @@ func insertInitialUsers(client *mongo.Client) error {
 			Password:  "sifra12345",
 			IsActive:  false,
 			Code:      "B456",
-			Role:      "Admin",
+			Role:      "User",
 		},
 	}
 
@@ -224,7 +223,7 @@ func (tr *UserRepo) GetAll() ([]models.User, error) {
 	return tasks, nil
 }
 
-func (tr *UserRepo) Delete(id uuid.UUID) error {
+func (tr *UserRepo) Delete(username string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
@@ -233,7 +232,7 @@ func (tr *UserRepo) Delete(id uuid.UUID) error {
 		return fmt.Errorf("failed to retrieve collection")
 	}
 
-	filter := bson.M{"id": id}
+	filter := bson.M{"username": username}
 	result, err := collection.DeleteOne(ctx, filter)
 	if err != nil {
 		log.Println("Error deleting user:", err)
@@ -241,11 +240,11 @@ func (tr *UserRepo) Delete(id uuid.UUID) error {
 	}
 
 	if result.DeletedCount == 0 {
-		log.Println("No user found with ID:", id)
-		return fmt.Errorf("no user found with the provided ID")
+		log.Println("No user found with username:", username)
+		return fmt.Errorf("no user found with the provided username")
 	}
 
-	log.Printf("User with ID %s deleted successfully", id)
+	log.Printf("User with username %s deleted successfully", username)
 	return nil
 }
 

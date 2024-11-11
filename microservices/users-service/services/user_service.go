@@ -66,6 +66,14 @@ func (s UserService) GetUserByUsername(username string) (*models.User, error) {
 	return user, nil
 }
 
+func (s UserService) DeleteUserByUsername(username string) error {
+	err := s.repo.Delete(username)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func (s UserService) VerifyAndActivateUser(email, code string) error {
 	if err := s.VerifyUser(email, code); err != nil {
 		return errors.New("verification failed")

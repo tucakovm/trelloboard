@@ -5,7 +5,6 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"projects_module/domain"
 	h "projects_module/handlers"
 	"projects_module/repositories"
 	"projects_module/services"
@@ -34,23 +33,6 @@ func main() {
 	defer repoProject.Disconnect(timeoutContext)
 	handleErr(err)
 
-	prj1 := domain.Project{
-		Name:           "prj1",
-		CompletionDate: time.Time{},
-		MinMembers:     2,
-		MaxMembers:     3,
-	}
-
-	prj2 := domain.Project{
-		Name:           "prj2",
-		CompletionDate: time.Time{},
-		MinMembers:     2,
-		MaxMembers:     3,
-	}
-
-	repoProject.Create(&prj1)
-	repoProject.Create(&prj2)
-
 	serviceProject, err := services.NewProjectService(*repoProject)
 	handleErr(err)
 
@@ -61,7 +43,7 @@ func main() {
 
 	prjRouter := r.Methods(http.MethodPost).Subrouter()
 	prjRouter.HandleFunc("/api/projects", handlerProject.Create)
-	prjRouter.Use(handlerProject.MiddlewarePatientDeserialization)
+	prjRouter.Use(handlerProject.MiddlewareProjectDeserialization)
 
 	r.HandleFunc("/api/projects", handlerProject.GetAll).Methods(http.MethodGet)
 	r.HandleFunc("/api/projects/{id}", handlerProject.Delete).Methods(http.MethodDelete)
@@ -69,7 +51,7 @@ func main() {
 	// Define CORS options
 	corsHandler := handlers.CORS(
 		handlers.AllowedOrigins([]string{"http://localhost:4200"}), // Set the correct origin
-		handlers.AllowedMethods([]string{"GET", "POST", "DELETE", "OPTIONS"}),
+		handlers.AllowedMethods([]string{"GET", "POST", "DELETE", "OPTIONS", "PUT"}),
 		handlers.AllowedHeaders([]string{"Content-Type", "Authorization"}),
 	)
 

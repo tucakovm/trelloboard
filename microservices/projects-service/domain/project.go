@@ -13,7 +13,7 @@ type Project struct {
 	CompletionDate time.Time          `bson:"completionDate" json:"completionDate"`
 	MinMembers     int32              `bson:"minMembers" json:"minMembers"`
 	MaxMembers     int32              `bson:"maxMembers" json:"maxMembers"`
-	//Manager        User
+	Manager        User               `bson:"manager" json:"manager"`
 	//Members        []User
 }
 

@@ -3,6 +3,8 @@ import { FormBuilder, FormGroup, Validators , AbstractControl } from '@angular/f
 import { User } from '../../model/user';
 import { Project } from '../../model/project';
 import { ProjectService } from '../../services/project.service';
+import { AuthService } from '../../services/auth.service';
+import { UserFP } from '../../model/userForProject';
 
 @Component({
   selector: 'app-project-create',
@@ -12,7 +14,7 @@ import { ProjectService } from '../../services/project.service';
 export class ProjectCreateComponent{
   projectForm: FormGroup;
 
-  constructor(private fb: FormBuilder, private projectService:ProjectService) {
+  constructor(private fb: FormBuilder, private projectService:ProjectService , private authService:AuthService) {
     this.projectForm = this.fb.group(
       {
         Name: ['', [Validators.required, Validators.minLength(3)]],
@@ -35,18 +37,28 @@ export class ProjectCreateComponent{
     return null; // Bez greške
   }
 
+  
+
   onSubmit(): void {
-    if (this.projectForm.valid) {
+
+    let tokenRole = this.authService.getUserRoles();
+    if (this.projectForm.valid && tokenRole == "Manager") {
       const projectData: Project = this.projectForm.value;
       
       let completionDate = new Date(projectData.CompletionDate);
       completionDate.setHours(0, 0, 0);
 
+      let tokenUsername = this.authService.getUserName();
+      projectData.Manager = new UserFP(tokenUsername,tokenRole
+      )
+
       let submittedProject: Project = new Project(
+        projectData.id,
         projectData.Name,
         completionDate,
         projectData.MinMembers,
-        projectData.MaxMembers
+        projectData.MaxMembers,
+        projectData.Manager,
       );
   
       console.log('Submitted Project Data:', submittedProject);
@@ -62,6 +74,9 @@ export class ProjectCreateComponent{
           // console.log('Project creation process completed.');
         }
       });
+    }
+    else{
+      console.error("Error submiting form")
     }
   }
   

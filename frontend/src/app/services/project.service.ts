@@ -19,10 +19,12 @@ export class ProjectService{
   getAllProjects(): Observable<Project[]> {
     return this.http.get<any[]>(`${this.apiUrl}/projects`).pipe(
       map((data: any[]) => data.map(item => new Project(
+        item.id,
         item.name,
         new Date(item.completionDate),
         item.minMembers,
-        item.maxMembers
+        item.maxMembers,
+        item.manager
       )))
     );
   }

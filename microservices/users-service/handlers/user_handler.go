@@ -3,6 +3,7 @@ package handlers
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/gorilla/mux"
 	"net/http"
 	"time"
 	"users_module/models"
@@ -98,6 +99,12 @@ func (h UserHandler) LoginUser(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, `{"error": "Invalid username or password"}`, http.StatusUnauthorized)
 		return
 	}
+
+	if user.IsActive == false { // assuming Password is an exported field
+		http.Error(w, `{"error": "User is not active"}`, http.StatusUnauthorized)
+		return
+	}
+
 	token, err := GenerateJWT(user)
 	if err != nil {
 		http.Error(w, `{"error": "Error generating token"}`, http.StatusInternalServerError)
@@ -137,6 +144,61 @@ func (h UserHandler) VerifyHandler(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(map[string]string{"message": "User verified and saved successfully"})
+}
+
+func (h UserHandler) GetUserByUsername(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	username := vars["username"]
+
+	w.Header().Set("Access-Control-Allow-Origin", "http://localhost:4200")
+	w.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS")
+	w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+	w.Header().Set("Content-Type", "application/json")
+
+	if r.Method == http.MethodOptions {
+		w.WriteHeader(http.StatusNoContent)
+		return
+	}
+
+	user, err := h.service.GetUserByUsername(username)
+	if err != nil {
+		http.Error(w, `{"Bad request"}`, http.StatusBadRequest)
+		return
+	}
+
+	userJson, err := json.Marshal(user)
+	if err != nil {
+		http.Error(w, `{"error": "Decoding error"}`, http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	w.Write(userJson)
+}
+
+func (h UserHandler) DeleteUserByUsername(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	username := vars["username"]
+
+	w.Header().Set("Access-Control-Allow-Origin", "http://localhost:4200")
+	w.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS , DELETE")
+	w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+	w.Header().Set("Content-Type", "application/json")
+
+	if r.Method == http.MethodOptions {
+		w.WriteHeader(http.StatusNoContent)
+		return
+	}
+
+	err := h.service.DeleteUserByUsername(username)
+	if err != nil {
+		http.Error(w, `{"Bad request"}`, http.StatusBadRequest)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
 }
 
 func GenerateJWT(user *models.User) (string, error) {
