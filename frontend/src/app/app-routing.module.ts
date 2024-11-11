@@ -16,6 +16,7 @@ const routes: Routes = [
   { path: "add-task", component: TasksComponent},
   { path: 'register', redirectTo: '/register', pathMatch: 'full' },
   { path: "all-projects", component: ProjectAllComponent},
+  { path: 'tasks/:projectId', component: TasksComponent },
   { path: "profile", component: ProfileComponent},
 ];
 @NgModule({

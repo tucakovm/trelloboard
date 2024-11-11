@@ -2,8 +2,8 @@ export class User{
     id:number;
     username:string;
     password:string;
-    firstname:string;
-    lastname:string;
+    firstName:string;
+    lastName:string;
     email:string;
 
     constructor(
@@ -17,8 +17,8 @@ export class User{
         this.id = id;
         this.username = username;
         this.password = password;
-        this.firstname = firstName;
-        this.lastname = lastName;
+        this.firstName = firstName;
+        this.lastName = lastName;
         this.email = email;
     }
 }

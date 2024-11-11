@@ -1,46 +1,49 @@
-import { Component } from '@angular/core';
+import {Component, OnInit} from '@angular/core';
 import { FormGroup, Validators, FormBuilder } from '@angular/forms';
 import { Task } from '../model/task';
 import { TaskService } from '../services/task.service';
 import { Status } from '../model/status';
+import {ActivatedRoute} from "@angular/router";
 
 @Component({
   selector: 'app-tasks',
   templateUrl: './tasks.component.html',
-  styleUrl: './tasks.component.css'
+  styleUrls: ['./tasks.component.css']
 })
-export class TasksComponent {
+export class TasksComponent implements OnInit {
+  taskForm: FormGroup;
+  projectId!: string;
 
-  taskForm : FormGroup;
-
-  constructor(private fb: FormBuilder, private taskService:TaskService) {
-    this.taskForm = this.fb.group(
-      {
-        Name: ['', [Validators.required, Validators.minLength(3)]],
-        Description:['',[Validators.required, Validators.minLength(10)]]
-      },
-
-    );
+  constructor(
+    private fb: FormBuilder,
+    private taskService: TaskService,
+    private route: ActivatedRoute
+  ) {
+    this.taskForm = this.fb.group({
+      Name: ['', [Validators.required, Validators.minLength(3)]],
+      Description: ['', [Validators.required, Validators.minLength(10)]]
+    });
   }
-
+  ngOnInit(): void {
+    this.route.paramMap.subscribe(params => {
+      this.projectId = params.get('projectId')!;
+    });
+  }
 
   onSubmit(): void {
     if (this.taskForm.valid) {
       const taskData: Task = this.taskForm.value;
-      console.log(this.taskForm.value)
-      let submittedTask: Task = new Task(taskData.Name,taskData.Description,Status.Pending);
+      const submittedTask: Task = new Task(taskData.Name, taskData.Description, Status.Pending, this.projectId);
+
       console.log('Submitted Task Data:', submittedTask);
       this.taskService.createTask(submittedTask).subscribe({
         next: (response) => {
-            console.log('Task created successfully:', response);
+          console.log('Task created successfully:', response);
         },
         error: (error) => {
-            console.error('Error creating task:', error);
-        },
-        complete: () => {
-
+          console.error('Error creating task:', error);
         }
-    });
+      });
     }
   }
 }

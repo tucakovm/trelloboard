@@ -5,6 +5,7 @@ type Task struct {
 	Name        string `json:"name" bson:"name"`
 	Description string `json:"description" bson:"description"`
 	Status      Status `json:"status" bson:"status"`
+	ProjectID   string `json:"project_id" bson:"project_id"`
 }
 
 type TasksRepository interface {

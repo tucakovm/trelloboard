@@ -63,11 +63,13 @@ func insertInitialTasks(client *mongo.Client) error {
 			Name:        "Task 1",
 			Description: "This is the first task.",
 			Status:      domain.Status(0),
+			ProjectID:   "jnasdndslksad",
 		},
 		domain.Task{
 			Name:        "Task 2",
 			Description: "This is the second task.",
 			Status:      domain.Status(0),
+			ProjectID:   "lksaddsmamkls",
 		},
 	}
 
@@ -99,6 +101,7 @@ func (tr *TaskRepo) getCollection() *mongo.Collection {
 func (tr *TaskRepo) Create(task domain.Task) (domain.Task, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
+	log.Println(task)
 
 	collection := tr.getCollection()
 	if collection == nil {

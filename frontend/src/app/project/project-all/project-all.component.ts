@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { ProjectService } from '../../services/project.service';
 import { Project } from '../../model/project';
+import { Router } from '@angular/router';
 
 @Component({
   selector: 'app-project-all',
@@ -9,7 +10,7 @@ import { Project } from '../../model/project';
 })
 export class ProjectAllComponent implements OnInit{
   projects?:Project[];
-  constructor(private projectService:ProjectService){}
+  constructor(private projectService:ProjectService,  private router: Router){}
 
   ngOnInit(): void {
     this.getAllProjects();
@@ -32,6 +33,11 @@ export class ProjectAllComponent implements OnInit{
           console.error('Error deleting project:', error);
         },
       })
+    }
+  }
+  addTask(projectId: number | null): void {
+    if (projectId != null) {
+      this.router.navigate(['/tasks', projectId]);
     }
   }
 }
