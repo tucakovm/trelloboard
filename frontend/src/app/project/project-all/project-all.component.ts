@@ -17,9 +17,14 @@ export class ProjectAllComponent implements OnInit{
   }
 
   getAllProjects(): void {
-    this.projectService.getAllProjects().subscribe((data: Project[]) => {
-      this.projects = data;
-    });
+    this.projectService.getAllProjects().subscribe( {
+      next:(data) =>{
+        this.projects = data;
+      },
+      error:(error)=>{
+        console.error("Error loading projects, projects are null!")
+      }
+    })
   }
 
   deleteProject(id: number|null): void {

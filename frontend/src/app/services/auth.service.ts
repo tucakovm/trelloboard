@@ -57,7 +57,7 @@ export class AuthService {
   isManager(): boolean{
     if (this.isLoggedIn()) {
       let roles = this.getUserRoles();
-      return roles && roles.includes('ROLE_MANAGER');
+      return roles && roles.includes('Manager');
     }
     return false;
   }
@@ -65,9 +65,15 @@ export class AuthService {
   isUser(): boolean{
     if (this.isLoggedIn()) {
       let roles = this.getUserRoles();
-      return roles && roles.includes('ROLE_USER');
+      return roles && roles.includes('User');
     }
     return false;
+  }
+
+  logout() {
+    if (typeof window !== 'undefined' && window.localStorage) {
+      localStorage.removeItem('jwt');
+    }
   }
 
   get headers():HttpHeaders{

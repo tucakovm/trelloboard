@@ -40,19 +40,8 @@ export class LoginComponent {
           console.log('Login success, response:', res);
 
           localStorage.setItem('jwt', res.token);
-
-          const token = this.authService.getDecodedToken();
-          const userRole = token?.user_role;
-
-          if (userRole === 'Manager') {
-            this.router.navigate(['/manager-dashboard']);
-          } else if (userRole === 'User') {
-            this.router.navigate(['/user-dashboard']);
-          } else {
-            console.warn('Unknown role:', userRole);
-            this.errorOccurred = true;
-            this.errorMessage = 'Unknown role. Please contact support.';
-          }
+          this.router.navigate(['/all-projects']);
+    
         },
         error: (error: any) => {
           this.errorOccurred = true;

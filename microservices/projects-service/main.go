@@ -43,7 +43,7 @@ func main() {
 
 	prjRouter := r.Methods(http.MethodPost).Subrouter()
 	prjRouter.HandleFunc("/api/projects", handlerProject.Create)
-	prjRouter.Use(handlerProject.MiddlewareProjectDeserialization)
+	prjRouter.Use(handlerProject.MiddlewarePatientDeserialization)
 
 	r.HandleFunc("/api/projects", handlerProject.GetAll).Methods(http.MethodGet)
 	r.HandleFunc("/api/projects/{id}", handlerProject.Delete).Methods(http.MethodDelete)
