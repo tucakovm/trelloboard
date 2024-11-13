@@ -1,10 +1,11 @@
 package service
 
 import (
-	"github.com/google/uuid"
 	"log"
 	"tasks-service/domain"
 	"tasks-service/repository"
+
+	"github.com/google/uuid"
 )
 
 type TaskService struct {
@@ -26,4 +27,8 @@ func (s *TaskService) GetAllTasks() ([]domain.Task, error) {
 
 func (s *TaskService) DeleteTask(id uuid.UUID) error {
 	return s.repo.Delete(id)
+}
+
+func (s *TaskService) DeleteTasksByProjectId(id string) error {
+	return s.repo.DeleteAllByProjectID(id)
 }

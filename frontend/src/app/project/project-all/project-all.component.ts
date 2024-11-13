@@ -2,6 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { ProjectService } from '../../services/project.service';
 import { Project } from '../../model/project';
 import { Router } from '@angular/router';
+import { TaskService } from '../../services/task.service';
 
 @Component({
   selector: 'app-project-all',
@@ -10,7 +11,7 @@ import { Router } from '@angular/router';
 })
 export class ProjectAllComponent implements OnInit{
   projects?:Project[];
-  constructor(private projectService:ProjectService,  private router: Router){}
+  constructor(private projectService:ProjectService,  private router: Router, private tasksService:TaskService){}
 
   ngOnInit(): void {
     this.getAllProjects();
@@ -22,7 +23,19 @@ export class ProjectAllComponent implements OnInit{
         this.projects = data;
       },
       error:(error)=>{
+        this.projects = [];
         console.error("Error loading projects, projects are null!")
+      }
+    })
+  }
+
+  deleteAllTasksByProjectId(id:string){
+    this.tasksService.deleteTasksByProjectId(id).subscribe({
+      next:(response)=>{
+        console.log("Tasks deleted sucessfuly:"+response)
+      },
+      error:(error)=>{
+        console.error("Error deleting tasks:"+ error)
       }
     })
   }
@@ -32,6 +45,7 @@ export class ProjectAllComponent implements OnInit{
       this.projectService.deleteProjectById(id).subscribe({
         next:(response) => {
           console.log('Project deleted successfully:', response);
+          this.deleteAllTasksByProjectId(id.toString());
           this.getAllProjects()
         },
         error: (error) => {

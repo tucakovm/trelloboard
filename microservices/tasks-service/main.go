@@ -3,12 +3,13 @@ package main
 import (
 	"context"
 	"fmt"
-	"github.com/gorilla/handlers"
-	"github.com/gorilla/mux"
 	"log"
 	"net/http"
 	h "tasks-service/handlers"
 	"tasks-service/repository"
+
+	"github.com/gorilla/handlers"
+	"github.com/gorilla/mux"
 )
 
 func main() {
@@ -34,6 +35,7 @@ func main() {
 	r.HandleFunc("/api/tasks", taskHandler.Create).Methods(http.MethodPost)
 	r.HandleFunc("/api/tasks", taskHandler.GetAll).Methods(http.MethodGet)
 	r.HandleFunc("/api/tasks", taskHandler.Delete).Methods(http.MethodDelete)
+	r.HandleFunc("/api/tasks/{project_id}", taskHandler.DeleteAllByProjectID).Methods(http.MethodDelete)
 
 	// Set up CORS
 	corsHandler := handlers.CORS(

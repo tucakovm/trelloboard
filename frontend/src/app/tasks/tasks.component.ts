@@ -3,7 +3,7 @@ import { FormGroup, Validators, FormBuilder } from '@angular/forms';
 import { Task } from '../model/task';
 import { TaskService } from '../services/task.service';
 import { Status } from '../model/status';
-import {ActivatedRoute} from "@angular/router";
+import {ActivatedRoute, Router} from "@angular/router";
 
 @Component({
   selector: 'app-tasks',
@@ -17,7 +17,8 @@ export class TasksComponent implements OnInit {
   constructor(
     private fb: FormBuilder,
     private taskService: TaskService,
-    private route: ActivatedRoute
+    private route: ActivatedRoute,
+    private router:Router,
   ) {
     this.taskForm = this.fb.group({
       Name: ['', [Validators.required, Validators.minLength(3)]],
@@ -38,6 +39,7 @@ export class TasksComponent implements OnInit {
       console.log('Submitted Task Data:', submittedTask);
       this.taskService.createTask(submittedTask).subscribe({
         next: (response) => {
+          this.router.navigate(['all-projects'])
           console.log('Task created successfully:', response);
         },
         error: (error) => {
