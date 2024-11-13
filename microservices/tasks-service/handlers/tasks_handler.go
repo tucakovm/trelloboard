@@ -2,12 +2,15 @@ package handlers
 
 import (
 	"encoding/json"
-	"github.com/google/uuid"
 	"io"
 	"log"
 	"net/http"
 	"tasks-service/domain"
 	"tasks-service/repository"
+
+	"github.com/gorilla/mux"
+
+	"github.com/google/uuid"
 )
 
 type TaskHandler struct {
@@ -91,6 +94,17 @@ func (h *TaskHandler) Delete(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := h.repo.Delete(id); err != nil {
+		http.Error(w, "Failed to delete task", http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}
+
+func (h *TaskHandler) DeleteAllByProjectID(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	projectID := vars["project_id"]
+	if err := h.repo.DeleteAllByProjectID(projectID); err != nil {
 		http.Error(w, "Failed to delete task", http.StatusInternalServerError)
 		return
 	}

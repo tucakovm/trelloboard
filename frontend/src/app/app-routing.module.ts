@@ -7,8 +7,6 @@ import { TasksComponent } from './tasks/tasks.component';
 import { ProjectAllComponent } from './project/project-all/project-all.component';
 import { LoginComponent } from './login/login.component';
 import { ProfileComponent } from './profile/profile.component';
-import { UserDashboardComponent } from './user-dashboard/user-dashboard.component';
-import { ManagerDashboardComponent } from './manager-dashboard/manager-dashboard.component';
 
 const routes: Routes = [
   { path: 'register', component: RegisterComponent },
@@ -19,8 +17,6 @@ const routes: Routes = [
   { path: 'register', redirectTo: '/register', pathMatch: 'full' },
   { path: 'all-projects', component: ProjectAllComponent },
   { path: 'tasks/:projectId', component: TasksComponent },
-  { path: 'manager-dashboard', component: ManagerDashboardComponent },
-  { path: 'user-dashboard', component: UserDashboardComponent },
   { path: 'profile', component: ProfileComponent },
 ];
 @NgModule({

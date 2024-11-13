@@ -177,3 +177,23 @@ func (tr *TaskRepo) Delete(id uuid.UUID) error {
 	log.Printf("Task with ID %s deleted successfully", id)
 	return nil
 }
+
+func (tr *TaskRepo) DeleteAllByProjectID(projectID string) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	collection := tr.getCollection()
+	if collection == nil {
+		return fmt.Errorf("failed to retrieve collection")
+	}
+
+	filter := bson.M{"project_id": projectID}
+	_, err := collection.DeleteMany(ctx, filter)
+	if err != nil {
+		log.Println("Error deleting tasks by ProjectID:", err)
+		return err
+	}
+
+	log.Printf("Tasks with ProjectID %s deleted successfully", projectID)
+	return nil
+}

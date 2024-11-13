@@ -12,8 +12,6 @@ import { ProjectAllComponent } from './project/project-all/project-all.component
 import { LoginComponent } from './login/login.component';
 import { JwtHelperService, JWT_OPTIONS } from '@auth0/angular-jwt';
 import { ProfileComponent } from './profile/profile.component';
-import { ManagerDashboardComponent } from './manager-dashboard/manager-dashboard.component';
-import { UserDashboardComponent } from './user-dashboard/user-dashboard.component'; // Import JwtHelperService
 
 
 @NgModule({
@@ -26,8 +24,6 @@ import { UserDashboardComponent } from './user-dashboard/user-dashboard.componen
     ProjectAllComponent,
     LoginComponent,
     ProfileComponent,
-    ManagerDashboardComponent,
-    UserDashboardComponent
   ],
   imports: [
     BrowserModule,

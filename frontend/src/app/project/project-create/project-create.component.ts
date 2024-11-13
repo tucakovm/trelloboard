@@ -5,6 +5,7 @@ import { Project } from '../../model/project';
 import { ProjectService } from '../../services/project.service';
 import { AuthService } from '../../services/auth.service';
 import { UserFP } from '../../model/userForProject';
+import { Router } from '@angular/router';
 
 @Component({
   selector: 'app-project-create',
@@ -14,7 +15,7 @@ import { UserFP } from '../../model/userForProject';
 export class ProjectCreateComponent{
   projectForm: FormGroup;
 
-  constructor(private fb: FormBuilder, private projectService:ProjectService , private authService:AuthService) {
+  constructor(private fb: FormBuilder, private projectService:ProjectService , private authService:AuthService, private router:Router) {
     this.projectForm = this.fb.group(
       {
         Name: ['', [Validators.required, Validators.minLength(3)]],
@@ -65,6 +66,7 @@ export class ProjectCreateComponent{
   
       this.projectService.createProject(submittedProject).subscribe({
         next: (response) => {
+          this.router.navigate(['/all-projects'])
           console.log('Project created successfully:', response);
         },
         error: (error) => {

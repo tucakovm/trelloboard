@@ -17,8 +17,8 @@ export class ProfileComponent implements OnInit {
     id: 0,
     username: '',
     password: '',
-    firstName: '',
-    lastName: '',
+    firstname: '',
+    lastname: '',
     email: '',
     role: '',
   };
@@ -54,4 +54,5 @@ export class ProfileComponent implements OnInit {
       console.log('Profile deletion cancelled');
     }
   }
+
 }

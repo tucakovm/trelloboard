@@ -19,5 +19,9 @@ export class TaskService {
       });
     }  
 
+    deleteTasksByProjectId(id:string): Observable<any>{
+    return this.http.delete<any>(`${this.apiUrl}/tasks/${id}`)
+    }
+
 
 }

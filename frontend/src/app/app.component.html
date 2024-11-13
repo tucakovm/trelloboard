@@ -75,9 +75,14 @@
   </head>
   <body>
     <nav class="nav-container">
-      <a routerLink="register" class="nav-item">Register</a>
-      <a routerLink="login" class="nav-item">Login</a>
-      <a routerLink="verify" class="nav-item">Verify Email</a>
+      <a *ngIf="!isLoggedIn()" routerLink="register" class="nav-item">Register</a>
+      <a *ngIf="!isLoggedIn()" routerLink="login" class="nav-item">Login</a>
+      <a *ngIf="!isLoggedIn()" routerLink="verify" class="nav-item">Verify Email</a>
+      <a *ngIf="isLoggedIn() && isManager()" routerLink="/add-task" class="nav-item">Add Task</a>
+      <a *ngIf="isLoggedIn() && isManager()" routerLink="/add-project" class="nav-item">Add Project</a>
+      <a *ngIf="isLoggedIn() && isManager()" routerLink="/all-projects" class="nav-item">All Projects</a>
+      <a *ngIf="isLoggedIn()"routerLink="/profile" class="nav-item">My profile</a>
+      <button *ngIf="isLoggedIn()" (click)="logOut()" class="nav-item">Log out</button>
     </nav>
     <router-outlet></router-outlet>
 

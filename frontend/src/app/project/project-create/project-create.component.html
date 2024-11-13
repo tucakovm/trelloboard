@@ -40,7 +40,7 @@
       <label for="MaxMembers" class="col-sm-3 col-form-label">Max Members:</label>
       <div class="col-sm-9">
         <input id="MaxMembers" formControlName="MaxMembers" type="number" class="form-control" />
-        <div *ngIf="projectForm.hasError('maxLessThanOrEqualMin')" class="text-danger mt-1">
+        <div *ngIf="projectForm.hasError('maxLessThanOrEqualMin') && projectForm.get('MaxMembers')?.touched" class="text-danger mt-1">
           Max Members must be greater than Min Members.
         </div>
         <div *ngIf="projectForm.get('MaxMembers')?.invalid && projectForm.get('MaxMembers')?.touched" class="text-danger mt-1">
