@@ -34,7 +34,7 @@ func (c ProjectHandler) decodeBodyProject(r io.Reader) (*domain.Project, error) 
 	return &rt, nil
 }
 
-func (c *ProjectHandler) renderJSON(w http.ResponseWriter, v interface{}, code int) {
+func (c ProjectHandler) renderJSON(w http.ResponseWriter, v interface{}, code int) {
 	js, err := json.Marshal(v)
 
 	if err != nil {

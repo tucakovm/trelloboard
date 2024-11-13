@@ -208,7 +208,7 @@ func (h UserHandler) DeleteUserByUsername(w http.ResponseWriter, r *http.Request
 }
 
 func GenerateJWT(user *models.User) (string, error) {
-	var secretKey = []byte("tajni_kljuc")
+	var secretKey = []byte("matija_AFK")
 	// Kreiraj claims (podatke koji se šalju u tokenu)
 	claims := jwt.MapClaims{
 		"user_role": user.Role,
