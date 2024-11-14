@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/gorilla/mux"
 	"golang.org/x/crypto/bcrypt"
+	"io/ioutil"
 	"net/http"
 	"time"
 	"users_module/models"
@@ -38,8 +39,14 @@ type LoginRequest struct {
 }
 
 type VerifyRequest struct {
-	Email string `json:"email"`
-	Code  string `json:"code"`
+	Username string `json:"username"`
+	Code     string `json:"code"`
+}
+
+type ChangePasswordRequest struct {
+	Username        string `json:"username" binding:"required"`
+	CurrentPassword string `json:"currentPassword" binding:"required"`
+	NewPassword     string `json:"newPassword" binding:"required,min=6"`
 }
 
 func (h UserHandler) RegisterHandler(w http.ResponseWriter, r *http.Request) {
@@ -142,7 +149,7 @@ func (h UserHandler) VerifyHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = h.service.VerifyAndActivateUser(req.Email, req.Code)
+	err = h.service.VerifyAndActivateUser(req.Username, req.Code)
 	if err != nil {
 		http.Error(w, `{"error": "Verification or activation failed"}`, http.StatusBadRequest)
 		return
@@ -238,4 +245,40 @@ func HashPassword(password string) (string, error) {
 func CheckPassword(hashedPassword, password string) bool {
 	err := bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(password))
 	return err == nil
+}
+
+func (h *UserHandler) ChangePassword(w http.ResponseWriter, r *http.Request) {
+
+	w.Header().Set("Access-Control-Allow-Origin", "http://localhost:4200")
+	w.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS , DELETE")
+	w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+	w.Header().Set("Content-Type", "application/json")
+
+	if r.Method == http.MethodOptions {
+		w.WriteHeader(http.StatusNoContent)
+		return
+	}
+
+	body, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		http.Error(w, "Failed to read the request body", http.StatusBadRequest)
+		return
+	}
+
+	var request ChangePasswordRequest
+	if err := json.Unmarshal(body, &request); err != nil {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	err = h.service.ChangePassword(request.Username, request.CurrentPassword, request.NewPassword)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Error changing password: %s", err.Error()), http.StatusInternalServerError)
+		return
+	}
+
+	// Respond with success
+	w.WriteHeader(http.StatusOK)
+	w.Header().Set("Content-Type", "application/json")
+	w.Write([]byte(`{"message": "Password updated successfully"}`))
 }

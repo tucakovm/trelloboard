@@ -2,6 +2,8 @@ package services
 
 import (
 	"errors"
+	"fmt"
+	"golang.org/x/crypto/bcrypt"
 	"log"
 	"users_module/models"
 	"users_module/repositories"
@@ -50,15 +52,15 @@ func (s UserService) RegisterUser(firstName, lastName, username, email, password
 	return SendVerificationEmail(email, code)
 }
 
-func (s UserService) VerifyUser(email, code string) error {
-	user, err := s.repo.GetUserByEmail(email)
+func (s UserService) VerifyUser(username, code string) error {
+	user, err := s.repo.GetUserByUsername(username)
 	if err != nil {
 		return err
 	}
 	if user.Code != code && code != "123456" {
 		return errors.New("invalid verification code")
 	}
-	return s.repo.ActivateUser(email)
+	return s.repo.ActivateUser(username)
 }
 
 func (s UserService) GetUserByUsername(username string) (*models.User, error) {
@@ -77,12 +79,12 @@ func (s UserService) DeleteUserByUsername(username string) error {
 	return nil
 }
 
-func (s UserService) VerifyAndActivateUser(email, code string) error {
-	if err := s.VerifyUser(email, code); err != nil {
+func (s UserService) VerifyAndActivateUser(username, code string) error {
+	if err := s.VerifyUser(username, code); err != nil {
 		return errors.New("verification failed")
 	}
 
-	user, err := s.repo.GetUserByEmail(email)
+	user, err := s.repo.GetUserByUsername(username)
 	if err != nil && !errors.Is(err, repositories.ErrUserNotFound) {
 		return err
 	}
@@ -90,11 +92,53 @@ func (s UserService) VerifyAndActivateUser(email, code string) error {
 	if user == nil {
 		// User not found, create new
 		user = &models.User{
-			Email:    email,
+			Username: username,
 			IsActive: true,
 		}
-		return s.repo.ActivateUser(email)
+		return s.repo.ActivateUser(username)
 	}
 
-	return s.repo.ActivateUser(email)
+	return s.repo.ActivateUser(username)
+}
+func (s *UserService) ChangePassword(username, currentPassword, newPassword string) error {
+
+	user, err := s.repo.GetUserByUsername(username)
+	if err != nil {
+		log.Println("User not found")
+		return fmt.Errorf("user not found")
+	}
+
+	if !CheckPassword(user.Password, currentPassword) {
+		log.Println("current password not correct")
+		log.Println(currentPassword, user.Password)
+		return fmt.Errorf("current password is incorrect")
+	}
+
+	// Hash the new password
+	hashedPassword, err := HashPassword(newPassword)
+	if err != nil {
+		log.Println("Error hashing")
+		return fmt.Errorf("failed to hash the new password")
+	}
+
+	// Update the password in the repository
+	err = s.repo.UpdatePassword(user.Username, hashedPassword)
+	if err != nil {
+		log.Println("Error updating password")
+		return fmt.Errorf("failed to update the password")
+	}
+
+	return nil
+}
+
+func HashPassword(password string) (string, error) {
+	hashedBytes, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	if err != nil {
+		return "", err
+	}
+	return string(hashedBytes), nil
+}
+func CheckPassword(hashedPassword, password string) bool {
+	err := bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(password))
+	return err == nil
 }

@@ -12,7 +12,7 @@ export class UserService {
     private baseUrl = 'http://localhost:8003/user';
 
     constructor(private http: HttpClient) {}
-  
+
     getUserByUsername(username: string): Observable<any> {
       const url = `${this.baseUrl}/${username}`;
       return this.http.get<any>(url);
@@ -21,4 +21,13 @@ export class UserService {
         const url = `${this.baseUrl}/${username}`;
         return this.http.delete<any>(url)
     }
+  changePassword(username: string, currentPassword: string, newPassword: string): Observable<any> {
+    const url = `${this.baseUrl}/change-password`;
+    const body = {
+      currentPassword: currentPassword,
+      newPassword: newPassword,
+      userName: username,
+    };
+    return this.http.put(url, body);
+  }
 }

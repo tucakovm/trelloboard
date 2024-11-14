@@ -168,7 +168,7 @@ func (tr *UserRepo) GetUserByEmail(email string) (*models.User, error) {
 	return &user, nil
 }
 
-func (tr *UserRepo) ActivateUser(email string) error {
+func (tr *UserRepo) ActivateUser(username string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
@@ -177,7 +177,7 @@ func (tr *UserRepo) ActivateUser(email string) error {
 		return fmt.Errorf("failed to retrieve collection")
 	}
 
-	filter := bson.M{"email": email}
+	filter := bson.M{"username": username}
 	update := bson.M{"$set": bson.M{"is_active": true}}
 
 	_, err := collection.UpdateOne(ctx, filter, update)
@@ -186,7 +186,7 @@ func (tr *UserRepo) ActivateUser(email string) error {
 		return err
 	}
 
-	log.Printf("User with email %s activated successfully", email)
+	log.Printf("User with email %s activated successfully", username)
 	return nil
 }
 func (tr *UserRepo) GetAll() ([]models.User, error) {
@@ -245,6 +245,25 @@ func (tr *UserRepo) Delete(username string) error {
 	}
 
 	log.Printf("User with username %s deleted successfully", username)
+	return nil
+}
+
+func (tr *UserRepo) UpdatePassword(username, hashedPassword string) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	collection := tr.getCollection()
+	if collection == nil {
+		log.Println("Failed to retrieve collection")
+		return fmt.Errorf("failed to retrieve collection")
+	}
+
+	_, err := collection.UpdateOne(ctx, bson.M{"username": username}, bson.M{"$set": bson.M{"password": hashedPassword}})
+	if err != nil {
+		log.Println("Failed to update password for user:", username)
+		return err
+	}
+
 	return nil
 }
 

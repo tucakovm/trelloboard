@@ -48,7 +48,49 @@
           />
         </div>
       </div>
+
+      <div class="text-center">
+        <button class="btn btn-secondary" (click)="toggleChangePassword()">
+          Change Password
+        </button>
+      </div>
+
+      <!-- Change Password Section -->
+      <div *ngIf="showChangePassword" class="mt-4">
+        <h5>Change Password</h5>
+        <div class="mb-3">
+          <label for="currentPassword" class="form-label">Current Password</label>
+          <input
+            type="password"
+            id="currentPassword"
+            class="form-control"
+            [(ngModel)]="passwordForm.currentPassword"
+          />
+        </div>
+        <div class="mb-3">
+          <label for="newPassword" class="form-label">New Password</label>
+          <input
+            type="password"
+            id="newPassword"
+            class="form-control"
+            [(ngModel)]="passwordForm.newPassword"
+          />
+        </div>
+        <div class="mb-3">
+          <label for="repeatNewPassword" class="form-label">Repeat New Password</label>
+          <input
+            type="password"
+            id="repeatNewPassword"
+            class="form-control"
+            [(ngModel)]="passwordForm.repeatNewPassword"
+          />
+        </div>
+        <button class="btn btn-primary" (click)="changePassword()">
+          Submit
+        </button>
+      </div>
     </div>
+
     <div class="card-footer text-center">
       <button class="btn btn-danger" (click)="deleteProfile()">
         Delete Profile

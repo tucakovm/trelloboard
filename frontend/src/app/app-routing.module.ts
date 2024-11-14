@@ -13,7 +13,7 @@ import { TasksAllComponent } from './tasks/tasks-all/tasks-all.component';
 const routes: Routes = [
   { path: 'register', component: RegisterComponent },
   { path: 'login', component: LoginComponent },
-  { path: 'verify', component: VerifyComponent },
+  { path: 'verify/:username', component: VerifyComponent },
   { path: 'add-project', component: ProjectCreateComponent },
   { path: 'add-task', component: TasksComponent },
   { path: 'register', redirectTo: '/register', pathMatch: 'full' },

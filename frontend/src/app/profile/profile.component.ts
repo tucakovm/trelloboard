@@ -6,13 +6,10 @@ import { UserService } from '../services/user.service';
 @Component({
   selector: 'app-profile',
   templateUrl: './profile.component.html',
-  styleUrl: './profile.component.css',
+  styleUrls: ['./profile.component.css'],
 })
+
 export class ProfileComponent implements OnInit {
-  constructor(
-    private authService: AuthService,
-    private userService: UserService
-  ) {}
   user: User = {
     id: 0,
     username: '',
@@ -22,6 +19,18 @@ export class ProfileComponent implements OnInit {
     email: '',
     role: '',
   };
+
+  showChangePassword = false;
+  passwordForm = {
+    currentPassword: '',
+    newPassword: '',
+    repeatNewPassword: ''
+  };
+
+  constructor(
+    private authService: AuthService,
+    private userService: UserService
+  ) {}
 
   ngOnInit(): void {
     this.getUser();
@@ -35,6 +44,30 @@ export class ProfileComponent implements OnInit {
       },
       (error) => {
         console.error('Error fetching user by username', error);
+      }
+    );
+  }
+
+  toggleChangePassword() {
+    this.showChangePassword = !this.showChangePassword;
+  }
+
+  changePassword() {
+    if (this.passwordForm.newPassword !== this.passwordForm.repeatNewPassword) {
+      alert("New passwords do not match!");
+      return;
+    }
+
+    this.userService.changePassword(this.user.username, this.passwordForm.currentPassword, this.passwordForm.newPassword).subscribe(
+      (response) => {
+        console.log('Password changed successfully', response);
+        alert("Password changed successfully!");
+        this.showChangePassword = false;
+        this.passwordForm = { currentPassword: '', newPassword: '', repeatNewPassword: '' };
+      },
+      (error) => {
+        console.error('Error changing password', error);
+        alert("Failed to change password. Please try again.");
       }
     );
   }
@@ -54,5 +87,4 @@ export class ProfileComponent implements OnInit {
       console.log('Profile deletion cancelled');
     }
   }
-
 }

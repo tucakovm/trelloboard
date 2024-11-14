@@ -42,11 +42,11 @@ func main() {
 	r.HandleFunc("/login", handlerUser.LoginUser).Methods(http.MethodPost)
 	r.HandleFunc("/user/{username}", handlerUser.GetUserByUsername).Methods(http.MethodGet)
 	r.HandleFunc("/user/{username}", handlerUser.DeleteUserByUsername).Methods(http.MethodDelete)
+	r.HandleFunc("/user/change-password", handlerUser.ChangePassword).Methods(http.MethodPut)
 
-	// Define CORS options
 	corsHandler := handlers.CORS(
 		handlers.AllowedOrigins([]string{"http://localhost:4200"}), // Set the correct origin
-		handlers.AllowedMethods([]string{"GET", "POST", "DELETE", "OPTIONS"}),
+		handlers.AllowedMethods([]string{"GET", "POST", "DELETE", "OPTIONS", "PUT"}),
 		handlers.AllowedHeaders([]string{"Content-Type", "Authorization"}),
 	)
 

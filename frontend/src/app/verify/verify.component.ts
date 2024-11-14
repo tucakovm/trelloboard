@@ -1,23 +1,33 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { ActivatedRoute, Router } from '@angular/router';
 
 @Component({
   selector: 'app-verify',
   templateUrl: './verify.component.html',
   styleUrls: ['./verify.component.css'],
 })
-export class VerifyComponent {
+export class VerifyComponent implements OnInit {
   verifyForm: FormGroup;
+  username: string | null = null;
 
-  constructor(private fb: FormBuilder, private http: HttpClient) {
+  constructor(
+    private fb: FormBuilder,
+    private http: HttpClient,
+    private route: ActivatedRoute,
+    private router: Router
+  ) {
     this.verifyForm = this.fb.group({
-      email: ['', [Validators.required, Validators.email]],
       code: [
         '',
         [Validators.required, Validators.minLength(6), Validators.maxLength(6)],
       ],
     });
+  }
+
+  ngOnInit(): void {
+    this.username = this.route.snapshot.paramMap.get('username');
   }
 
   onSubmit() {
@@ -27,12 +37,18 @@ export class VerifyComponent {
         'Content-Type': 'application/json',
       });
 
+      const requestData = {
+        ...formData,
+        username: this.username,
+      };
+
       this.http
-        .post('http://localhost:8003/verify', formData, { headers })
+        .post('http://localhost:8003/verify', requestData, { headers })
         .subscribe(
           (response) => {
             console.log('Verification successful', response);
-            this.verifyForm.reset(); // Optionally reset the form on success
+            this.verifyForm.reset();
+            this.router.navigate(['/login']);
           },
           (error) => {
             console.error('Verification failed', error);
