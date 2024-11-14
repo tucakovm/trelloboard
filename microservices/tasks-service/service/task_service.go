@@ -32,3 +32,7 @@ func (s *TaskService) DeleteTask(id uuid.UUID) error {
 func (s *TaskService) DeleteTasksByProjectId(id string) error {
 	return s.repo.DeleteAllByProjectID(id)
 }
+
+func (s *TaskService) GetTasksByProjectId(id string) (domain.Tasks, error) {
+	return s.repo.GetAllByProjectID(id)
+}

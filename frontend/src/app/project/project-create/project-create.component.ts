@@ -60,20 +60,20 @@ export class ProjectCreateComponent{
     if (this.projectForm.valid && tokenRole == "Manager") {
       const projectData: Project = this.projectForm.value;
       
-      let completionDate = new Date(projectData.CompletionDate);
+      let completionDate = new Date(projectData.completionDate);
       completionDate.setHours(0, 0, 0);
 
       let tokenUsername = this.authService.getUserName();
-      projectData.Manager = new UserFP(tokenUsername,tokenRole
+      projectData.manager = new UserFP(tokenUsername,tokenRole
       )
 
       let submittedProject: Project = new Project(
         projectData.id,
-        projectData.Name,
+        projectData.name,
         completionDate,
-        projectData.MinMembers,
-        projectData.MaxMembers,
-        projectData.Manager,
+        projectData.minMembers,
+        projectData.maxMembers,
+        projectData.manager,
       );
   
       console.log('Submitted Project Data:', submittedProject);

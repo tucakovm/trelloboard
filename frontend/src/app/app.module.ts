@@ -7,11 +7,13 @@ import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { HttpClientModule } from '@angular/common/http';
 import { RegisterComponent } from './register/register.component';
 import { VerifyComponent } from './verify/verify.component';
-import { TasksComponent } from './tasks/tasks.component';
+import { TasksComponent } from './tasks/tasks-create/tasks.component';
 import { ProjectAllComponent } from './project/project-all/project-all.component';
 import { LoginComponent } from './login/login.component';
 import { JwtHelperService, JWT_OPTIONS } from '@auth0/angular-jwt';
 import { ProfileComponent } from './profile/profile.component';
+import { ProjectDetailsComponent } from './project/project-details/project-details.component';
+import { TasksAllComponent } from './tasks/tasks-all/tasks-all.component';
 
 
 @NgModule({
@@ -24,6 +26,8 @@ import { ProfileComponent } from './profile/profile.component';
     ProjectAllComponent,
     LoginComponent,
     ProfileComponent,
+    ProjectDetailsComponent,
+    TasksAllComponent,
   ],
   imports: [
     BrowserModule,

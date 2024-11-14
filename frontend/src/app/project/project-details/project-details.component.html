@@ -1,0 +1,85 @@
+<div class="container mt-5">
+  <div class="card shadow-lg">
+    <div class="card-header bg-primary text-white">
+      <h3>Project Details</h3>
+    </div>
+    <div class="card-body">
+      <div class="row mb-3">
+        <div class="col-md-6">
+          <label for="projectName" class="form-label">Project Name:</label>
+          <input
+            type="text"
+            id="projectName"
+            class="form-control"
+            [(ngModel)]="project.name"
+            readonly
+          />
+        </div>
+      </div>
+
+      <div class="row mb-3">
+        <div class="col-md-6">
+          <label for="completionDate" class="form-label">Completion Date:</label>
+          <input
+            type="text"
+            id="completionDate"
+            class="form-control"
+            [(ngModel)]="project.completionDate"
+            readonly
+          />
+        </div>
+        <div class="col-md-6">
+          <label for="minMembers" class="form-label">Minimum Members:</label>
+          <input
+            type="number"
+            id="minMembers"
+            class="form-control"
+            [(ngModel)]="project.minMembers"
+            readonly
+          />
+        </div>
+      </div>
+
+      <div class="row mb-3">
+        <div class="col-md-6">
+          <label for="maxMembers" class="form-label">Maximum Members:</label>
+          <input
+            type="number"
+            id="maxMembers"
+            class="form-control"
+            [(ngModel)]="project.maxMembers"
+            readonly
+          />
+        </div>
+        <div class="col-md-6">
+          <label for="managerUsername" class="form-label">Manager Username:</label>
+          <input
+            type="text"
+            id="managerUsername"
+            class="form-control"
+            [(ngModel)]="project.manager.username"
+            readonly
+          />
+        </div>
+      </div>
+
+      <div class="row mt-4">
+        <div class="col-md-6">
+          <button class="btn btn-danger" (click)="deleteProject()">
+            Delete Project
+          </button>
+        </div>
+        <div class="col-md-6 text-end">
+          <button class="btn btn-success" (click)="addTask()">
+            Dodaj Task
+          </button>
+        </div>
+        <div class="col-md-6 text-end">
+          <button class="btn btn-success" (click)="allTasks()">
+            See all tasks
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

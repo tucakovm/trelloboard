@@ -4,22 +4,17 @@
         <div *ngFor="let project of projects" class="col">
             <div class="card h-100 shadow-sm">
                 <div class="card-body">
-                    <h5 class="card-title">{{ project.Name }}</h5>
+                    <h5 class="card-title">{{ project.name }}</h5>
                     <p class="card-text">
-                        <strong>Completion Date:</strong> {{ project.CompletionDate | date:'dd.MM.yyyy' }}
+                        <strong>Completion Date:</strong> {{ project.completionDate | date:'dd.MM.yyyy' }}
                     </p>
                     <p class="card-text">
-                        <strong>Min members:</strong> {{ project.MinMembers }}
+                        <strong>Min members:</strong> {{ project.minMembers }}
                     </p>
                     <p class="card-text">
-                        <strong>Max members:</strong> {{ project.MaxMembers }}
+                        <strong>Max members:</strong> {{ project.maxMembers }}
                     </p>
-                    <button class="btn btn-danger mt-3" (click)="deleteProject(project.id)">
-                        Delete project
-                    </button>
-                  <button class="btn btn-danger mt-3" (click)="addTask(project.id)">
-                    Dodaj Task
-                  </button>
+                    <a [routerLink]="['/all-projects', project.id]" class="btn btn-outline-info">Details</a>
                 </div>
             </div>
         </div>

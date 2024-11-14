@@ -1,10 +1,10 @@
 import { Status } from "./status";
 
 export class Task{
-    Name: string;
-    Description: string;
-    Status: Status;
-    public project_id?: string
+    name: string;
+    description: string;
+    status: Status;
+    project_id?: string
 
   constructor(
     name: string,
@@ -12,9 +12,9 @@ export class Task{
     status: Status,
     projectId: string
   ) {
-        this.Name = name;
-        this.Description = description;
-        this.Status = status;
+        this.name = name;
+        this.description = description;
+        this.status = status;
         this.project_id = projectId;
     }
 

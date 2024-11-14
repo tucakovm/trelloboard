@@ -51,6 +51,65 @@ func (pr *ProjectRepo) getCollection() *mongo.Collection {
 	return patientsCollection
 }
 
+func insertInitialProjects(client *mongo.Client) error {
+	collection := client.Database("mongoDemo").Collection("projects")
+	count, err := collection.CountDocuments(context.Background(), bson.M{})
+	if err != nil {
+		log.Println("Error checking project count:", err)
+		return err
+	}
+
+	if count > 0 {
+		log.Println("Projects already exist in the database")
+		return nil
+	}
+
+	projects := []interface{}{
+		domain.Project{
+			Id:             primitive.NewObjectID(),
+			Name:           "Project Alpha",
+			CompletionDate: time.Now().AddDate(0, 3, 0),
+			MinMembers:     2,
+			MaxMembers:     5,
+			Manager:        domain.User{Username: "alicej", Role: "Manager"},
+		},
+		domain.Project{
+			Id:             primitive.NewObjectID(),
+			Name:           "Project Beta",
+			CompletionDate: time.Now().AddDate(0, 6, 0),
+			MinMembers:     3,
+			MaxMembers:     6,
+			Manager:        domain.User{Username: "alicej", Role: "Manager"},
+		},
+		domain.Project{
+			Id:             primitive.NewObjectID(),
+			Name:           "Project Gamma",
+			CompletionDate: time.Now().AddDate(0, 1, 0),
+			MinMembers:     1,
+			MaxMembers:     4,
+			Manager:        domain.User{Username: "alicej", Role: "Manager"},
+		},
+		domain.Project{
+			Id:             primitive.NewObjectID(),
+			Name:           "Project Delta",
+			CompletionDate: time.Now().AddDate(0, 9, 0),
+			MinMembers:     4,
+			MaxMembers:     10,
+			Manager:        domain.User{Username: "alicej", Role: "Manager"},
+		},
+	}
+
+	// Insert initial projects
+	_, err = collection.InsertMany(context.Background(), projects)
+	if err != nil {
+		log.Println("Error inserting initial projects:", err)
+		return err
+	}
+
+	log.Println("Initial projects inserted successfully")
+	return nil
+}
+
 func New(ctx context.Context, logger *log.Logger) (*ProjectRepo, error) {
 	dburi := os.Getenv("MONGO_DB_URI")
 
@@ -63,6 +122,10 @@ func New(ctx context.Context, logger *log.Logger) (*ProjectRepo, error) {
 	err = client.Ping(ctx, nil)
 	if err != nil {
 		return nil, err
+	}
+
+	if err := insertInitialProjects(client); err != nil {
+		log.Printf("Failed to insert initial projects: %v", err)
 	}
 
 	return &ProjectRepo{
@@ -123,4 +186,30 @@ func (pr *ProjectRepo) Delete(id string) error {
 	}
 	log.Printf("Documents deleted: %v\n", result.DeletedCount)
 	return nil
+}
+
+func (pr *ProjectRepo) GetById(id string) (*domain.Project, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	projectsCollection := pr.getCollection()
+
+	// Convert id string to ObjectID
+	objID, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		log.Println("Invalid ID format:", err)
+		return nil, err
+	}
+
+	// Find project by _id
+	filter := bson.M{"_id": objID}
+	var project domain.Project
+	err = projectsCollection.FindOne(ctx, filter).Decode(&project)
+	if err != nil {
+		log.Println("Error finding project by ID:", err)
+		return nil, err
+	}
+	log.Println("repo je prosao")
+
+	return &project, nil
 }

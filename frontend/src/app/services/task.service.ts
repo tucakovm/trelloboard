@@ -23,5 +23,10 @@ export class TaskService {
     return this.http.delete<any>(`${this.apiUrl}/tasks/${id}`)
     }
 
+    getAllTasksByProjectId(id:string):Observable<Task[]>{
+      console.log("pozvan task service")
+      return this.http.get<Task[]>(`${this.apiUrl}/tasks/${id}`)
+    }
+
 
 }

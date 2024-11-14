@@ -197,3 +197,40 @@ func (tr *TaskRepo) DeleteAllByProjectID(projectID string) error {
 	log.Printf("Tasks with ProjectID %s deleted successfully", projectID)
 	return nil
 }
+
+func (tr *TaskRepo) GetAllByProjectID(projectID string) (domain.Tasks, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	collection := tr.getCollection()
+	if collection == nil {
+		return nil, fmt.Errorf("failed to retrieve collection")
+	}
+
+	filter := bson.M{"project_id": projectID}
+
+	cursor, err := collection.Find(ctx, filter)
+	if err != nil {
+		log.Println("Error fetching tasks by ProjectID:", err)
+		return nil, err
+	}
+	defer cursor.Close(ctx)
+
+	var tasks domain.Tasks
+	for cursor.Next(ctx) {
+		var task domain.Task
+		if err := cursor.Decode(&task); err != nil {
+			log.Println("Error decoding task:", err)
+			return nil, err
+		}
+		tasks = append(tasks, &task)
+	}
+
+	if err := cursor.Err(); err != nil {
+		log.Println("Error iterating over tasks:", err)
+		return nil, err
+	}
+
+	log.Printf("Fetched %d tasks with ProjectID %s", len(tasks), projectID)
+	return tasks, nil
+}

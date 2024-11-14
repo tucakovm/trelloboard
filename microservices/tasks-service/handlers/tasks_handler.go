@@ -111,3 +111,21 @@ func (h *TaskHandler) DeleteAllByProjectID(w http.ResponseWriter, r *http.Reques
 
 	w.WriteHeader(http.StatusNoContent)
 }
+
+func (h *TaskHandler) GetAllByProjectID(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	projectID := vars["project_id"]
+
+	// Poziv repoza za dobijanje svih zadataka po projectID
+	tasks, err := h.repo.GetAllByProjectID(projectID)
+	if err != nil {
+		// Greška u pretrazi zadataka, vraća se status 500 i odgovarajuća poruka
+		http.Error(w, "Failed to fetch tasks", http.StatusInternalServerError)
+		return
+	}
+
+	log.Println("repo je prosao")
+	log.Println(tasks)
+	// Vraća uspešan odgovor sa statusom 200 i JSON podacima
+	h.renderJSON(w, tasks, http.StatusOK)
+}

@@ -29,7 +29,12 @@ export class ProjectService{
     );
   }
 
-    deleteProjectById(id:number): Observable<void>{
+    deleteProjectById(id:string): Observable<void>{
       return this.http.delete<void>(`${this.apiUrl}/projects/${id}`)
+    }
+
+    getById(id:string):Observable<Project>{
+      console.log("pozvan getbyid servis na frontu")
+      return this.http.get<Project>(`${this.apiUrl}/projects/getById/${id}`)
     }
 }

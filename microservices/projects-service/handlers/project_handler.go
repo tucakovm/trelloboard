@@ -106,6 +106,25 @@ func (h ProjectHandler) Delete(w http.ResponseWriter, r *http.Request) {
 	h.renderJSON(w, "Project deleted", http.StatusOK)
 }
 
+func (h ProjectHandler) GetById(w http.ResponseWriter, r *http.Request) {
+	if r.Method == http.MethodOptions {
+		w.WriteHeader(http.StatusNoContent)
+		return
+	}
+	vars := mux.Vars(r)
+	id := vars["id"]
+
+	project, err := h.service.GetById(id)
+	if err != nil {
+		http.Error(w, "Failed to fetch project", http.StatusInternalServerError)
+		return
+	}
+
+	log.Println("handler je prosao")
+	log.Println(project)
+	h.renderJSON(w, project, http.StatusOK)
+}
+
 func (h ProjectHandler) MiddlewarePatientDeserialization(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(rw http.ResponseWriter, h *http.Request) {
 		project := &domain.Project{}

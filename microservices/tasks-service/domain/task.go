@@ -8,6 +8,8 @@ type Task struct {
 	ProjectID   string `json:"project_id" bson:"project_id"`
 }
 
+type Tasks []*Task
+
 type TasksRepository interface {
 	Create(task Task) (Task, error)
 }

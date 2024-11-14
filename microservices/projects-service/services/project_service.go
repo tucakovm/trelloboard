@@ -26,3 +26,7 @@ func (s ProjectService) GetAll(id string) (domain.Projects, error) {
 func (s ProjectService) Delete(id string) error {
 	return s.repo.Delete(id)
 }
+
+func (s ProjectService) GetById(id string) (*domain.Project, error) {
+	return s.repo.GetById(id)
+}

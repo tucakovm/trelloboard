@@ -3,10 +3,12 @@ import { RouterModule, Routes } from '@angular/router';
 import { RegisterComponent } from './register/register.component';
 import { VerifyComponent } from './verify/verify.component';
 import { ProjectCreateComponent } from './project/project-create/project-create.component';
-import { TasksComponent } from './tasks/tasks.component';
+import { TasksComponent } from './tasks/tasks-create/tasks.component';
 import { ProjectAllComponent } from './project/project-all/project-all.component';
 import { LoginComponent } from './login/login.component';
 import { ProfileComponent } from './profile/profile.component';
+import { ProjectDetailsComponent } from './project/project-details/project-details.component';
+import { TasksAllComponent } from './tasks/tasks-all/tasks-all.component';
 
 const routes: Routes = [
   { path: 'register', component: RegisterComponent },
@@ -16,8 +18,10 @@ const routes: Routes = [
   { path: 'add-task', component: TasksComponent },
   { path: 'register', redirectTo: '/register', pathMatch: 'full' },
   { path: 'all-projects', component: ProjectAllComponent },
-  { path: 'tasks/:projectId', component: TasksComponent },
+  { path: 'tasks/create/:projectId', component: TasksComponent },
   { path: 'profile', component: ProfileComponent },
+  { path: 'all-projects/:id', component: ProjectDetailsComponent },
+  { path: 'tasks/:projectId', component: TasksAllComponent },
 ];
 @NgModule({
   imports: [RouterModule.forRoot(routes)],

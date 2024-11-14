@@ -36,6 +36,7 @@ func main() {
 	r.HandleFunc("/api/tasks", taskHandler.GetAll).Methods(http.MethodGet)
 	r.HandleFunc("/api/tasks", taskHandler.Delete).Methods(http.MethodDelete)
 	r.HandleFunc("/api/tasks/{project_id}", taskHandler.DeleteAllByProjectID).Methods(http.MethodDelete)
+	r.HandleFunc("/api/tasks/{project_id}", taskHandler.GetAllByProjectID).Methods(http.MethodGet)
 
 	// Set up CORS
 	corsHandler := handlers.CORS(

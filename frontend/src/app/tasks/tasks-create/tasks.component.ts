@@ -1,8 +1,8 @@
 import {Component, OnInit} from '@angular/core';
 import { FormGroup, Validators, FormBuilder } from '@angular/forms';
-import { Task } from '../model/task';
-import { TaskService } from '../services/task.service';
-import { Status } from '../model/status';
+import { Task } from '../../model/task';
+import { TaskService } from '../../services/task.service';
+import { Status } from '../../model/status';
 import {ActivatedRoute, Router} from "@angular/router";
 
 @Component({
@@ -21,8 +21,8 @@ export class TasksComponent implements OnInit {
     private router:Router,
   ) {
     this.taskForm = this.fb.group({
-      Name: ['', [Validators.required, Validators.minLength(3)]],
-      Description: ['', [Validators.required, Validators.minLength(10)]]
+      name: ['', [Validators.required, Validators.minLength(3)]],
+      description: ['', [Validators.required, Validators.minLength(10)]]
     });
   }
   ngOnInit(): void {
@@ -34,7 +34,7 @@ export class TasksComponent implements OnInit {
   onSubmit(): void {
     if (this.taskForm.valid) {
       const taskData: Task = this.taskForm.value;
-      const submittedTask: Task = new Task(taskData.Name, taskData.Description, Status.Pending, this.projectId);
+      const submittedTask: Task = new Task(taskData.name, taskData.description, Status.Pending, this.projectId);
 
       console.log('Submitted Task Data:', submittedTask);
       this.taskService.createTask(submittedTask).subscribe({
