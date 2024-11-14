@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"projects_module/config"
 	h "projects_module/handlers"
 	"projects_module/repositories"
 	"projects_module/services"
@@ -15,7 +16,8 @@ import (
 )
 
 func main() {
-	//cfg := config.GetConfig()
+	cfg := config.GetConfig()
+	log.Println(cfg.Address)
 
 	// Initialize context
 	timeoutContext, cancel := context.WithTimeout(context.Background(), 30*time.Second)
@@ -45,7 +47,7 @@ func main() {
 	prjRouter.HandleFunc("/api/projects", handlerProject.Create)
 	prjRouter.Use(handlerProject.MiddlewarePatientDeserialization)
 
-	r.HandleFunc("/api/projects", handlerProject.GetAll).Methods(http.MethodGet)
+	r.HandleFunc("/api/projects/{username}", handlerProject.GetAll).Methods(http.MethodGet)
 	r.HandleFunc("/api/projects/{id}", handlerProject.Delete).Methods(http.MethodDelete)
 
 	// Define CORS options
@@ -59,7 +61,7 @@ func main() {
 	srv := &http.Server{
 
 		Handler: corsHandler(r), // Apply CORS handler to router
-		Addr:    ":8001",        // Use the desired port
+		Addr:    cfg.Address,    // Use the desired port
 	}
 
 	// Start the server

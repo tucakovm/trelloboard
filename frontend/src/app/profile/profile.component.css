@@ -127,5 +127,5 @@ input[type="checkbox"] {
 
 ::selection {
   background-color: var(--primary-color);
-  color: white;
+  color: blueviolet;
 }

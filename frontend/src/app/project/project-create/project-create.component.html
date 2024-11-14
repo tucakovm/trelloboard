@@ -13,16 +13,20 @@
       </div>
     </div>
 
-     <!-- Completion Date -->
-     <div class="form-group mb-3 row">
-      <label for="CompletionDate" class="col-sm-3 col-form-label">Completion Date:</label>
-      <div class="col-sm-9">
-        <input id="CompletionDate" formControlName="CompletionDate" type="date" class="form-control" />
-        <div *ngIf="projectForm.get('CompletionDate')?.invalid && projectForm.get('CompletionDate')?.touched" class="text-danger mt-1">
-          Completion Date is required.
-        </div>
+<!-- Completion Date -->
+  <div class="form-group mb-3 row">
+    <label for="CompletionDate" class="col-sm-3 col-form-label">Completion Date:</label>
+    <div class="col-sm-9">
+      <input id="CompletionDate" formControlName="CompletionDate" type="date" class="form-control" />
+      <div *ngIf="projectForm.get('CompletionDate')?.errors?.['required'] && projectForm.get('CompletionDate')?.touched" class="text-danger mt-1">
+        Completion Date is required.
+      </div>
+      <div *ngIf="projectForm.get('CompletionDate')?.errors?.['notFutureDate'] && projectForm.get('CompletionDate')?.touched" class="text-danger mt-1">
+        Completion Date must be in the future.
       </div>
     </div>
+  </div>
+
 
     <!-- Min Members -->
     <div class="form-group mb-3 row">

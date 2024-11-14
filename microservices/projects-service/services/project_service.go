@@ -19,8 +19,8 @@ func (s ProjectService) Create(p *domain.Project) error {
 	return s.repo.Create(p)
 }
 
-func (s ProjectService) GetAll() (domain.Projects, error) {
-	return s.repo.GetAll()
+func (s ProjectService) GetAll(id string) (domain.Projects, error) {
+	return s.repo.GetAll(id)
 }
 
 func (s ProjectService) Delete(id string) error {

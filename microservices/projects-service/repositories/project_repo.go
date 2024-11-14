@@ -84,26 +84,29 @@ func (pr *ProjectRepo) Create(project *domain.Project) error {
 	return nil
 }
 
-func (pr *ProjectRepo) GetAll() (domain.Projects, error) {
-	// Initialise context (after 5 seconds timeout, abort operation)
+func (pr *ProjectRepo) GetAll(id string) (domain.Projects, error) {
+	// Initialize context (after 5 seconds timeout, abort operation)
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	log.Println("test1")
-	projectsCollection := pr.getCollection()
 
-	var project domain.Projects
-	log.Println("test2")
-	patientsCursor, err := projectsCollection.Find(ctx, bson.M{})
+	projectsCollection := pr.getCollection()
+	var projects domain.Projects
+
+	// Query only projects where the manager's ID matches the provided id
+	filter := bson.M{"manager.username": id}
+	cursor, err := projectsCollection.Find(ctx, filter)
 	if err != nil {
-		log.Println(err)
+		log.Println("Error finding projects:", err)
 		return nil, err
 	}
-	log.Println("test3")
-	if err = patientsCursor.All(ctx, &project); err != nil {
-		log.Println(err)
+
+	// Decode the results into the projects slice
+	if err = cursor.All(ctx, &projects); err != nil {
+		log.Println("Error decoding projects:", err)
 		return nil, err
 	}
-	return project, nil
+
+	return projects, nil
 }
 
 func (pr *ProjectRepo) Delete(id string) error {

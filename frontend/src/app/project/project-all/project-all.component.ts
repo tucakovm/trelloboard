@@ -3,6 +3,7 @@ import { ProjectService } from '../../services/project.service';
 import { Project } from '../../model/project';
 import { Router } from '@angular/router';
 import { TaskService } from '../../services/task.service';
+import { AuthService } from '../../services/auth.service';
 
 @Component({
   selector: 'app-project-all',
@@ -11,14 +12,15 @@ import { TaskService } from '../../services/task.service';
 })
 export class ProjectAllComponent implements OnInit{
   projects?:Project[];
-  constructor(private projectService:ProjectService,  private router: Router, private tasksService:TaskService){}
+  constructor(private projectService:ProjectService,  private router: Router, private tasksService:TaskService , private authService:AuthService){}
 
   ngOnInit(): void {
     this.getAllProjects();
   }
 
   getAllProjects(): void {
-    this.projectService.getAllProjects().subscribe( {
+    let username = this.authService.getUserName()
+    this.projectService.getAllProjects(username).subscribe( {
       next:(data) =>{
         this.projects = data;
       },

@@ -68,8 +68,11 @@ func (h ProjectHandler) GetAll(rw http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	vars := mux.Vars(r)
+	id := vars["username"]
+
 	// Call the service to get all projects
-	allProducts, err := h.service.GetAll()
+	allProducts, err := h.service.GetAll(id)
 	if err != nil {
 		http.Error(rw, "Database exception", http.StatusInternalServerError)
 		return

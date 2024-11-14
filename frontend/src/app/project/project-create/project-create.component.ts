@@ -1,5 +1,5 @@
 import { Component} from '@angular/core';
-import { FormBuilder, FormGroup, Validators , AbstractControl } from '@angular/forms';
+import { FormBuilder, FormGroup, Validators , AbstractControl , ValidationErrors } from '@angular/forms';
 import { User } from '../../model/user';
 import { Project } from '../../model/project';
 import { ProjectService } from '../../services/project.service';
@@ -19,7 +19,7 @@ export class ProjectCreateComponent{
     this.projectForm = this.fb.group(
       {
         Name: ['', [Validators.required, Validators.minLength(3)]],
-        CompletionDate: [null, Validators.required],
+        CompletionDate: [null, [Validators.required, this.futureDateValidator]],
         MinMembers: [0, [Validators.required, Validators.min(1)]],
         MaxMembers: [0, [Validators.required, Validators.min(1)]]
       },
@@ -37,6 +37,20 @@ export class ProjectCreateComponent{
     }
     return null; // Bez greške
   }
+
+    // Validator to check if CompletionDate is in the future
+    futureDateValidator(control: AbstractControl): ValidationErrors | null {
+      const selectedDate = new Date(control.value);
+      const currentDate = new Date();
+  
+      // Remove time part for accurate comparison
+      currentDate.setHours(0, 0, 0, 0);
+  
+      if (selectedDate <= currentDate) {
+        return { notFutureDate: true };
+      }
+      return null;
+    }
 
   
 
