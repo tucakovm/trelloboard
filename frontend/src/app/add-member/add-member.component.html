@@ -1,0 +1,11 @@
+<div class="container add-member-form">
+    <h2 class="text-center">Add Member</h2>
+    <form (ngSubmit)="onSubmit()" [formGroup]="addMemberForm" class="form-container">
+      <div class="mb-3">
+        <label for="username" class="form-label">Username</label>
+        <input type="text" id="username" class="form-control" formControlName="username" placeholder="Enter username" />
+      </div>
+      <button type="submit" class="btn btn-primary w-100">Submit</button>
+    </form>
+  </div>
+  

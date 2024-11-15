@@ -50,6 +50,7 @@ func main() {
 	r.HandleFunc("/api/projects/{username}", handlerProject.GetAll).Methods(http.MethodGet)
 	r.HandleFunc("/api/projects/{id}", handlerProject.Delete).Methods(http.MethodDelete)
 	r.HandleFunc("/api/projects/getById/{id}", handlerProject.GetById).Methods(http.MethodGet)
+	r.HandleFunc("/api/projects/{id}/members", handlerProject.AddMember).Methods(http.MethodPost)
 
 	// Define CORS options
 	corsHandler := handlers.CORS(

@@ -2,9 +2,10 @@ package domain
 
 import (
 	"encoding/json"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 	"io"
 	"time"
+
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type Project struct {
@@ -14,7 +15,7 @@ type Project struct {
 	MinMembers     int32              `bson:"minMembers" json:"minMembers"`
 	MaxMembers     int32              `bson:"maxMembers" json:"maxMembers"`
 	Manager        User               `bson:"manager" json:"manager"`
-	//Members        []User
+	Members        []User             `bson:"members" json:"members"`
 }
 
 type Projects []*Project

@@ -9,6 +9,7 @@ import { LoginComponent } from './login/login.component';
 import { ProfileComponent } from './profile/profile.component';
 import { ProjectDetailsComponent } from './project/project-details/project-details.component';
 import { TasksAllComponent } from './tasks/tasks-all/tasks-all.component';
+import { AddMemberComponent } from './add-member/add-member.component';
 
 const routes: Routes = [
   { path: 'register', component: RegisterComponent },
@@ -21,7 +22,9 @@ const routes: Routes = [
   { path: 'tasks/create/:projectId', component: TasksComponent },
   { path: 'profile', component: ProfileComponent },
   { path: 'all-projects/:id', component: ProjectDetailsComponent },
+  { path: 'all-projects/:projectId/add-member', component: AddMemberComponent },
   { path: 'tasks/:projectId', component: TasksAllComponent },
+  
 ];
 @NgModule({
   imports: [RouterModule.forRoot(routes)],

@@ -30,3 +30,7 @@ func (s ProjectService) Delete(id string) error {
 func (s ProjectService) GetById(id string) (*domain.Project, error) {
 	return s.repo.GetById(id)
 }
+
+func (s ProjectService) AddMember(projectId string, user domain.User) error {
+	return s.repo.AddMember(projectId, user)
+}

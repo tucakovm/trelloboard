@@ -18,9 +18,17 @@ export class ProjectDetailsComponent implements OnInit{
     minMembers: 0,
     maxMembers: 0,
     manager: {
+        id: '',
         username: '',
         role: ''
-    }
+    },
+    members:[
+      {
+        id: '',
+        username: '',
+        role: ''
+      },
+    ]
   }
   constructor(private projectService:ProjectService,private route: ActivatedRoute,private tasksService:TaskService, private router:Router){}
 
@@ -84,4 +92,11 @@ export class ProjectDetailsComponent implements OnInit{
       this.router.navigate(['/tasks', this.id]);
     }
   }  
+
+  addMember(){
+    if (this.id) {
+      this.router.navigate(['/all-projects', this.id,"add-member" ]);
+    }
+  }
+
 }

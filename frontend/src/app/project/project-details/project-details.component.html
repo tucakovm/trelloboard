@@ -1,62 +1,62 @@
 <div class="container mt-5">
-  <div class="card shadow-lg">
-    <div class="card-header bg-primary text-white">
+  <div class="card shadow-lg border-0">
+    <div class="card-header bg-primary text-white text-center py-3">
       <h3>Project Details</h3>
     </div>
-    <div class="card-body">
-      <div class="row mb-3">
+    <div class="card-body p-4">
+      <div class="row mb-4">
         <div class="col-md-6">
           <label for="projectName" class="form-label">Project Name:</label>
           <input
             type="text"
             id="projectName"
-            class="form-control"
+            class="form-control border-0 input-readonly"
             [(ngModel)]="project.name"
             readonly
           />
         </div>
-      </div>
-
-      <div class="row mb-3">
         <div class="col-md-6">
           <label for="completionDate" class="form-label">Completion Date:</label>
           <input
             type="text"
             id="completionDate"
-            class="form-control"
+            class="form-control border-0 input-readonly"
             [(ngModel)]="project.completionDate"
-            readonly
-          />
-        </div>
-        <div class="col-md-6">
-          <label for="minMembers" class="form-label">Minimum Members:</label>
-          <input
-            type="number"
-            id="minMembers"
-            class="form-control"
-            [(ngModel)]="project.minMembers"
             readonly
           />
         </div>
       </div>
 
-      <div class="row mb-3">
+      <div class="row mb-4">
+        <div class="col-md-6">
+          <label for="minMembers" class="form-label">Minimum Members:</label>
+          <input
+            type="number"
+            id="minMembers"
+            class="form-control border-0 input-readonly"
+            [(ngModel)]="project.minMembers"
+            readonly
+          />
+        </div>
         <div class="col-md-6">
           <label for="maxMembers" class="form-label">Maximum Members:</label>
           <input
             type="number"
             id="maxMembers"
-            class="form-control"
+            class="form-control border-0 input-readonly"
             [(ngModel)]="project.maxMembers"
             readonly
           />
         </div>
+      </div>
+
+      <div class="row mb-4">
         <div class="col-md-6">
           <label for="managerUsername" class="form-label">Manager Username:</label>
           <input
             type="text"
             id="managerUsername"
-            class="form-control"
+            class="form-control border-0 input-readonly"
             [(ngModel)]="project.manager.username"
             readonly
           />
@@ -64,19 +64,24 @@
       </div>
 
       <div class="row mt-4">
-        <div class="col-md-6">
-          <button class="btn btn-danger" (click)="deleteProject()">
+        <div class="col-md-4">
+          <button class="btn btn-danger w-100 shadow-sm" (click)="deleteProject()">
             Delete Project
           </button>
         </div>
-        <div class="col-md-6 text-end">
-          <button class="btn btn-success" (click)="addTask()">
-            Dodaj Task
+        <div class="col-md-4">
+          <button class="btn btn-primary w-100 shadow-sm" (click)="addTask()">
+            Add Task
           </button>
         </div>
-        <div class="col-md-6 text-end">
-          <button class="btn btn-success" (click)="allTasks()">
-            See all tasks
+        <div class="col-md-4">
+          <button class="btn btn-success w-100 shadow-sm" (click)="allTasks()">
+            See All Tasks
+          </button>
+        </div>
+        <div class="col-md-4">
+          <button class="btn btn-success w-100 shadow-sm" (click)="addMember()">
+            Add members
           </button>
         </div>
       </div>

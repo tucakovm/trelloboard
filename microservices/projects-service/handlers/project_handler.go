@@ -141,3 +141,38 @@ func (h ProjectHandler) MiddlewarePatientDeserialization(next http.Handler) http
 		next.ServeHTTP(rw, h)
 	})
 }
+
+func (h ProjectHandler) AddMember(w http.ResponseWriter, r *http.Request) {
+	if r.Method == http.MethodOptions {
+		w.WriteHeader(http.StatusNoContent)
+		return
+	}
+
+	// Get the projectId from URL parameter
+	vars := mux.Vars(r)
+	projectId := vars["id"]
+	if projectId == "" {
+		http.Error(w, "Project ID is required", http.StatusBadRequest)
+		return
+	}
+
+	// Parse user from request body
+	var user domain.User
+	err := json.NewDecoder(r.Body).Decode(&user)
+	if err != nil {
+		http.Error(w, "Invalid user data", http.StatusBadRequest)
+		return
+	}
+
+	// Call the service to add the member to the project
+	err = h.service.AddMember(projectId, user)
+	if err != nil {
+		http.Error(w, "Error adding member to project", http.StatusInternalServerError)
+		return
+	}
+
+	// Respond with success message
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte(`{"message": "Member added successfully"}`))
+}

@@ -72,6 +72,9 @@ func insertInitialProjects(client *mongo.Client) error {
 			MinMembers:     2,
 			MaxMembers:     5,
 			Manager:        domain.User{Username: "alicej", Role: "Manager"},
+			Members: []domain.User{
+				{Username: "bobsmith", Role: "User"},
+			},
 		},
 		domain.Project{
 			Id:             primitive.NewObjectID(),
@@ -80,6 +83,9 @@ func insertInitialProjects(client *mongo.Client) error {
 			MinMembers:     3,
 			MaxMembers:     6,
 			Manager:        domain.User{Username: "alicej", Role: "Manager"},
+			Members: []domain.User{
+				{Username: "bobsmith", Role: "User"},
+			},
 		},
 		domain.Project{
 			Id:             primitive.NewObjectID(),
@@ -88,6 +94,7 @@ func insertInitialProjects(client *mongo.Client) error {
 			MinMembers:     1,
 			MaxMembers:     4,
 			Manager:        domain.User{Username: "alicej", Role: "Manager"},
+			Members:        []domain.User{},
 		},
 		domain.Project{
 			Id:             primitive.NewObjectID(),
@@ -96,6 +103,7 @@ func insertInitialProjects(client *mongo.Client) error {
 			MinMembers:     4,
 			MaxMembers:     10,
 			Manager:        domain.User{Username: "alicej", Role: "Manager"},
+			Members:        []domain.User{},
 		},
 	}
 
@@ -212,4 +220,39 @@ func (pr *ProjectRepo) GetById(id string) (*domain.Project, error) {
 	log.Println("repo je prosao")
 
 	return &project, nil
+}
+
+// AddMember adds a user to the project's member list
+func (pr *ProjectRepo) AddMember(projectId string, user domain.User) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	projectsCollection := pr.getCollection()
+
+	// Convert projectId string to ObjectID
+	objID, err := primitive.ObjectIDFromHex(projectId)
+	if err != nil {
+		log.Println("Invalid project ID format:", err)
+		return err
+	}
+
+	// Update the project by appending the user to the Members array
+	filter := bson.M{"_id": objID}
+	update := bson.M{
+		"$push": bson.M{"members": user},
+	}
+
+	result, err := projectsCollection.UpdateOne(ctx, filter, update)
+	if err != nil {
+		log.Println("Error adding member to project:", err)
+		return err
+	}
+
+	if result.ModifiedCount == 0 {
+		log.Println("No project found with the given ID")
+		return fmt.Errorf("no project found with the given ID")
+	}
+
+	log.Printf("User %s added to project %s", user.Username, projectId)
+	return nil
 }

@@ -7,6 +7,7 @@ export class Project {
     minMembers: number;
     maxMembers: number;
     manager:UserFP;
+    members:UserFP[];
 
     constructor(
         id : number,
@@ -14,7 +15,8 @@ export class Project {
         completionDate: Date,
         minMembers: number,
         maxMembers: number,
-        manager : UserFP
+        manager : UserFP,
+        members:UserFP[]
     ) {
         this.id = id;
         this.name = name;
@@ -22,5 +24,6 @@ export class Project {
         this.minMembers = minMembers;
         this.maxMembers = maxMembers;
         this.manager = manager
+        this.members = members;
     }
 }

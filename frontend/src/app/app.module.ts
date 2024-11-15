@@ -14,6 +14,7 @@ import { JwtHelperService, JWT_OPTIONS } from '@auth0/angular-jwt';
 import { ProfileComponent } from './profile/profile.component';
 import { ProjectDetailsComponent } from './project/project-details/project-details.component';
 import { TasksAllComponent } from './tasks/tasks-all/tasks-all.component';
+import { AddMemberComponent } from './add-member/add-member.component';
 
 
 @NgModule({
@@ -28,6 +29,7 @@ import { TasksAllComponent } from './tasks/tasks-all/tasks-all.component';
     ProfileComponent,
     ProjectDetailsComponent,
     TasksAllComponent,
+    AddMemberComponent,
   ],
   imports: [
     BrowserModule,

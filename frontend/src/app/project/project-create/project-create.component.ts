@@ -64,7 +64,7 @@ export class ProjectCreateComponent{
       completionDate.setHours(0, 0, 0);
 
       let tokenUsername = this.authService.getUserName();
-      projectData.manager = new UserFP(tokenUsername,tokenRole
+      projectData.manager = new UserFP("0349439342edasdasawq123122",tokenUsername,tokenRole
       )
 
       let submittedProject: Project = new Project(
@@ -74,6 +74,7 @@ export class ProjectCreateComponent{
         projectData.minMembers,
         projectData.maxMembers,
         projectData.manager,
+        projectData.members
       );
   
       console.log('Submitted Project Data:', submittedProject);

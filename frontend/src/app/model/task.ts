@@ -18,4 +18,8 @@ export class Task{
         this.project_id = projectId;
     }
 
+    get statusText(): string {
+      return Status[this.status];
+  }
+
 }

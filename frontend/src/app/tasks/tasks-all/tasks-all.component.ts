@@ -2,6 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { TaskService } from '../../services/task.service';
 import { ActivatedRoute } from '@angular/router';
 import { Task } from '../../model/task';
+import { Status } from '../../model/status';
 
 @Component({
   selector: 'app-tasks-all',
@@ -17,19 +18,22 @@ export class TasksAllComponent implements OnInit{
       this.getAll();
   }
 
-  getAll(){
+  getAll() {
     this.id = this.route.snapshot.paramMap.get('projectId');
-    console.log("id:"+this.id);
-    if(this.id){
-      this.tasksService.getAllTasksByProjectId(this.id).subscribe(
-        (tasks: Task[]) => {
-          this.tasks = tasks;
-          console.log("Taskovi: " + this.tasks);
-        },
-        (error) => {
-          console.error('Error fetching tasks:', error);
-        }
-      );
+    console.log("id:" + this.id);
+    if (this.id) {
+        this.tasksService.getAllTasksByProjectId(this.id).subscribe(
+            (tasks: Task[]) => {
+                this.tasks = tasks.map(task => ({
+                    ...task,
+                    statusText: Status[task.status]
+                }));
+                console.log("Taskovi: ", this.tasks);
+            },
+            (error) => {
+                console.error('Error fetching tasks:', error);
+            }
+        );
     }
-  }
+}
 }

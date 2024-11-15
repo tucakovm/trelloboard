@@ -39,7 +39,7 @@ export class TasksComponent implements OnInit {
       console.log('Submitted Task Data:', submittedTask);
       this.taskService.createTask(submittedTask).subscribe({
         next: (response) => {
-          this.router.navigate(['all-projects'])
+          this.router.navigate(['tasks',this.projectId])
           console.log('Task created successfully:', response);
         },
         error: (error) => {
