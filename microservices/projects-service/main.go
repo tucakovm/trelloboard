@@ -2,22 +2,35 @@ package main
 
 import (
 	"context"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/reflection"
 	"log"
-	"net/http"
+	"net"
 	"os"
+	"os/signal"
 	"projects_module/config"
 	h "projects_module/handlers"
+	proj "projects_module/proto/project"
 	"projects_module/repositories"
 	"projects_module/services"
+	"syscall"
 	"time"
-
-	"github.com/gorilla/handlers"
-	"github.com/gorilla/mux"
 )
 
 func main() {
 	cfg := config.GetConfig()
 	log.Println(cfg.Address)
+
+	listener, err := net.Listen("tcp", cfg.Address)
+	if err != nil {
+		log.Fatalln(err)
+	}
+	defer func(listener net.Listener) {
+		err := listener.Close()
+		if err != nil {
+			log.Fatal(err)
+		}
+	}(listener)
 
 	// Initialize context
 	timeoutContext, cancel := context.WithTimeout(context.Background(), 30*time.Second)
@@ -41,33 +54,53 @@ func main() {
 	handlerProject, err := h.NewConnectionHandler(serviceProject)
 	handleErr(err)
 
-	r := mux.NewRouter()
+	// Bootstrap gRPC server.
+	grpcServer := grpc.NewServer()
+	reflection.Register(grpcServer)
 
-	prjRouter := r.Methods(http.MethodPost).Subrouter()
-	prjRouter.HandleFunc("/api/projects", handlerProject.Create)
-	prjRouter.Use(handlerProject.MiddlewarePatientDeserialization)
+	// Bootstrap gRPC service server and respond to request.
+	proj.RegisterProjectServiceServer(grpcServer, handlerProject)
 
-	r.HandleFunc("/api/projects/{username}", handlerProject.GetAll).Methods(http.MethodGet)
-	r.HandleFunc("/api/projects/{id}", handlerProject.Delete).Methods(http.MethodDelete)
-	r.HandleFunc("/api/projects/getById/{id}", handlerProject.GetById).Methods(http.MethodGet)
-	r.HandleFunc("/api/projects/{id}/members", handlerProject.AddMember).Methods(http.MethodPost)
+	//r.HandleFunc("/api/projects/{id}/members", handlerProject.AddMember).Methods(http.MethodPost)
+	go func() {
+		if err := grpcServer.Serve(listener); err != nil {
+			log.Fatal("server error: ", err)
+		}
+	}()
 
-	// Define CORS options
-	corsHandler := handlers.CORS(
-		handlers.AllowedOrigins([]string{"http://localhost:4200"}), // Set the correct origin
-		handlers.AllowedMethods([]string{"GET", "POST", "DELETE", "OPTIONS", "PUT"}),
-		handlers.AllowedHeaders([]string{"Content-Type", "Authorization"}),
-	)
+	//r := mux.NewRouter()
+	//
+	//prjRouter := r.Methods(http.MethodPost).Subrouter()
+	//prjRouter.HandleFunc("/api/projects", handlerProject.Create)
+	//prjRouter.Use(handlerProject.MiddlewarePatientDeserialization)
+	//
+	//r.HandleFunc("/api/projects/{username}", handlerProject.GetAll).Methods(http.MethodGet)
+	//r.HandleFunc("/api/projects/{id}", handlerProject.Delete).Methods(http.MethodDelete)
+	//r.HandleFunc("/api/projects/getById/{id}", handlerProject.GetById).Methods(http.MethodGet)
+	//
+	//// Define CORS options
+	//corsHandler := handlers.CORS(
+	//	handlers.AllowedOrigins([]string{"http://localhost:4200"}), // Set the correct origin
+	//	handlers.AllowedMethods([]string{"GET", "POST", "DELETE", "OPTIONS", "PUT"}),
+	//	handlers.AllowedHeaders([]string{"Content-Type", "Authorization"}),
+	//)
+	//
+	//// Create the HTTP server with CORS handler
+	//srv := &http.Server{
+	//
+	//	Handler: corsHandler(r), // Apply CORS handler to router
+	//	Addr:    cfg.Address,    // Use the desired port
+	//}
+	//
+	//// Start the server
+	//log.Fatal(srv.ListenAndServe())
 
-	// Create the HTTP server with CORS handler
-	srv := &http.Server{
+	stopCh := make(chan os.Signal, 1)
+	signal.Notify(stopCh, syscall.SIGTERM)
 
-		Handler: corsHandler(r), // Apply CORS handler to router
-		Addr:    cfg.Address,    // Use the desired port
-	}
+	<-stopCh
 
-	// Start the server
-	log.Fatal(srv.ListenAndServe())
+	grpcServer.Stop()
 }
 
 func handleErr(err error) {

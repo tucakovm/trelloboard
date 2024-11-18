@@ -12,7 +12,7 @@ import { TaskService } from '../../services/task.service';
 export class ProjectDetailsComponent implements OnInit{
   id: string | null = null;
   project:Project = {
-    id: 0,
+    id: '',
     name: '',
     completionDate: new Date(),  
     minMembers: 0,
@@ -37,15 +37,19 @@ export class ProjectDetailsComponent implements OnInit{
     console.log(this.project)
   }
 
-  getProject(){
-    console.log("test1")
+  getProject() {
+    console.log("test1");
     this.id = this.route.snapshot.paramMap.get('id');
     
     if (this.id) {
       this.projectService.getById(this.id).subscribe(
-        (project: Project) => {
-          this.project = project;
-          console.log(this.project)
+        (project: Project | null) => {
+          if (project) {
+            this.project = project;
+            console.log(this.project);
+          } else {
+            console.error('Project not found or an error occurred.');
+          }
         },
         (error) => {
           console.error('Error fetching project:', error);
@@ -53,6 +57,7 @@ export class ProjectDetailsComponent implements OnInit{
       );
     }
   }
+  
 
   deleteAllTasksByProjectId(id:string){
     this.tasksService.deleteTasksByProjectId(id).subscribe({

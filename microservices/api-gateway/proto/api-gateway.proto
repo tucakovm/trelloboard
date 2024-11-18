@@ -1,0 +1,72 @@
+syntax = "proto3";
+
+option go_package = "proto/api-gateway";
+
+import "google/protobuf/timestamp.proto"; // for handling time.Time type
+import "google/api/annotations.proto";
+
+
+service ProjectService {
+  rpc GetAllProjects(GetAllProjectsReq) returns (GetAllProjectsRes) {
+    option (google.api.http) = {
+      get: "/api/projects/{username}"
+    };
+  }
+  rpc Create(CreateProjectReq) returns (EmptyResponse) {
+    option (google.api.http) = {
+      post: "/api/project",
+      body: "project"
+    };
+  }
+  rpc Delete(DeleteProjectReq) returns (EmptyResponse) {
+    option (google.api.http) = {
+      delete: "/api/project/{id}"
+    };
+  }
+  rpc GetById(GetByIdReq) returns (GetByIdRes) {
+    option (google.api.http) = {
+      get: "/api/project/{id}"
+    };
+  }
+}
+
+message EmptyResponse {}
+
+message GetAllProjectsReq {
+  string username = 1;
+}
+
+message Project {
+  string id = 1;  // primitive.ObjectID is represented as a string
+  string name = 2;
+  google.protobuf.Timestamp completionDate = 3;  // time.Time type in Go
+  int32 minMembers = 4;
+  int32 maxMembers = 5;
+  User manager = 6;  // Nested User message
+}
+
+message User {
+  string id = 1;  // Define User fields based on your Go struct
+  string username = 2;
+  string role = 3;
+}
+
+message GetAllProjectsRes {
+  repeated Project projects = 1;
+}
+
+message CreateProjectReq {
+  Project project = 1;
+}
+
+message DeleteProjectReq {
+  string id = 1;
+}
+
+message GetByIdRes {
+  Project project = 1;
+}
+
+message GetByIdReq {
+  string id = 1;
+}

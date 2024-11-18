@@ -2,10 +2,12 @@ package repositories
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
 	"os"
 	"projects_module/domain"
+	proto "projects_module/proto/project"
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
@@ -64,6 +66,8 @@ func insertInitialProjects(client *mongo.Client) error {
 		return nil
 	}
 
+	//existingID, _ := primitive.ObjectIDFromHex("67386650a0d21b3a8f823722") // Known ObjectID as string
+
 	projects := []interface{}{
 		domain.Project{
 			Id:             primitive.NewObjectID(),
@@ -71,10 +75,10 @@ func insertInitialProjects(client *mongo.Client) error {
 			CompletionDate: time.Now().AddDate(0, 3, 0),
 			MinMembers:     2,
 			MaxMembers:     5,
-			Manager:        domain.User{Username: "alicej", Role: "Manager"},
 			Members: []domain.User{
 				{Username: "bobsmith", Role: "User"},
 			},
+			Manager: domain.User{Id: "67386650a0d21b3a8f823722", Username: "alicej", Role: "Manager"},
 		},
 		domain.Project{
 			Id:             primitive.NewObjectID(),
@@ -82,10 +86,10 @@ func insertInitialProjects(client *mongo.Client) error {
 			CompletionDate: time.Now().AddDate(0, 6, 0),
 			MinMembers:     3,
 			MaxMembers:     6,
-			Manager:        domain.User{Username: "alicej", Role: "Manager"},
 			Members: []domain.User{
 				{Username: "bobsmith", Role: "User"},
 			},
+			Manager: domain.User{Id: "67386650a0d21b3a8f823722", Username: "alicej", Role: "Manager"},
 		},
 		domain.Project{
 			Id:             primitive.NewObjectID(),
@@ -93,8 +97,8 @@ func insertInitialProjects(client *mongo.Client) error {
 			CompletionDate: time.Now().AddDate(0, 1, 0),
 			MinMembers:     1,
 			MaxMembers:     4,
-			Manager:        domain.User{Username: "alicej", Role: "Manager"},
 			Members:        []domain.User{},
+			Manager:        domain.User{Id: "67386650a0d21b3a8f823722", Username: "alicej", Role: "Manager"},
 		},
 		domain.Project{
 			Id:             primitive.NewObjectID(),
@@ -102,8 +106,8 @@ func insertInitialProjects(client *mongo.Client) error {
 			CompletionDate: time.Now().AddDate(0, 9, 0),
 			MinMembers:     4,
 			MaxMembers:     10,
-			Manager:        domain.User{Username: "alicej", Role: "Manager"},
 			Members:        []domain.User{},
+			Manager:        domain.User{Id: "67386650a0d21b3a8f823722", Username: "alicej", Role: "Manager"},
 		},
 	}
 
@@ -141,21 +145,45 @@ func New(ctx context.Context, logger *log.Logger) (*ProjectRepo, error) {
 	}, nil
 }
 
-func (pr *ProjectRepo) Create(project *domain.Project) error {
+func (pr *ProjectRepo) Create(project *proto.Project) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
+
+	// Provera CompletionDate pre poziva AsTime()
+	if project.CompletionDate == nil {
+		log.Println("CompletionDate is nil")
+		return errors.New("completionDate is required")
+	}
+
+	completionDate := project.CompletionDate.AsTime()
+
+	// Konvertuj proto.Project u domain.Project
+	prj := &domain.Project{
+		Name:           project.Name,
+		CompletionDate: completionDate.UTC(), // Osigurajte da je u UTC
+		MinMembers:     project.MinMembers,
+		MaxMembers:     project.MaxMembers,
+		Manager: domain.User{
+			Id:       project.Manager.Id,
+			Username: project.Manager.Username,
+			Role:     project.Manager.Role,
+		},
+	}
+
+	// Ubaci konvertovani domain.Project u MongoDB
 	projectsCollection := pr.getCollection()
 
-	result, err := projectsCollection.InsertOne(ctx, &project)
+	result, err := projectsCollection.InsertOne(ctx, prj)
 	if err != nil {
-		log.Println(err)
+		log.Printf("Error inserting document: %v\n", err)
 		return err
 	}
-	log.Printf("Documents ID: %v\n", result.InsertedID)
+
+	log.Printf("Document ID: %v\n", result.InsertedID)
 	return nil
 }
 
-func (pr *ProjectRepo) GetAll(id string) (domain.Projects, error) {
+func (pr *ProjectRepo) GetAllProjects(id string) (domain.Projects, error) {
 	// Initialize context (after 5 seconds timeout, abort operation)
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
@@ -217,7 +245,6 @@ func (pr *ProjectRepo) GetById(id string) (*domain.Project, error) {
 		log.Println("Error finding project by ID:", err)
 		return nil, err
 	}
-	log.Println("repo je prosao")
 
 	return &project, nil
 }
