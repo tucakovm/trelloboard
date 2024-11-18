@@ -2,20 +2,18 @@ package handlers
 
 import (
 	"context"
-	"encoding/json"
-	"io"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	"log"
-	"net/http"
-	"projects_module/domain"
+	proto "projects_module/proto/project"
 	"projects_module/services"
-
-	"github.com/gorilla/mux"
 )
 
 type KeyProduct struct{}
 
 type ProjectHandler struct {
 	service services.ProjectService
+	proto.UnimplementedProjectServiceServer
 }
 
 func NewConnectionHandler(service services.ProjectService) (ProjectHandler, error) {
@@ -24,120 +22,58 @@ func NewConnectionHandler(service services.ProjectService) (ProjectHandler, erro
 	}, nil
 }
 
-func (c ProjectHandler) decodeBodyProject(r io.Reader) (*domain.Project, error) {
-	dec := json.NewDecoder(r)
-	dec.DisallowUnknownFields()
+func (h ProjectHandler) Create(ctx context.Context, req *proto.CreateProjectReq) (*proto.EmptyResponse, error) {
+	log.Printf("Received Create Project request: %v", req.Project)
 
-	var rt domain.Project
-	if err := dec.Decode(&rt); err != nil {
-		return nil, err
-	}
-	return &rt, nil
-}
-
-func (c ProjectHandler) renderJSON(w http.ResponseWriter, v interface{}, code int) {
-	js, err := json.Marshal(v)
-
+	err := h.service.Create(req.Project) // Prosleđivanje samo req.Project
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+		log.Printf("Error creating project: %v", err)
+		return nil, status.Error(codes.InvalidArgument, "bad request ...")
 	}
-
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(code)
-	w.Write(js)
+	return nil, nil
 }
 
-func (h ProjectHandler) Create(w http.ResponseWriter, r *http.Request) {
-	if r.Method == http.MethodOptions {
-		w.WriteHeader(http.StatusNoContent)
-		return
-	}
-	//project, err := h.decodeBodyProject(r.Body)
-	project := r.Context().Value(KeyProduct{}).(*domain.Project)
-	log.Println(project)
-
-	h.service.Create(project)
-
-	h.renderJSON(w, domain.Projects{}, http.StatusCreated)
-}
-
-func (h ProjectHandler) GetAll(rw http.ResponseWriter, r *http.Request) {
-	if r.Method == http.MethodOptions {
-		rw.WriteHeader(http.StatusNoContent)
-		return
-	}
-
-	vars := mux.Vars(r)
-	id := vars["username"]
-
-	// Call the service to get all projects
-	allProducts, err := h.service.GetAll(id)
+func (h ProjectHandler) GetAllProjects(ctx context.Context, req *proto.GetAllProjectsReq) (*proto.GetAllProjectsRes, error) {
+	allProducts, err := h.service.GetAllProjects(req.Username)
+	log.Println("project handler getAll")
+	log.Println(allProducts)
 	if err != nil {
-		http.Error(rw, "Database exception", http.StatusInternalServerError)
-		return
+		return nil, status.Error(codes.InvalidArgument, "bad request ...")
 	}
 
-	// Marshal and write the response
-	rw.Header().Set("Content-Type", "application/json")
-	rw.WriteHeader(http.StatusOK)
-	jsonData, err := json.Marshal(allProducts)
-	if err != nil {
-		http.Error(rw, "Error marshalling data", http.StatusInternalServerError)
-		return
-	}
-	rw.Write(jsonData)
+	response := &proto.GetAllProjectsRes{Projects: allProducts}
+	//data, err := p.Marshal(response)
+	//if err != nil {
+	//	log.Println("Error serializing response:", err)
+	//} else {
+	//	log.Println("Serialized response:", data)
+	//	// Try unmarshaling back to verify the integrity of data
+	//	var deserializedResponse proto.GetAllProjectsRes
+	//	err := p.Unmarshal(data, &deserializedResponse)
+	//	if err != nil {
+	//		log.Println("Error unmarshaling response:", err)
+	//	} else {
+	//		log.Println("Deserialized response:", deserializedResponse)
+	//	}
+	//}
+
+	return response, nil
 }
 
-func (h ProjectHandler) Delete(w http.ResponseWriter, r *http.Request) {
-	if r.Method == http.MethodOptions {
-		w.WriteHeader(http.StatusNoContent)
-		return
-	}
-	vars := mux.Vars(r)
-	id := vars["id"]
-
-	err := h.service.Delete(id)
+func (h ProjectHandler) Delete(ctx context.Context, req *proto.DeleteProjectReq) (*proto.EmptyResponse, error) {
+	err := h.service.Delete(req.Id)
 	if err != nil {
-		http.Error(w, "Failed to delete config", http.StatusInternalServerError)
-		return
+		return nil, status.Error(codes.InvalidArgument, "bad request ...")
 	}
-
-	h.renderJSON(w, "Project deleted", http.StatusOK)
+	return nil, nil
 }
 
-func (h ProjectHandler) GetById(w http.ResponseWriter, r *http.Request) {
-	if r.Method == http.MethodOptions {
-		w.WriteHeader(http.StatusNoContent)
-		return
-	}
-	vars := mux.Vars(r)
-	id := vars["id"]
-
-	project, err := h.service.GetById(id)
+func (h ProjectHandler) GetById(ctx context.Context, req *proto.GetByIdReq) (*proto.GetByIdRes, error) {
+	log.Printf("Received Project id request: %v", req.Id)
+	project, err := h.service.GetById(req.Id)
 	if err != nil {
-		http.Error(w, "Failed to fetch project", http.StatusInternalServerError)
-		return
+		return nil, status.Error(codes.InvalidArgument, "bad request ...")
 	}
-
-	log.Println("handler je prosao")
-	log.Println(project)
-	h.renderJSON(w, project, http.StatusOK)
-}
-
-func (h ProjectHandler) MiddlewarePatientDeserialization(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(rw http.ResponseWriter, h *http.Request) {
-		project := &domain.Project{}
-		err := project.FromJSON(h.Body)
-		if err != nil {
-			http.Error(rw, "Unable to decode json", http.StatusBadRequest)
-			log.Fatal(err)
-			return
-		}
-
-		ctx := context.WithValue(h.Context(), KeyProduct{}, project)
-		h = h.WithContext(ctx)
-
-		next.ServeHTTP(rw, h)
-	})
+	response := &proto.GetByIdRes{Project: project}
+	return response, nil
 }

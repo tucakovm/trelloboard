@@ -18,10 +18,10 @@ export class ProjectCreateComponent{
   constructor(private fb: FormBuilder, private projectService:ProjectService , private authService:AuthService, private router:Router) {
     this.projectForm = this.fb.group(
       {
-        Name: ['', [Validators.required, Validators.minLength(3)]],
-        CompletionDate: [null, [Validators.required, this.futureDateValidator]],
-        MinMembers: [0, [Validators.required, Validators.min(1)]],
-        MaxMembers: [0, [Validators.required, Validators.min(1)]]
+        name: ['', [Validators.required, Validators.minLength(3)]],
+        completionDate: [null, [Validators.required, this.futureDateValidator]],
+        minMembers: [0, [Validators.required, Validators.min(1)]],
+        maxMembers: [0, [Validators.required, Validators.min(1)]]
       },
       { validators: this.maxGreaterThanMinValidator } // Dodajemo validator na formu
     );
@@ -63,12 +63,16 @@ export class ProjectCreateComponent{
       let completionDate = new Date(projectData.completionDate);
       completionDate.setHours(0, 0, 0);
 
+      let isoDate = completionDate.toISOString();
+
       let tokenUsername = this.authService.getUserName();
-      projectData.manager = new UserFP(tokenUsername,tokenRole
+      let tokenId = this.authService.getUserId();
+      console.log(tokenId)
+      projectData.manager = new UserFP(tokenId,tokenUsername,tokenRole
       )
 
       let submittedProject: Project = new Project(
-        projectData.id,
+        "",
         projectData.name,
         completionDate,
         projectData.minMembers,

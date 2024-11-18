@@ -49,6 +49,14 @@ export class AuthService {
     return null;
   }
 
+  getUserId() {
+    const decodedToken = this.getDecodedToken();
+    if (decodedToken && decodedToken.id) {
+      return decodedToken.id;
+    }
+    return null;
+  }
+
   isLoggedIn(): boolean {
     let result = this.tokenIsPresent();
     return result;

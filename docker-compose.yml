@@ -1,5 +1,3 @@
-version: "3.1"
-
 services:
   angular:
     build:
@@ -7,7 +5,28 @@ services:
       dockerfile: Dockerfile
     container_name: angular
     ports:
-      - 4200:4200
+      - "4200:4200"
+    depends_on:
+      - api_gateway
+    env_file:
+      microservices/.env
+
+  api_gateway:
+    image: api_gateway
+    container_name: "api_gateway"
+    hostname: "api_gateway"
+    build:
+      context: microservices/api-gateway/
+      dockerfile: Dockerfile
+    restart: always
+    env_file:
+      microservices/.env
+    depends_on:
+      - projects_server
+      - tasks_server
+      - users_server
+    ports:
+      - "8000:8000"
 
   projects_server:
     image: project-service
@@ -18,11 +37,9 @@ services:
     container_name: "projects-server"
     hostname: "projects-server"
     ports:
-      # <port_on_local>:<port_in_machine>
-      - 8001:8001
-    environment:
-      - MONGO_DB_URI=mongodb://root:pass@mongo:27017
-      - PROJECTS_SERVICE_PORT=8001
+      - "8001:8001"
+    env_file:
+      microservices/.env
     depends_on:
       mongo:
         condition: service_healthy
@@ -36,10 +53,9 @@ services:
     container_name: "tasks-server"
     hostname: "tasks-server"
     ports:
-      # <port_on_local>:<port_in_machine>
-      - 8002:8002
-    environment:
-      - MONGO_DB_URI=mongodb://root:pass@mongo:27017
+      - "8002:8002"
+    env_file:
+      microservices/.env
     depends_on:
       mongo:
         condition: service_healthy
@@ -53,20 +69,14 @@ services:
     container_name: "users-server"
     hostname: "users-server"
     ports:
-      # <port_on_local>:<port_in_machine>
-      - 8003:8003
-      - 587:587
-    environment:
-      - MONGO_DB_URI=mongodb://root:pass@mongo:27017
-      - SMTP_HOST=smtp.gmail.com
-      - SMTP_PASSWORD=yxduddpfdnrwozfp
-      - SMTP_PORT=587
-      - SMTP_USER=nocapteam101@gmail.com
+      - "8003:8003"
+      - "587:587"
+    env_file:
+      microservices/.env
     depends_on:
       mongo:
         condition: service_healthy
 
-  # NoSQL: MongoDB
   mongo:
     image: mongo
     restart: always
@@ -76,7 +86,6 @@ services:
       MONGO_INITDB_ROOT_USERNAME: root
       MONGO_INITDB_ROOT_PASSWORD: pass
       MONGO_INITDB_DATABASE: mongoDemo
-    # Docker healtcheck - checks if database is "alive"
     healthcheck:
       test: echo 'db.runCommand("ping").ok'
       interval: 10s
@@ -85,12 +94,10 @@ services:
     volumes:
       - mongo_store:/data/db
 
-  # NoSQL: MognoExpress
   mongo-express:
     image: mongo-express
     restart: always
     environment:
-      # hostname of mongo databse
       - ME_CONFIG_MONGODB_SERVER=mongo
       - ME_CONFIG_MONGODB_ADMINUSERNAME=root
       - ME_CONFIG_MONGODB_ADMINPASSWORD=pass

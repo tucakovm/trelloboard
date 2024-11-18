@@ -16,6 +16,7 @@ import { ProjectDetailsComponent } from './project/project-details/project-detai
 import { TasksAllComponent } from './tasks/tasks-all/tasks-all.component';
 
 
+
 @NgModule({
   declarations: [
     AppComponent,

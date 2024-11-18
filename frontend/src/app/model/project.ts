@@ -1,7 +1,7 @@
 import { UserFP } from "./userForProject";
 
 export class Project {
-    id : number;
+    id : string;
     name: string;
     completionDate: Date;  
     minMembers: number;
@@ -9,7 +9,7 @@ export class Project {
     manager:UserFP;
 
     constructor(
-        id : number,
+        id : string,
         name: string,
         completionDate: Date,
         minMembers: number,
