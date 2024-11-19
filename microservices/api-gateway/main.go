@@ -20,55 +20,77 @@ import (
 
 func main() {
 	cfg := config.GetConfig()
-	log.Println(cfg.Address)
-	log.Println(cfg.ProjectServiceAddress)
+	log.Println("Starting API Gateway...")
+	log.Println("Address:", cfg.Address)
+	log.Println("ProjectServiceAddress:", cfg.ProjectServiceAddress)
+	log.Println("TaskServiceAddress:", cfg.TaskServiceAddress)
 
+	// Create a context for the gateway
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	conn, err := grpc.DialContext(
+	// ProjectService connection
+	projectConn, err := grpc.DialContext(
 		ctx,
-		"projects-server:8001",
+		cfg.ProjectServiceAddress,
 		grpc.WithBlock(),
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 	)
-
 	if err != nil {
-		log.Fatalln("Failed to dial server:", err)
+		log.Fatalln("Failed to dial ProjectService:", err)
 	}
 
+	// Create a gRPC Gateway multiplexer
 	gwmux := runtime.NewServeMux()
-	client := gateway.NewProjectServiceClient(conn)
-	err = gateway.RegisterProjectServiceHandlerClient(
-		context.Background(),
-		gwmux,
-		client,
+
+	// Register ProjectService HTTP handlers
+	projectClient := gateway.NewProjectServiceClient(projectConn)
+	if err := gateway.RegisterProjectServiceHandlerClient(ctx, gwmux, projectClient); err != nil {
+		log.Fatalln("Failed to register ProjectService gateway:", err)
+	}
+	log.Println("ProjectService Gateway registered successfully.")
+
+	// TaskService connection
+	taskConn, err := grpc.DialContext(
+		ctx,
+		cfg.TaskServiceAddress,
+		grpc.WithBlock(),
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
 	)
 	if err != nil {
-		log.Fatalln("Failed to register gateway:", err)
+		log.Fatalln("Failed to dial TaskService:", err)
 	}
-	log.Println("gRPC Gateway registered successfully.")
-	log.Printf("ProjectServiceAddress: %s", cfg.ProjectServiceAddress)
 
+	// Register TaskService HTTP handlers
+	taskClient := gateway.NewTaskServiceClient(taskConn)
+	if err := gateway.RegisterTaskServiceHandlerClient(ctx, gwmux, taskClient); err != nil {
+		log.Fatalln("Failed to register TaskService gateway:", err)
+	}
+	log.Println("TaskService Gateway registered successfully.")
+
+	// Start the HTTP server
 	gwServer := &http.Server{
 		Addr:    cfg.Address,
 		Handler: logRequests(enableCORS(gwmux)),
 	}
 
 	go func() {
-		if err := gwServer.ListenAndServe(); err != nil {
-			log.Fatal("server error: ", err)
+		log.Printf("API Gateway listening on %s\n", cfg.Address)
+		if err := gwServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			log.Fatalf("HTTP server error: %v\n", err)
 		}
 	}()
 
-	stopCh := make(chan os.Signal)
-	signal.Notify(stopCh, syscall.SIGTERM)
-
+	// Graceful shutdown handling
+	stopCh := make(chan os.Signal, 1)
+	signal.Notify(stopCh, syscall.SIGINT, syscall.SIGTERM)
 	<-stopCh
 
-	if err = gwServer.Close(); err != nil {
-		log.Fatalln("error while stopping server: ", err)
+	log.Println("Shutting down API Gateway...")
+	if err := gwServer.Close(); err != nil {
+		log.Fatalf("Error while stopping server: %v\n", err)
 	}
+	log.Println("API Gateway stopped.")
 }
 
 func enableCORS(h http.Handler) http.Handler {

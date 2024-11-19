@@ -70,3 +70,60 @@ message GetByIdRes {
 message GetByIdReq {
   string id = 1;
 }
+
+
+service TaskService {
+  rpc GetAllTasks(GetAllTasksReq) returns (GetAllTasksRes) {
+    option (google.api.http) = {
+      get: "/api/tasks/{username}"
+    };
+  }
+  rpc Create(CreateTaskReq) returns (EmptyResponse) {
+    option (google.api.http) = {
+      post: "/api/task",
+      body: "task"
+    };
+  }
+  rpc Delete(DeleteTaskReq) returns (EmptyResponse) {
+    option (google.api.http) = {
+      delete: "/api/task/{id}"
+    };
+  }
+  rpc GetById(GetByIdReq) returns (GetByIdRes) {
+    option (google.api.http) = {
+      get: "/api/task/{id}"
+    };
+  }
+}
+
+message GetAllTasksReq {
+  string username = 1;
+}
+
+message Task {
+  string id = 1;  // Unique identifier for the task
+  string name = 2;
+  google.protobuf.Timestamp dueDate = 3;  // time.Time type for due date
+  string description = 4;
+  User assignedTo = 5;  // Nested User message for task assignment
+}
+
+message GetAllTasksRes {
+  repeated Task tasks = 1;
+}
+
+message CreateTaskReq {
+  Task task = 1;
+}
+
+message DeleteTaskReq {
+  string id = 1;
+}
+
+message GetByIdRes {
+  Task task = 1;
+}
+
+message GetByIdReq {
+  string id = 1;
+}
