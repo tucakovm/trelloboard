@@ -39,7 +39,7 @@ export class RegisterComponent {
       });
 
       this.http
-        .post('http://localhost:8003/register', formData, { headers })
+        .post('http://localhost:8003/api/users/register', formData, { headers })
         .subscribe(
           (response) => {
             this.successMessage = 'Registration successful! Verification email sent.';

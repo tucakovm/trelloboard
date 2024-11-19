@@ -1,21 +1,20 @@
 package handlers
 
 import (
-	"encoding/json"
+	"context"
 	"fmt"
-	"github.com/gorilla/mux"
-	"golang.org/x/crypto/bcrypt"
-	"io/ioutil"
-	"net/http"
-	"time"
-	"users_module/models"
-	"users_module/services"
-
 	"github.com/golang-jwt/jwt/v4"
+	"golang.org/x/crypto/bcrypt"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
+	"time"
+	proto "users_module/proto/users"
+	"users_module/services"
 )
 
 type UserHandler struct {
 	service services.UserService
+	proto.UnimplementedUsersServiceServer
 }
 
 func NewUserHandler(service services.UserService) (UserHandler, error) {
@@ -49,172 +48,79 @@ type ChangePasswordRequest struct {
 	NewPassword     string `json:"newPassword" binding:"required,min=6"`
 }
 
-func (h UserHandler) RegisterHandler(w http.ResponseWriter, r *http.Request) {
-	var req RegisterRequest
+func (h UserHandler) RegisterHandler(ctx context.Context, req *proto.RegisterReq) (*proto.EmptyResponse, error) {
 
-	w.Header().Set("Access-Control-Allow-Origin", "http://localhost:4200")
-	w.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS")
-	w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
-	w.Header().Set("Content-Type", "application/json")
+	user := req.User
+	password, _ := HashPassword(user.Password)
 
-	if r.Method == http.MethodOptions {
-		w.WriteHeader(http.StatusNoContent)
-		return
-	}
-
-	err := json.NewDecoder(r.Body).Decode(&req)
+	err := h.service.RegisterUser(user.FirstName, user.LastName, user.Username, user.Email, password, user.Role)
 	if err != nil {
-		http.Error(w, `{"error": "Invalid request payload"}`, http.StatusBadRequest)
-		return
-	}
-	password, _ := HashPassword(req.Password)
-	if err != nil {
-		http.Error(w, `{"error": "Failed to hash password"}`, http.StatusInternalServerError)
-		return
+		return nil, status.Error(codes.InvalidArgument, "bad request ...")
 	}
 
-	err = h.service.RegisterUser(req.FirstName, req.LastName, req.Username, req.Email, password, req.Role)
-	if err != nil {
-		http.Error(w, `{"error": "Registration failed"}`, http.StatusInternalServerError)
-		return
-	}
-
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(map[string]string{"message": "Verification email sent"})
+	return nil, nil
 }
 
-func (h UserHandler) LoginUser(w http.ResponseWriter, r *http.Request) {
-	var req LoginRequest
-
-	w.Header().Set("Access-Control-Allow-Origin", "http://localhost:4200")
-	w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
-	w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
-	w.Header().Set("Content-Type", "application/json")
-
-	if r.Method == http.MethodOptions {
-		w.WriteHeader(http.StatusNoContent)
-		return
-	}
-
-	err := json.NewDecoder(r.Body).Decode(&req)
-	if err != nil {
-		http.Error(w, `{"error": "Invalid request payload"}`, http.StatusBadRequest)
-	}
-
+func (h UserHandler) LoginUser(ctx context.Context, req *proto.LoginReq) (*proto.LoginRes, error) {
 	// Pokušaj dohvatanja korisnika
-	user, err := h.service.GetUserByUsername(req.Username)
+	user, err := h.service.GetUserByUsername(req.LoginUser.Username)
 	if err != nil {
-		http.Error(w, `{"error": "User not found"}`, http.StatusUnauthorized)
-		return
+		return nil, status.Error(codes.InvalidArgument, "User not found ...")
 	}
 
-	if !CheckPassword(user.Password, req.Password) {
-		http.Error(w, `{"error": "Invalid username or password"}`, http.StatusInternalServerError)
-		return
+	// Provera lozinke
+	if !CheckPassword(user.Password, req.LoginUser.Password) {
+		return nil, status.Error(codes.Unauthenticated, "Invalid username or password ...")
 	}
 
-	if user.IsActive == false { // assuming Password is an exported field
-		http.Error(w, `{"error": "User is not active"}`, http.StatusUnauthorized)
-		return
+	// Provera da li je korisnik aktivan
+	if !user.IsActive {
+		return nil, status.Error(codes.PermissionDenied, "User is not active ...")
 	}
 
+	// Generisanje JWT tokena
 	token, err := GenerateJWT(user)
 	if err != nil {
-		http.Error(w, `{"error": "Error generating token"}`, http.StatusInternalServerError)
-		return
+		return nil, status.Error(codes.Internal, "Error generating token ...")
 	}
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(map[string]string{
-		"message": "Login successful",
-		"token":   token,
-	})
+
+	// Vraćanje odgovora sa tokenom
+	return &proto.LoginRes{
+		Message: "Login successful",
+		Token:   token,
+	}, nil
 }
 
-func (h UserHandler) VerifyHandler(w http.ResponseWriter, r *http.Request) {
-	var req VerifyRequest
+func (h UserHandler) VerifyHandler(ctx context.Context, req *proto.VerifyReq) (*proto.EmptyResponse, error) {
 
-	w.Header().Set("Access-Control-Allow-Origin", "http://localhost:4200")
-	w.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS")
-	w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
-	w.Header().Set("Content-Type", "application/json")
-
-	if r.Method == http.MethodOptions {
-		w.WriteHeader(http.StatusNoContent)
-		return
-	}
-
-	err := json.NewDecoder(r.Body).Decode(&req)
+	err := h.service.VerifyAndActivateUser(req.VerifyUser.Username, req.VerifyUser.Code)
 	if err != nil {
-		http.Error(w, `{"error": "Invalid request payload"}`, http.StatusBadRequest)
-		return
+		return nil, status.Error(codes.InvalidArgument, "bad request ...")
 	}
 
-	err = h.service.VerifyAndActivateUser(req.Username, req.Code)
-	if err != nil {
-		http.Error(w, `{"error": "Verification or activation failed"}`, http.StatusBadRequest)
-		return
-	}
-
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(map[string]string{"message": "User verified and saved successfully"})
+	return nil, nil
 }
 
-func (h UserHandler) GetUserByUsername(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	username := vars["username"]
+func (h UserHandler) GetUserByUsername(ctx context.Context, req *proto.GetUserByUsernameReq) (*proto.GetUserByUsernameRes, error) {
 
-	w.Header().Set("Access-Control-Allow-Origin", "http://localhost:4200")
-	w.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS")
-	w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
-	w.Header().Set("Content-Type", "application/json")
-
-	if r.Method == http.MethodOptions {
-		w.WriteHeader(http.StatusNoContent)
-		return
-	}
-
-	user, err := h.service.GetUserByUsername(username)
+	user, err := h.service.GetUserByUsername(req.Username)
 	if err != nil {
-		http.Error(w, `{"Bad request"}`, http.StatusBadRequest)
-		return
+		return nil, status.Error(codes.InvalidArgument, "bad request ...")
 	}
-
-	userJson, err := json.Marshal(user)
-	if err != nil {
-		http.Error(w, `{"error": "Decoding error"}`, http.StatusInternalServerError)
-		return
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	w.Write(userJson)
+	response := &proto.GetUserByUsernameRes{User: user}
+	return response, nil
 }
 
-func (h UserHandler) DeleteUserByUsername(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	username := vars["username"]
+func (h UserHandler) DeleteUserByUsername(ctx context.Context, req *proto.GetUserByUsernameReq) (*proto.EmptyResponse, error) {
 
-	w.Header().Set("Access-Control-Allow-Origin", "http://localhost:4200")
-	w.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS , DELETE")
-	w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
-	w.Header().Set("Content-Type", "application/json")
-
-	if r.Method == http.MethodOptions {
-		w.WriteHeader(http.StatusNoContent)
-		return
-	}
-
-	err := h.service.DeleteUserByUsername(username)
+	err := h.service.DeleteUserByUsername(req.Username)
 	if err != nil {
-		http.Error(w, `{"Bad request"}`, http.StatusBadRequest)
-		return
+		return nil, status.Error(codes.InvalidArgument, "bad request ...")
 	}
-
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
+	return nil, nil
 }
 
-func GenerateJWT(user *models.User) (string, error) {
+func GenerateJWT(user *proto.UserL) (string, error) {
 	var secretKey = []byte("matija_AFK")
 	// Kreiraj claims (podatke koji se šalju u tokenu)
 	claims := jwt.MapClaims{
@@ -248,38 +154,12 @@ func CheckPassword(hashedPassword, password string) bool {
 	return err == nil
 }
 
-func (h *UserHandler) ChangePassword(w http.ResponseWriter, r *http.Request) {
+func (h *UserHandler) ChangePassword(ctx context.Context, req *proto.ChangePasswordReq) (*proto.EmptyResponse, error) {
 
-	w.Header().Set("Access-Control-Allow-Origin", "http://localhost:4200")
-	w.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS , DELETE")
-	w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
-	w.Header().Set("Content-Type", "application/json")
-
-	if r.Method == http.MethodOptions {
-		w.WriteHeader(http.StatusNoContent)
-		return
-	}
-
-	body, err := ioutil.ReadAll(r.Body)
+	err := h.service.ChangePassword(req.ChangeUser.Username, req.ChangeUser.CurrentPassword, req.ChangeUser.NewPassword)
 	if err != nil {
-		http.Error(w, "Failed to read the request body", http.StatusBadRequest)
-		return
+		return nil, status.Error(codes.InvalidArgument, "bad request ...")
 	}
 
-	var request ChangePasswordRequest
-	if err := json.Unmarshal(body, &request); err != nil {
-		http.Error(w, "Invalid request body", http.StatusBadRequest)
-		return
-	}
-
-	err = h.service.ChangePassword(request.Username, request.CurrentPassword, request.NewPassword)
-	if err != nil {
-		http.Error(w, fmt.Sprintf("Error changing password: %s", err.Error()), http.StatusInternalServerError)
-		return
-	}
-
-	// Respond with success
-	w.WriteHeader(http.StatusOK)
-	w.Header().Set("Content-Type", "application/json")
-	w.Write([]byte(`{"message": "Password updated successfully"}`))
+	return nil, nil
 }

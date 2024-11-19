@@ -5,11 +5,7 @@ export class UserFP{
 
 
     constructor(
-<<<<<<< HEAD
-        id:string,
-=======
         id: string,
->>>>>>> gRPC
         username: string,
         role:string
 

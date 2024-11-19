@@ -2,19 +2,35 @@ package main
 
 import (
 	"context"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/reflection"
 	"log"
-	"net/http"
+	"net"
 	"os"
 	"time"
+	"users_module/config"
 	h "users_module/handlers"
+	users "users_module/proto/users"
 	"users_module/repositories"
 	"users_module/services"
-
-	"github.com/gorilla/handlers"
-	"github.com/gorilla/mux"
 )
 
 func main() {
+
+	cfg, _ := config.LoadConfig()
+	log.Println(cfg.UserPort)
+
+	listener, err := net.Listen("tcp", ":8003")
+	if err != nil {
+		log.Fatalln(err)
+	}
+	defer func(listener net.Listener) {
+		err := listener.Close()
+		if err != nil {
+			log.Fatal(err)
+		}
+	}(listener)
+
 	timeoutContext, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
@@ -36,29 +52,42 @@ func main() {
 	handlerUser, err := h.NewUserHandler(serviceUser)
 	handleErr(err)
 
-	r := mux.NewRouter()
-	r.HandleFunc("/register", handlerUser.RegisterHandler).Methods(http.MethodPost)
-	r.HandleFunc("/verify", handlerUser.VerifyHandler).Methods(http.MethodPost)
-	r.HandleFunc("/login", handlerUser.LoginUser).Methods(http.MethodPost)
-	r.HandleFunc("/user/{username}", handlerUser.GetUserByUsername).Methods(http.MethodGet)
-	r.HandleFunc("/user/{username}", handlerUser.DeleteUserByUsername).Methods(http.MethodDelete)
-	r.HandleFunc("/user/change-password", handlerUser.ChangePassword).Methods(http.MethodPut)
+	// Bootstrap gRPC server.
+	grpcServer := grpc.NewServer()
+	reflection.Register(grpcServer)
 
-	corsHandler := handlers.CORS(
-		handlers.AllowedOrigins([]string{"http://localhost:4200"}), // Set the correct origin
-		handlers.AllowedMethods([]string{"GET", "POST", "DELETE", "OPTIONS", "PUT"}),
-		handlers.AllowedHeaders([]string{"Content-Type", "Authorization"}),
-	)
+	// Bootstrap gRPC service server and respond to request.
+	users.RegisterUsersServiceServer(grpcServer, &handlerUser)
 
-	// Create the HTTP server with CORS handler
-	srv := &http.Server{
+	go func() {
+		if err := grpcServer.Serve(listener); err != nil {
+			log.Fatal("server error: ", err)
+		}
+	}()
 
-		Handler: corsHandler(r), // Apply CORS handler to router
-		Addr:    ":8003",        // Use the desired port
-	}
-
-	// Start the server
-	log.Fatal(srv.ListenAndServe())
+	//r := mux.NewRouter()
+	//r.HandleFunc("/register", handlerUser.RegisterHandler).Methods(http.MethodPost)
+	//r.HandleFunc("/verify", handlerUser.VerifyHandler).Methods(http.MethodPost)
+	//r.HandleFunc("/login", handlerUser.LoginUser).Methods(http.MethodPost)
+	//r.HandleFunc("/user/{username}", handlerUser.GetUserByUsername).Methods(http.MethodGet)
+	//r.HandleFunc("/user/{username}", handlerUser.DeleteUserByUsername).Methods(http.MethodDelete)
+	//r.HandleFunc("/user/change-password", handlerUser.ChangePassword).Methods(http.MethodPut)
+	//
+	//corsHandler := handlers.CORS(
+	//	handlers.AllowedOrigins([]string{"http://localhost:4200"}), // Set the correct origin
+	//	handlers.AllowedMethods([]string{"GET", "POST", "DELETE", "OPTIONS", "PUT"}),
+	//	handlers.AllowedHeaders([]string{"Content-Type", "Authorization"}),
+	//)
+	//
+	//// Create the HTTP server with CORS handler
+	//srv := &http.Server{
+	//
+	//	Handler: corsHandler(r), // Apply CORS handler to router
+	//	Addr:    ":8003",        // Use the desired port
+	//}
+	//
+	//// Start the server
+	//log.Fatal(srv.ListenAndServe())
 }
 
 func handleErr(err error) {

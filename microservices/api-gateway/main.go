@@ -3,9 +3,7 @@ package main
 import (
 	"api-gateway/config"
 	gateway "api-gateway/proto/gateway"
-	"bytes"
 	"context"
-	"io"
 	"log"
 	"net/http"
 	"os"
@@ -33,6 +31,13 @@ func main() {
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 	)
 
+	conn2, err := grpc.DialContext(
+		ctx,
+		"users-server:8003",
+		grpc.WithBlock(),
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
+	)
+
 	if err != nil {
 		log.Fatalln("Failed to dial server:", err)
 	}
@@ -44,6 +49,12 @@ func main() {
 		gwmux,
 		client,
 	)
+	client2 := gateway.NewUsersServiceClient(conn2)
+	err = gateway.RegisterUsersServiceHandlerClient(
+		context.Background(),
+		gwmux,
+		client2,
+	)
 	if err != nil {
 		log.Fatalln("Failed to register gateway:", err)
 	}
@@ -52,7 +63,7 @@ func main() {
 
 	gwServer := &http.Server{
 		Addr:    cfg.Address,
-		Handler: logRequests(enableCORS(gwmux)),
+		Handler: enableCORS(gwmux),
 	}
 
 	go func() {
@@ -84,25 +95,24 @@ func enableCORS(h http.Handler) http.Handler {
 	})
 }
 
-func logRequests(h http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// Logovanje osnovnih informacija o HTTP zahtevu
-		log.Printf("HTTP Request - Method: %s, URL: %s, Headers: %v", r.Method, r.URL.String(), r.Header)
-
-		// Proveri da li je to POST zahtev na /api/project (pretpostavljam da je ruta za Create)
-		if r.Method == http.MethodPost && r.URL.Path == "/api/project" {
-			// Možeš koristiti log.Println za logovanje tela zahteva
-			body, err := io.ReadAll(r.Body)
-			if err != nil {
-				log.Printf("Failed to read request body: %v", err)
-			} else {
-				log.Printf("Request Body: %s", string(body))
-			}
-			// Ne zaboravi da vratiš telo nazad, jer ćeš ga inače izgubiti
-			r.Body = io.NopCloser(bytes.NewReader(body))
-		}
-
-		// Nastavi sa obradom zahteva
-		h.ServeHTTP(w, r)
-	})
-}
+//func logRequests(h http.Handler) http.Handler {
+//	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+//		// Logovanje osnovnih informacija o HTTP zahtevu
+//		log.Printf("HTTP Request - Method: %s, URL: %s, Headers: %v", r.Method, r.URL.String(), r.Header)
+//
+//		// Proveri da li je to POST zahtev na /api/project (pretpostavljam da je ruta za Create)
+//		if r.Method == http.MethodPost && r.URL.Path == "/api/project" {
+//			// Možeš koristiti log.Println za logovanje tela zahteva
+//			body, err := io.ReadAll(r.Body)
+//			if err != nil {
+//				log.Printf("Failed to read request body: %v", err)
+//			} else {
+//				log.Printf("Request Body: %s", string(body))
+//			}
+//			// Ne zaboravi da vratiš telo nazad, jer ćeš ga inače izgubiti
+//			r.Body = io.NopCloser(bytes.NewReader(body))
+//		}
+//
+//		// Nastavi sa obradom zahteva
+//		h.ServeHTTP(w, r)
+//	})
