@@ -6,63 +6,39 @@ import "google/protobuf/timestamp.proto";
 import "google/api/annotations.proto";
 
 service TaskService {
-  rpc Create(CreateTaskReq) returns (TaskResponse) {
-    option (google.api.http) = {
-      post: "/tasks"
-      body: "*"
-    };
-  }
-
-  rpc GetAllTasks(EmptyRequest) returns (GetAllTasksRes) {
-    option (google.api.http) = {
-      get: "/tasks"
-    };
-  }
-
-  rpc DeleteTask(DeleteTaskReq) returns (EmptyResponse) {
-    option (google.api.http) = {
-      delete: "/tasks/{id}"
-    };
-  }
-
-  rpc GetAllByProjectID(GetAllByProjectIDReq) returns (GetAllTasksRes) {
-    option (google.api.http) = {
-      get: "/tasks/project/{project_id}"
-    };
-  }
+  rpc Create(CreateTaskReq) returns (EmptyResponse) {}
+  rpc GetAllByProjectId(GetAllTasksReq) returns (GetAllTasksRes) {}
+  rpc Delete(DeleteTaskReq) returns (EmptyResponse) {}
+  rpc GetById(GetByIdReq) returns (TaskResponse) {}
 }
 
 message EmptyResponse {}
 
-message EmptyRequest {}
-
 message CreateTaskReq {
-  string name = 1;
-  string description = 2;
-  google.protobuf.Timestamp due_date = 3;
-  string project_id = 4;
+  Task task = 1;
 }
-
+message GetByIdReq {
+  string id = 1;
+}
 message DeleteTaskReq {
   string id = 1;
 }
-
+message GetAllTasksReq {
+  string id = 1;
+}
 message GetAllByProjectIDReq {
   string project_id = 1;
 }
-
 message TaskResponse {
   Task task = 1;
 }
-
 message GetAllTasksRes {
   repeated Task tasks = 1;
 }
-
 message Task {
   string id = 1;
   string name = 2;
   string description = 3;
-  google.protobuf.Timestamp due_date = 4;
+  int32 status = 4;
   string project_id = 5;
 }

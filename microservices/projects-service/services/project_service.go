@@ -39,6 +39,14 @@ func (s ProjectService) GetAllProjects(id string) ([]*proto.Project, error) {
 
 	var protoProjects []*proto.Project
 	for _, dp := range projects {
+		var protoMembers []*proto.User
+		for _, member := range dp.Members {
+			protoMembers = append(protoMembers, &proto.User{
+				Id:       member.Id,
+				Username: member.Username,
+				Role:     member.Role,
+			})
+		}
 		protoProjects = append(protoProjects, &proto.Project{
 			Id:             dp.Id.Hex(),
 			Name:           dp.Name,
@@ -50,6 +58,7 @@ func (s ProjectService) GetAllProjects(id string) ([]*proto.Project, error) {
 				Username: dp.Manager.Username,
 				Role:     dp.Manager.Role,
 			},
+			Members: protoMembers,
 		})
 	}
 	return protoProjects, nil
@@ -65,7 +74,7 @@ func (s ProjectService) GetById(id string) (*proto.Project, error) {
 		return nil, status.Error(codes.Internal, "DB exception.")
 	}
 	protoProject := &proto.Project{
-		Id:             prj.Id.String(),
+		Id:             prj.Id.Hex(),
 		Name:           prj.Name,
 		CompletionDate: timestamppb.New(prj.CompletionDate),
 		MinMembers:     int32(prj.MinMembers),

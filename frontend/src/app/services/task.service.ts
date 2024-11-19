@@ -7,20 +7,20 @@ import { Task } from "../model/task";
 })
 export class TaskService {
 
-  private apiUrl = "http://localhost:8002/api" 
+  private apiUrl = "http://localhost:8000/api"
   constructor(private http:HttpClient){
 
     }
 
 
     createTask(task: Task): Observable<Task> {
-      return this.http.post<Task>(this.apiUrl+"/tasks", task, {
+      return this.http.post<Task>(this.apiUrl+"/task", task, {
         headers: new HttpHeaders({ 'Content-Type': 'application/json' })
       });
-    }  
+    }
 
     deleteTasksByProjectId(id:string): Observable<any>{
-    return this.http.delete<any>(`${this.apiUrl}/tasks/${id}`)
+    return this.http.delete<any>(`${this.apiUrl}/task/${id}`)
     }
 
     getAllTasksByProjectId(id:string):Observable<Task[]>{

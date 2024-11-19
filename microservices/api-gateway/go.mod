@@ -4,7 +4,6 @@ go 1.22.9
 
 require (
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.23.0
-	github.com/joho/godotenv v1.5.1
 	google.golang.org/grpc v1.67.1
 )
 

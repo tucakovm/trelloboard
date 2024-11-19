@@ -167,7 +167,7 @@ func (pr *ProjectRepo) Create(project *proto.Project) error {
 			Id:       project.Manager.Id,
 			Username: project.Manager.Username,
 			Role:     project.Manager.Role,
-		},
+		}, Members: make([]domain.User, 0),
 	}
 
 	// Ubaci konvertovani domain.Project u MongoDB

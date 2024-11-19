@@ -39,7 +39,8 @@ message Project {
   google.protobuf.Timestamp completionDate = 3;  // time.Time type in Go
   int32 minMembers = 4;
   int32 maxMembers = 5;
-  User manager = 6;  // Nested User message
+  User manager = 6;
+  repeated User members = 7;
 }
 
 message User {

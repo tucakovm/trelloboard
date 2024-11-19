@@ -23,7 +23,7 @@ service ProjectService {
       delete: "/api/project/{id}"
     };
   }
-  rpc GetById(GetByIdReq) returns (GetByIdRes) {
+  rpc GetById(GetProjectByIdReq) returns (GetProjectByIdRes) {
     option (google.api.http) = {
       get: "/api/project/{id}"
     };
@@ -32,17 +32,14 @@ service ProjectService {
 
 message EmptyResponse {}
 
-message GetAllProjectsReq {
-  string username = 1;
-}
-
 message Project {
   string id = 1;  // primitive.ObjectID is represented as a string
   string name = 2;
   google.protobuf.Timestamp completionDate = 3;  // time.Time type in Go
   int32 minMembers = 4;
   int32 maxMembers = 5;
-  User manager = 6;  // Nested User message
+  User manager = 6;
+  repeated User members = 7; // Nested User message
 }
 
 message User {
@@ -54,28 +51,27 @@ message User {
 message GetAllProjectsRes {
   repeated Project projects = 1;
 }
-
+message GetAllProjectsReq {
+  string username = 1;
+}
 message CreateProjectReq {
   Project project = 1;
 }
-
 message DeleteProjectReq {
   string id = 1;
 }
-
-message GetByIdRes {
+message GetProjectByIdRes {
   Project project = 1;
 }
-
-message GetByIdReq {
+message GetProjectByIdReq {
   string id = 1;
 }
 
 
 service TaskService {
-  rpc GetAllTasks(GetAllTasksReq) returns (GetAllTasksRes) {
+  rpc GetAllByProjectId(GetAllTasksReq) returns (GetAllTasksRes) {
     option (google.api.http) = {
-      get: "/api/tasks/{username}"
+      get: "/api/tasks/{id}"
     };
   }
   rpc Create(CreateTaskReq) returns (EmptyResponse) {
@@ -89,41 +85,36 @@ service TaskService {
       delete: "/api/task/{id}"
     };
   }
-  rpc GetById(GetByIdReq) returns (GetByIdRes) {
+  rpc GetById(GetByIdTaskReq) returns (GetByIdTaskRes) {
     option (google.api.http) = {
       get: "/api/task/{id}"
     };
   }
 }
 
-message GetAllTasksReq {
-  string username = 1;
-}
-
 message Task {
-  string id = 1;  // Unique identifier for the task
+  string id = 1;
   string name = 2;
-  google.protobuf.Timestamp dueDate = 3;  // time.Time type for due date
-  string description = 4;
-  User assignedTo = 5;  // Nested User message for task assignment
+  string description = 3;
+  int32 status = 4;
+  string project_id = 5;
 }
 
 message GetAllTasksRes {
   repeated Task tasks = 1;
 }
-
+message GetAllTasksReq {
+  string proj_id = 1;
+}
 message CreateTaskReq {
   Task task = 1;
 }
-
 message DeleteTaskReq {
   string id = 1;
 }
-
-message GetByIdRes {
+message GetByIdTaskRes {
   Task task = 1;
 }
-
-message GetByIdReq {
+message GetByIdTaskReq {
   string id = 1;
 }

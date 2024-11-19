@@ -1,8 +1,7 @@
 package config
 
 import (
-	"github.com/joho/godotenv"
-	"log"
+	"fmt"
 	"os"
 )
 
@@ -12,11 +11,7 @@ type Config struct {
 
 func GetConfig() Config {
 
-	if err := godotenv.Load(); err != nil {
-		log.Println("No .env file found")
-	}
-
 	return Config{
-		Address: ":" + os.Getenv("TASKS_SERVICE_PORT"),
+		Address: fmt.Sprintf(":%s", os.Getenv("TASKS_SERVICE_PORT")),
 	}
 }

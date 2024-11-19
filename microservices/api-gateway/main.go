@@ -5,6 +5,7 @@ import (
 	gateway "api-gateway/proto/gateway"
 	"bytes"
 	"context"
+	"errors"
 	"io"
 	"log"
 	"net/http"
@@ -22,17 +23,15 @@ func main() {
 	cfg := config.GetConfig()
 	log.Println("Starting API Gateway...")
 	log.Println("Address:", cfg.Address)
-	log.Println("ProjectServiceAddress:", cfg.ProjectServiceAddress)
-	log.Println("TaskServiceAddress:", cfg.TaskServiceAddress)
 
 	// Create a context for the gateway
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
 	// ProjectService connection
 	projectConn, err := grpc.DialContext(
 		ctx,
-		cfg.ProjectServiceAddress,
+		cfg.FullProjectServiceAddress(),
 		grpc.WithBlock(),
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 	)
@@ -53,7 +52,7 @@ func main() {
 	// TaskService connection
 	taskConn, err := grpc.DialContext(
 		ctx,
-		cfg.TaskServiceAddress,
+		cfg.FullTaskServiceAddress(),
 		grpc.WithBlock(),
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 	)
@@ -64,7 +63,7 @@ func main() {
 	// Register TaskService HTTP handlers
 	taskClient := gateway.NewTaskServiceClient(taskConn)
 	if err := gateway.RegisterTaskServiceHandlerClient(ctx, gwmux, taskClient); err != nil {
-		log.Fatalln("Failed to register TaskService gateway:", err)
+		log.Fatalln("Failed to register TaskService gateway:", cfg.FullTaskServiceAddress(), err)
 	}
 	log.Println("TaskService Gateway registered successfully.")
 
@@ -76,7 +75,7 @@ func main() {
 
 	go func() {
 		log.Printf("API Gateway listening on %s\n", cfg.Address)
-		if err := gwServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+		if err := gwServer.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			log.Fatalf("HTTP server error: %v\n", err)
 		}
 	}()
@@ -112,7 +111,7 @@ func logRequests(h http.Handler) http.Handler {
 		log.Printf("HTTP Request - Method: %s, URL: %s, Headers: %v", r.Method, r.URL.String(), r.Header)
 
 		// Proveri da li je to POST zahtev na /api/project (pretpostavljam da je ruta za Create)
-		if r.Method == http.MethodPost && r.URL.Path == "/api/project" {
+		if r.Method == http.MethodPost && r.URL.Path == "/api/task" {
 			// Možeš koristiti log.Println za logovanje tela zahteva
 			body, err := io.ReadAll(r.Body)
 			if err != nil {

@@ -29,7 +29,7 @@ func NewConnectionHandler(service services.ProjectService) (ProjectHandler, erro
 func (h ProjectHandler) Create(ctx context.Context, req *proto.CreateProjectReq) (*proto.EmptyResponse, error) {
 	log.Printf("Received Create Project request: %v", req.Project)
 
-	err := h.service.Create(req.Project) // Prosleđivanje samo req.Project
+	err := h.service.Create(req.Project)
 	if err != nil {
 		log.Printf("Error creating project: %v", err)
 		return nil, status.Error(codes.InvalidArgument, "bad request ...")
@@ -39,8 +39,8 @@ func (h ProjectHandler) Create(ctx context.Context, req *proto.CreateProjectReq)
 
 func (h ProjectHandler) GetAllProjects(ctx context.Context, req *proto.GetAllProjectsReq) (*proto.GetAllProjectsRes, error) {
 	allProducts, err := h.service.GetAllProjects(req.Username)
-	log.Println("project handler getAll")
-	log.Println(allProducts)
+	//log.Println("project handler getAll")
+	//log.Println(allProducts)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, "bad request ...")
 	}
@@ -60,6 +60,7 @@ func (h ProjectHandler) GetAllProjects(ctx context.Context, req *proto.GetAllPro
 	//		log.Println("Deserialized response:", deserializedResponse)
 	//	}
 	//}
+	log.Println(response)
 
 	return response, nil
 }

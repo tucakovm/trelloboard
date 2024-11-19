@@ -233,3 +233,219 @@ var ProjectService_ServiceDesc = grpc.ServiceDesc{
 	Streams:  []grpc.StreamDesc{},
 	Metadata: "api-gateway.proto",
 }
+
+const (
+	TaskService_GetAllTasks_FullMethodName = "/TaskService/GetAllTasks"
+	TaskService_Create_FullMethodName      = "/TaskService/Create"
+	TaskService_Delete_FullMethodName      = "/TaskService/Delete"
+	TaskService_GetById_FullMethodName     = "/TaskService/GetById"
+)
+
+// TaskServiceClient is the client API for TaskService service.
+//
+// For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
+type TaskServiceClient interface {
+	GetAllTasks(ctx context.Context, in *GetAllTasksReq, opts ...grpc.CallOption) (*GetAllTasksRes, error)
+	Create(ctx context.Context, in *CreateTaskReq, opts ...grpc.CallOption) (*EmptyResponse, error)
+	Delete(ctx context.Context, in *DeleteTaskReq, opts ...grpc.CallOption) (*EmptyResponse, error)
+	GetById(ctx context.Context, in *GetByIdTaskReq, opts ...grpc.CallOption) (*GetByIdTaskRes, error)
+}
+
+type taskServiceClient struct {
+	cc grpc.ClientConnInterface
+}
+
+func NewTaskServiceClient(cc grpc.ClientConnInterface) TaskServiceClient {
+	return &taskServiceClient{cc}
+}
+
+func (c *taskServiceClient) GetAllTasks(ctx context.Context, in *GetAllTasksReq, opts ...grpc.CallOption) (*GetAllTasksRes, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetAllTasksRes)
+	err := c.cc.Invoke(ctx, TaskService_GetAllTasks_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *taskServiceClient) Create(ctx context.Context, in *CreateTaskReq, opts ...grpc.CallOption) (*EmptyResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(EmptyResponse)
+	err := c.cc.Invoke(ctx, TaskService_Create_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *taskServiceClient) Delete(ctx context.Context, in *DeleteTaskReq, opts ...grpc.CallOption) (*EmptyResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(EmptyResponse)
+	err := c.cc.Invoke(ctx, TaskService_Delete_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *taskServiceClient) GetById(ctx context.Context, in *GetByIdTaskReq, opts ...grpc.CallOption) (*GetByIdTaskRes, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetByIdTaskRes)
+	err := c.cc.Invoke(ctx, TaskService_GetById_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// TaskServiceServer is the server API for TaskService service.
+// All implementations must embed UnimplementedTaskServiceServer
+// for forward compatibility.
+type TaskServiceServer interface {
+	GetAllTasks(context.Context, *GetAllTasksReq) (*GetAllTasksRes, error)
+	Create(context.Context, *CreateTaskReq) (*EmptyResponse, error)
+	Delete(context.Context, *DeleteTaskReq) (*EmptyResponse, error)
+	GetById(context.Context, *GetByIdTaskReq) (*GetByIdTaskRes, error)
+	mustEmbedUnimplementedTaskServiceServer()
+}
+
+// UnimplementedTaskServiceServer must be embedded to have
+// forward compatible implementations.
+//
+// NOTE: this should be embedded by value instead of pointer to avoid a nil
+// pointer dereference when methods are called.
+type UnimplementedTaskServiceServer struct{}
+
+func (UnimplementedTaskServiceServer) GetAllTasks(context.Context, *GetAllTasksReq) (*GetAllTasksRes, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetAllTasks not implemented")
+}
+func (UnimplementedTaskServiceServer) Create(context.Context, *CreateTaskReq) (*EmptyResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Create not implemented")
+}
+func (UnimplementedTaskServiceServer) Delete(context.Context, *DeleteTaskReq) (*EmptyResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Delete not implemented")
+}
+func (UnimplementedTaskServiceServer) GetById(context.Context, *GetByIdTaskReq) (*GetByIdTaskRes, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetById not implemented")
+}
+func (UnimplementedTaskServiceServer) mustEmbedUnimplementedTaskServiceServer() {}
+func (UnimplementedTaskServiceServer) testEmbeddedByValue()                     {}
+
+// UnsafeTaskServiceServer may be embedded to opt out of forward compatibility for this service.
+// Use of this interface is not recommended, as added methods to TaskServiceServer will
+// result in compilation errors.
+type UnsafeTaskServiceServer interface {
+	mustEmbedUnimplementedTaskServiceServer()
+}
+
+func RegisterTaskServiceServer(s grpc.ServiceRegistrar, srv TaskServiceServer) {
+	// If the following call pancis, it indicates UnimplementedTaskServiceServer was
+	// embedded by pointer and is nil.  This will cause panics if an
+	// unimplemented method is ever invoked, so we test this at initialization
+	// time to prevent it from happening at runtime later due to I/O.
+	if t, ok := srv.(interface{ testEmbeddedByValue() }); ok {
+		t.testEmbeddedByValue()
+	}
+	s.RegisterService(&TaskService_ServiceDesc, srv)
+}
+
+func _TaskService_GetAllTasks_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetAllTasksReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(TaskServiceServer).GetAllTasks(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: TaskService_GetAllTasks_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(TaskServiceServer).GetAllTasks(ctx, req.(*GetAllTasksReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _TaskService_Create_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateTaskReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(TaskServiceServer).Create(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: TaskService_Create_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(TaskServiceServer).Create(ctx, req.(*CreateTaskReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _TaskService_Delete_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeleteTaskReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(TaskServiceServer).Delete(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: TaskService_Delete_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(TaskServiceServer).Delete(ctx, req.(*DeleteTaskReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _TaskService_GetById_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetByIdTaskReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(TaskServiceServer).GetById(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: TaskService_GetById_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(TaskServiceServer).GetById(ctx, req.(*GetByIdTaskReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+// TaskService_ServiceDesc is the grpc.ServiceDesc for TaskService service.
+// It's only intended for direct use with grpc.RegisterService,
+// and not to be introspected or modified (even as a copy)
+var TaskService_ServiceDesc = grpc.ServiceDesc{
+	ServiceName: "TaskService",
+	HandlerType: (*TaskServiceServer)(nil),
+	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "GetAllTasks",
+			Handler:    _TaskService_GetAllTasks_Handler,
+		},
+		{
+			MethodName: "Create",
+			Handler:    _TaskService_Create_Handler,
+		},
+		{
+			MethodName: "Delete",
+			Handler:    _TaskService_Delete_Handler,
+		},
+		{
+			MethodName: "GetById",
+			Handler:    _TaskService_GetById_Handler,
+		},
+	},
+	Streams:  []grpc.StreamDesc{},
+	Metadata: "api-gateway.proto",
+}

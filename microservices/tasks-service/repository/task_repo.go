@@ -3,12 +3,12 @@ package repository
 import (
 	"context"
 	"fmt"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"log"
 	"os"
 	"tasks-service/domain"
 	"time"
 
-	"github.com/google/uuid"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -18,7 +18,7 @@ type TaskRepo struct {
 	Cli *mongo.Client
 }
 
-func NewTaskRepo(ctx context.Context) (*TaskRepo, error) {
+func NewTaskRepo(ctx context.Context, logger *log.Logger) (*TaskRepo, error) {
 	dburi := os.Getenv("MONGO_DB_URI")
 	if dburi == "" {
 		return nil, fmt.Errorf("MONGO_DB_URI is not set")
@@ -42,6 +42,14 @@ func NewTaskRepo(ctx context.Context) (*TaskRepo, error) {
 	}
 
 	return &TaskRepo{Cli: client}, nil
+}
+
+func (tr *TaskRepo) Disconnect(ctx context.Context) error {
+	err := tr.Cli.Disconnect(ctx)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func insertInitialTasks(client *mongo.Client) error {
@@ -98,7 +106,7 @@ func (tr *TaskRepo) getCollection() *mongo.Collection {
 	return tr.Cli.Database("mongoDemo").Collection("tasks")
 }
 
-func (tr *TaskRepo) Create(task domain.Task) (domain.Task, error) {
+func (tr *TaskRepo) Create(task domain.Task) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 	log.Println(task)
@@ -106,17 +114,17 @@ func (tr *TaskRepo) Create(task domain.Task) (domain.Task, error) {
 	collection := tr.getCollection()
 	if collection == nil {
 		log.Println("Failed to retrieve collection")
-		return domain.Task{}, fmt.Errorf("collection is nil")
+		return fmt.Errorf("collection is nil")
 	}
 
 	_, err := collection.InsertOne(ctx, task)
 	if err != nil {
 		log.Println("Error inserting task:", err, task)
-		return domain.Task{}, err
+		return err
 	}
 
 	log.Println("Task created successfully:", task)
-	return task, nil
+	return nil
 }
 
 func (tr *TaskRepo) GetAll() ([]domain.Task, error) {
@@ -153,28 +161,19 @@ func (tr *TaskRepo) GetAll() ([]domain.Task, error) {
 	return tasks, nil
 }
 
-func (tr *TaskRepo) Delete(id uuid.UUID) error {
+func (tr *TaskRepo) Delete(id string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
+	taskCollection := tr.getCollection()
 
-	collection := tr.getCollection()
-	if collection == nil {
-		return fmt.Errorf("failed to retrieve collection")
-	}
-
-	filter := bson.M{"id": id}
-	result, err := collection.DeleteOne(ctx, filter)
+	objID, _ := primitive.ObjectIDFromHex(id)
+	filter := bson.D{{Key: "_id", Value: objID}}
+	result, err := taskCollection.DeleteOne(ctx, filter)
 	if err != nil {
-		log.Println("Error deleting task:", err)
+		log.Println(err)
 		return err
 	}
-
-	if result.DeletedCount == 0 {
-		log.Println("No task found with ID:", id)
-		return fmt.Errorf("no task found with the provided ID")
-	}
-
-	log.Printf("Task with ID %s deleted successfully", id)
+	log.Printf("Documents deleted: %v\n", result.DeletedCount)
 	return nil
 }
 
@@ -202,28 +201,16 @@ func (tr *TaskRepo) GetAllByProjectID(projectID string) (domain.Tasks, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	collection := tr.getCollection()
-	if collection == nil {
-		return nil, fmt.Errorf("failed to retrieve collection")
-	}
-
-	filter := bson.M{"project_id": projectID}
-
-	cursor, err := collection.Find(ctx, filter)
-	if err != nil {
-		log.Println("Error fetching tasks by ProjectID:", err)
-		return nil, err
-	}
-	defer cursor.Close(ctx)
-
+	tasksCollection := tr.getCollection()
 	var tasks domain.Tasks
-	for cursor.Next(ctx) {
-		var task domain.Task
-		if err := cursor.Decode(&task); err != nil {
-			log.Println("Error decoding task:", err)
-			return nil, err
-		}
-		tasks = append(tasks, &task)
+
+	// Query only projects where the manager's ID matches the provided id
+	filter := bson.M{"project_id": projectID}
+	cursor, err := tasksCollection.Find(ctx, filter)
+	if err != nil {
+		log.Println("Error finding tasks:", err)
+		return nil, err
+
 	}
 
 	if err := cursor.Err(); err != nil {
@@ -233,4 +220,29 @@ func (tr *TaskRepo) GetAllByProjectID(projectID string) (domain.Tasks, error) {
 
 	log.Printf("Fetched %d tasks with ProjectID %s", len(tasks), projectID)
 	return tasks, nil
+}
+
+func (tr *TaskRepo) GetById(id string) (*domain.Task, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	projectsCollection := tr.getCollection()
+
+	// Convert id string to ObjectID
+	objID, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		log.Println("Invalid ID format:", err)
+		return nil, err
+	}
+
+	// Find project by _id
+	filter := bson.M{"_id": objID}
+	var t domain.Task
+	err = projectsCollection.FindOne(ctx, filter).Decode(&t)
+	if err != nil {
+		log.Println("Error finding task by ID:", err)
+		return nil, err
+	}
+
+	return &t, nil
 }
