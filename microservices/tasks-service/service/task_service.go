@@ -62,7 +62,8 @@ func (s *TaskService) GetTasksByProjectId(id string) ([]*proto.Task, error) {
 	if err != nil {
 		return nil, status.Error(codes.Internal, "DB exception.")
 	}
-
+	log.Println("SErvice tasks")
+	log.Println(tasks)
 	var protoTasks []*proto.Task
 	for _, dp := range tasks {
 		protoTasks = append(protoTasks, &proto.Task{
@@ -73,5 +74,6 @@ func (s *TaskService) GetTasksByProjectId(id string) ([]*proto.Task, error) {
 			ProjectId:   dp.ProjectID,
 		})
 	}
+	log.Println(protoTasks)
 	return protoTasks, err
 }

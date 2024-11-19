@@ -4,14 +4,14 @@ export class Task{
     id : string;
     name: string;
     description: string;
-    status: Status;
+    status: string;
     project_id?: string
 
   constructor(
     id : string,
     name: string,
     description: string,
-    status: Status,
+    status: string,
     projectId: string
   ) {
         this.id = id;
@@ -21,8 +21,8 @@ export class Task{
         this.project_id = projectId;
     }
 
-    get statusText(): string {
-      return Status[this.status];
-  }
+  //   get statusText(): string {
+  //     return Status[this.status];
+  // }
 
 }

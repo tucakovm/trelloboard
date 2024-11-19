@@ -204,17 +204,27 @@ func (tr *TaskRepo) GetAllByProjectID(projectID string) (domain.Tasks, error) {
 	tasksCollection := tr.getCollection()
 	var tasks domain.Tasks
 
-	// Query only projects where the manager's ID matches the provided id
+	// Query only tasks where the project_id matches the ObjectId
 	filter := bson.M{"project_id": projectID}
 	cursor, err := tasksCollection.Find(ctx, filter)
 	if err != nil {
 		log.Println("Error finding tasks:", err)
 		return nil, err
+	}
+	defer cursor.Close(ctx)
 
+	// Iterate over the cursor and decode each document into the tasks slice
+	for cursor.Next(ctx) {
+		var task *domain.Task
+		if err := cursor.Decode(&task); err != nil {
+			log.Println("Error decoding task:", err)
+			continue
+		}
+		tasks = append(tasks, task)
 	}
 
 	if err := cursor.Err(); err != nil {
-		log.Println("Error iterating over tasks:", err)
+		log.Println("Cursor error:", err)
 		return nil, err
 	}
 

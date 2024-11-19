@@ -96,7 +96,7 @@ message Task {
   string id = 1;
   string name = 2;
   string description = 3;
-  int32 status = 4;
+  string status = 4;
   string project_id = 5;
 }
 
@@ -104,7 +104,7 @@ message GetAllTasksRes {
   repeated Task tasks = 1;
 }
 message GetAllTasksReq {
-  string proj_id = 1;
+  string id = 1;
 }
 message CreateTaskReq {
   Task task = 1;

@@ -162,7 +162,7 @@ func local_request_ProjectService_Delete_0(ctx context.Context, marshaler runtim
 }
 
 func request_ProjectService_GetById_0(ctx context.Context, marshaler runtime.Marshaler, client ProjectServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq GetByIdReq
+	var protoReq GetProjectByIdReq
 	var metadata runtime.ServerMetadata
 
 	var (
@@ -188,7 +188,7 @@ func request_ProjectService_GetById_0(ctx context.Context, marshaler runtime.Mar
 }
 
 func local_request_ProjectService_GetById_0(ctx context.Context, marshaler runtime.Marshaler, server ProjectServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq GetByIdReq
+	var protoReq GetProjectByIdReq
 	var metadata runtime.ServerMetadata
 
 	var (
@@ -213,7 +213,7 @@ func local_request_ProjectService_GetById_0(ctx context.Context, marshaler runti
 
 }
 
-func request_TaskService_GetAllTasks_0(ctx context.Context, marshaler runtime.Marshaler, client TaskServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+func request_TaskService_GetAllByProjectId_0(ctx context.Context, marshaler runtime.Marshaler, client TaskServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var protoReq GetAllTasksReq
 	var metadata runtime.ServerMetadata
 
@@ -224,22 +224,22 @@ func request_TaskService_GetAllTasks_0(ctx context.Context, marshaler runtime.Ma
 		_   = err
 	)
 
-	val, ok = pathParams["username"]
+	val, ok = pathParams["id"]
 	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "username")
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "id")
 	}
 
-	protoReq.Username, err = runtime.String(val)
+	protoReq.Id, err = runtime.String(val)
 	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "username", err)
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "id", err)
 	}
 
-	msg, err := client.GetAllTasks(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
+	msg, err := client.GetAllByProjectId(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
 	return msg, metadata, err
 
 }
 
-func local_request_TaskService_GetAllTasks_0(ctx context.Context, marshaler runtime.Marshaler, server TaskServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+func local_request_TaskService_GetAllByProjectId_0(ctx context.Context, marshaler runtime.Marshaler, server TaskServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var protoReq GetAllTasksReq
 	var metadata runtime.ServerMetadata
 
@@ -250,17 +250,17 @@ func local_request_TaskService_GetAllTasks_0(ctx context.Context, marshaler runt
 		_   = err
 	)
 
-	val, ok = pathParams["username"]
+	val, ok = pathParams["id"]
 	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "username")
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "id")
 	}
 
-	protoReq.Username, err = runtime.String(val)
+	protoReq.Id, err = runtime.String(val)
 	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "username", err)
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "id", err)
 	}
 
-	msg, err := server.GetAllTasks(ctx, &protoReq)
+	msg, err := server.GetAllByProjectId(ctx, &protoReq)
 	return msg, metadata, err
 
 }
@@ -512,7 +512,7 @@ func RegisterProjectServiceHandlerServer(ctx context.Context, mux *runtime.Serve
 // GRPC interceptors will not work for this type of registration. To use interceptors, you must use the "runtime.WithMiddlewares" option in the "runtime.NewServeMux" call.
 func RegisterTaskServiceHandlerServer(ctx context.Context, mux *runtime.ServeMux, server TaskServiceServer) error {
 
-	mux.Handle("GET", pattern_TaskService_GetAllTasks_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("GET", pattern_TaskService_GetAllByProjectId_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		var stream runtime.ServerTransportStream
@@ -520,12 +520,12 @@ func RegisterTaskServiceHandlerServer(ctx context.Context, mux *runtime.ServeMux
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/.TaskService/GetAllTasks", runtime.WithHTTPPathPattern("/api/tasks/{username}"))
+		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/.TaskService/GetAllByProjectId", runtime.WithHTTPPathPattern("/api/tasks/{id}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := local_request_TaskService_GetAllTasks_0(annotatedContext, inboundMarshaler, server, req, pathParams)
+		resp, md, err := local_request_TaskService_GetAllByProjectId_0(annotatedContext, inboundMarshaler, server, req, pathParams)
 		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
 		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
 		if err != nil {
@@ -533,7 +533,7 @@ func RegisterTaskServiceHandlerServer(ctx context.Context, mux *runtime.ServeMux
 			return
 		}
 
-		forward_TaskService_GetAllTasks_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_TaskService_GetAllByProjectId_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
@@ -802,25 +802,25 @@ func RegisterTaskServiceHandler(ctx context.Context, mux *runtime.ServeMux, conn
 // "TaskServiceClient" to call the correct interceptors. This client ignores the HTTP middlewares.
 func RegisterTaskServiceHandlerClient(ctx context.Context, mux *runtime.ServeMux, client TaskServiceClient) error {
 
-	mux.Handle("GET", pattern_TaskService_GetAllTasks_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("GET", pattern_TaskService_GetAllByProjectId_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/.TaskService/GetAllTasks", runtime.WithHTTPPathPattern("/api/tasks/{username}"))
+		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/.TaskService/GetAllByProjectId", runtime.WithHTTPPathPattern("/api/tasks/{id}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := request_TaskService_GetAllTasks_0(annotatedContext, inboundMarshaler, client, req, pathParams)
+		resp, md, err := request_TaskService_GetAllByProjectId_0(annotatedContext, inboundMarshaler, client, req, pathParams)
 		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
 		if err != nil {
 			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
 			return
 		}
 
-		forward_TaskService_GetAllTasks_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_TaskService_GetAllByProjectId_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
@@ -894,7 +894,7 @@ func RegisterTaskServiceHandlerClient(ctx context.Context, mux *runtime.ServeMux
 }
 
 var (
-	pattern_TaskService_GetAllTasks_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2}, []string{"api", "tasks", "username"}, ""))
+	pattern_TaskService_GetAllByProjectId_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2}, []string{"api", "tasks", "id"}, ""))
 
 	pattern_TaskService_Create_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"api", "task"}, ""))
 
@@ -904,7 +904,7 @@ var (
 )
 
 var (
-	forward_TaskService_GetAllTasks_0 = runtime.ForwardResponseMessage
+	forward_TaskService_GetAllByProjectId_0 = runtime.ForwardResponseMessage
 
 	forward_TaskService_Create_0 = runtime.ForwardResponseMessage
 

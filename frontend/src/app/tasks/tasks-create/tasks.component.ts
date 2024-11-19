@@ -34,7 +34,7 @@ export class TasksComponent implements OnInit {
   onSubmit(): void {
     if (this.taskForm.valid) {
       const taskData: Task = this.taskForm.value;
-      const submittedTask: Task = new Task("",taskData.name, taskData.description, Status.Pending, this.projectId);
+      const submittedTask: Task = new Task("",taskData.name, taskData.description, taskData.status, this.projectId);
 
       console.log('Submitted Task Data:', submittedTask);
       this.taskService.createTask(submittedTask).subscribe({
