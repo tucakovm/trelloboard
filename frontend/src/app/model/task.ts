@@ -1,25 +1,28 @@
 import { Status } from "./status";
 
 export class Task{
+    id : string | null;
     name: string;
     description: string;
-    status: Status;
+    status: string;
     project_id?: string
 
   constructor(
+    id : string | null,
     name: string,
     description: string,
-    status: Status,
+    status: string,
     projectId: string
   ) {
+        this.id = id;
         this.name = name;
         this.description = description;
         this.status = status;
         this.project_id = projectId;
     }
 
-    get statusText(): string {
-      return Status[this.status];
-  }
+  //   get statusText(): string {
+  //     return Status[this.status];
+  // }
 
 }

@@ -5,7 +5,11 @@ export class UserFP{
 
 
     constructor(
+<<<<<<< HEAD
         id: string,
+=======
+        id:string,
+>>>>>>> feature/grpc/task
         username: string,
         role:string
 

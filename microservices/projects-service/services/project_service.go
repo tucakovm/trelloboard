@@ -1,7 +1,6 @@
 package services
 
 import (
-	"errors"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -22,13 +21,22 @@ func NewProjectService(repo repositories.ProjectRepo) (ProjectService, error) {
 }
 
 func (s ProjectService) Create(req *proto.Project) error {
-	if req == nil {
-		log.Println("Received nil project.")
-		return errors.New("received nil project")
+	completionDate := req.CompletionDate.AsTime()
+
+	prj := &domain.Project{
+		Name:           req.Name,
+		CompletionDate: completionDate.UTC(),
+		MinMembers:     req.MinMembers,
+		MaxMembers:     req.MaxMembers,
+		Manager: domain.User{
+			Id:       req.Manager.Id,
+			Username: req.Manager.Username,
+			Role:     req.Manager.Role,
+		}, Members: make([]domain.User, 0),
 	}
 
 	log.Printf("SERVICE Received Create Project request: %v", req)
-	return s.repo.Create(req)
+	return s.repo.Create(prj)
 }
 
 func (s ProjectService) GetAllProjects(id string) ([]*proto.Project, error) {
@@ -39,6 +47,14 @@ func (s ProjectService) GetAllProjects(id string) ([]*proto.Project, error) {
 
 	var protoProjects []*proto.Project
 	for _, dp := range projects {
+		var protoMembers []*proto.User
+		for _, member := range dp.Members {
+			protoMembers = append(protoMembers, &proto.User{
+				Id:       member.Id,
+				Username: member.Username,
+				Role:     member.Role,
+			})
+		}
 		protoProjects = append(protoProjects, &proto.Project{
 			Id:             dp.Id.Hex(),
 			Name:           dp.Name,
@@ -50,6 +66,7 @@ func (s ProjectService) GetAllProjects(id string) ([]*proto.Project, error) {
 				Username: dp.Manager.Username,
 				Role:     dp.Manager.Role,
 			},
+			Members: protoMembers,
 		})
 	}
 	return protoProjects, nil
@@ -65,7 +82,7 @@ func (s ProjectService) GetById(id string) (*proto.Project, error) {
 		return nil, status.Error(codes.Internal, "DB exception.")
 	}
 	protoProject := &proto.Project{
-		Id:             prj.Id.String(),
+		Id:             prj.Id.Hex(),
 		Name:           prj.Name,
 		CompletionDate: timestamppb.New(prj.CompletionDate),
 		MinMembers:     int32(prj.MinMembers),

@@ -3,30 +3,35 @@ package main
 import (
 	"api-gateway/config"
 	gateway "api-gateway/proto/gateway"
+	"bytes"
 	"context"
+	"errors"
+	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
+	"io"
+
 	"log"
 	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
-
-	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
 )
 
 func main() {
 	cfg := config.GetConfig()
-	log.Println(cfg.Address)
-	log.Println(cfg.ProjectServiceAddress)
+	log.Println("Starting API Gateway...")
+	log.Println("Address:", cfg.Address)
 
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	// Create a context for the gateway
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	conn, err := grpc.DialContext(
+	// ProjectService connection
+	projectConn, err := grpc.DialContext(
 		ctx,
-		"projects-server:8001",
+		cfg.FullProjectServiceAddress(),
 		grpc.WithBlock(),
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 	)
@@ -39,15 +44,25 @@ func main() {
 	)
 
 	if err != nil {
-		log.Fatalln("Failed to dial server:", err)
+		log.Fatalln("Failed to dial ProjectService:", err)
 	}
 
+	// Create a gRPC Gateway multiplexer
 	gwmux := runtime.NewServeMux()
-	client := gateway.NewProjectServiceClient(conn)
-	err = gateway.RegisterProjectServiceHandlerClient(
-		context.Background(),
-		gwmux,
-		client,
+
+	// Register ProjectService HTTP handlers
+	projectClient := gateway.NewProjectServiceClient(projectConn)
+	if err := gateway.RegisterProjectServiceHandlerClient(ctx, gwmux, projectClient); err != nil {
+		log.Fatalln("Failed to register ProjectService gateway:", err)
+	}
+	log.Println("ProjectService Gateway registered successfully.")
+
+	// TaskService connection
+	taskConn, err := grpc.DialContext(
+		ctx,
+		cfg.FullTaskServiceAddress(),
+		grpc.WithBlock(),
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
 	)
 	client2 := gateway.NewUsersServiceClient(conn2)
 	err = gateway.RegisterUsersServiceHandlerClient(
@@ -56,30 +71,39 @@ func main() {
 		client2,
 	)
 	if err != nil {
-		log.Fatalln("Failed to register gateway:", err)
+		log.Fatalln("Failed to dial TaskService:", err)
 	}
-	log.Println("gRPC Gateway registered successfully.")
-	log.Printf("ProjectServiceAddress: %s", cfg.ProjectServiceAddress)
 
+	// Register TaskService HTTP handlers
+	taskClient := gateway.NewTaskServiceClient(taskConn)
+	if err := gateway.RegisterTaskServiceHandlerClient(ctx, gwmux, taskClient); err != nil {
+		log.Fatalln("Failed to register TaskService gateway:", cfg.FullTaskServiceAddress(), err)
+	}
+	log.Println("TaskService Gateway registered successfully.")
+
+	// Start the HTTP server
 	gwServer := &http.Server{
 		Addr:    cfg.Address,
 		Handler: enableCORS(gwmux),
 	}
 
 	go func() {
-		if err := gwServer.ListenAndServe(); err != nil {
-			log.Fatal("server error: ", err)
+		log.Printf("API Gateway listening on %s\n", cfg.Address)
+		if err := gwServer.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+			log.Fatalf("HTTP server error: %v\n", err)
 		}
 	}()
 
-	stopCh := make(chan os.Signal)
-	signal.Notify(stopCh, syscall.SIGTERM)
-
+	// Graceful shutdown handling
+	stopCh := make(chan os.Signal, 1)
+	signal.Notify(stopCh, syscall.SIGINT, syscall.SIGTERM)
 	<-stopCh
 
-	if err = gwServer.Close(); err != nil {
-		log.Fatalln("error while stopping server: ", err)
+	log.Println("Shutting down API Gateway...")
+	if err := gwServer.Close(); err != nil {
+		log.Fatalf("Error while stopping server: %v\n", err)
 	}
+	log.Println("API Gateway stopped.")
 }
 
 func enableCORS(h http.Handler) http.Handler {
@@ -95,24 +119,25 @@ func enableCORS(h http.Handler) http.Handler {
 	})
 }
 
-//func logRequests(h http.Handler) http.Handler {
-//	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-//		// Logovanje osnovnih informacija o HTTP zahtevu
-//		log.Printf("HTTP Request - Method: %s, URL: %s, Headers: %v", r.Method, r.URL.String(), r.Header)
-//
-//		// Proveri da li je to POST zahtev na /api/project (pretpostavljam da je ruta za Create)
-//		if r.Method == http.MethodPost && r.URL.Path == "/api/project" {
-//			// Možeš koristiti log.Println za logovanje tela zahteva
-//			body, err := io.ReadAll(r.Body)
-//			if err != nil {
-//				log.Printf("Failed to read request body: %v", err)
-//			} else {
-//				log.Printf("Request Body: %s", string(body))
-//			}
-//			// Ne zaboravi da vratiš telo nazad, jer ćeš ga inače izgubiti
-//			r.Body = io.NopCloser(bytes.NewReader(body))
-//		}
-//
-//		// Nastavi sa obradom zahteva
-//		h.ServeHTTP(w, r)
-//	})
+func logRequests(h http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Logovanje osnovnih informacija o HTTP zahtevu
+		log.Printf("HTTP Request - Method: %s, URL: %s, Headers: %v", r.Method, r.URL.String(), r.Header)
+
+		// Proveri da li je to POST zahtev na /api/project (pretpostavljam da je ruta za Create)
+		if r.Method == http.MethodPost && r.URL.Path == "/api/task" {
+			// Možeš koristiti log.Println za logovanje tela zahteva
+			body, err := io.ReadAll(r.Body)
+			if err != nil {
+				log.Printf("Failed to read request body: %v", err)
+			} else {
+				log.Printf("Request Body: %s", string(body))
+			}
+			// Ne zaboravi da vratiš telo nazad, jer ćeš ga inače izgubiti
+			r.Body = io.NopCloser(bytes.NewReader(body))
+		}
+
+		// Nastavi sa obradom zahteva
+		h.ServeHTTP(w, r)
+	})
+}

@@ -1,131 +1,57 @@
 package handlers
 
 import (
-	"encoding/json"
-	"io"
+	"context"
 	"log"
-	"net/http"
-	"tasks-service/domain"
-	"tasks-service/repository"
+	proto "tasks-service/proto/task"
+	"tasks-service/service"
 
-	"github.com/gorilla/mux"
-
-	"github.com/google/uuid"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
+	//"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 type TaskHandler struct {
-	repo *repository.TaskRepo // Use a pointer here
+	service *service.TaskService // Use a pointer here
+	proto.UnimplementedTaskServiceServer
 }
 
-func NewTaskHandler(repo *repository.TaskRepo) *TaskHandler { // Accept pointer in constructor
-	return &TaskHandler{repo: repo}
+func NewTaskHandler(service *service.TaskService) *TaskHandler {
+	return &TaskHandler{service: service}
 }
 
-func (h *TaskHandler) decodeBodyTask(r io.Reader) (*domain.Task, error) {
-	dec := json.NewDecoder(r)
-	dec.DisallowUnknownFields()
-
-	var task domain.Task
-	if err := dec.Decode(&task); err != nil {
-		return nil, err
-	}
-	return &task, nil
-}
-
-func (h *TaskHandler) renderJSON(w http.ResponseWriter, v interface{}, code int) {
-	js, err := json.Marshal(v)
+func (h *TaskHandler) Delete(ctx context.Context, req *proto.DeleteTaskReq) (*proto.EmptyResponse, error) {
+	err := h.service.DeleteTask(req.Id)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+		return nil, status.Error(codes.InvalidArgument, "bad request ...")
 	}
-
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(code)
-	w.Write(js)
+	return nil, nil
 }
 
-func (h *TaskHandler) Create(w http.ResponseWriter, r *http.Request) {
-	log.Println("aaaaaaaa")
-	if r.Method == http.MethodOptions {
-		w.WriteHeader(http.StatusNoContent)
-		log.Println("options proso")
-		return
-	}
-	log.Println("proso options")
-
-	task, err := h.decodeBodyTask(r.Body)
+func (h *TaskHandler) Create(ctx context.Context, req *proto.CreateTaskReq) (*proto.EmptyResponse, error) {
+	log.Println(req.Task)
+	err := h.service.Create(req.Task)
 	if err != nil {
-		log.Println("greska u dekodiranju bodya")
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
+		log.Printf("Error creating project: %v", err)
+		return nil, status.Error(codes.InvalidArgument, "bad request ...")
 	}
-	log.Println("dekodiran body")
-
-	//task.Id = uuid.New()
-
-	createdTask, err := h.repo.Create(*task)
-	log.Println("pokrenut create task u handleru")
-	if err != nil {
-		log.Println("greska u kreairanju taska u repo")
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	log.Println("ide gas")
-
-	h.renderJSON(w, createdTask, http.StatusCreated)
+	return nil, nil
 }
 
-func (h *TaskHandler) GetAll(w http.ResponseWriter, r *http.Request) {
-	tasks, err := h.repo.GetAll()
+func (h *TaskHandler) GetById(ctx context.Context, req *proto.GetByIdReq) (*proto.TaskResponse, error) {
+	task, err := h.service.GetById(req.Id)
 	if err != nil {
-		http.Error(w, "Failed to retrieve tasks", http.StatusInternalServerError)
-		return
+		return nil, status.Error(codes.InvalidArgument, "bad request ...")
 	}
-
-	h.renderJSON(w, tasks, http.StatusOK)
+	response := &proto.TaskResponse{Task: task}
+	return response, nil
 }
 
-func (h *TaskHandler) Delete(w http.ResponseWriter, r *http.Request) {
-	idStr := r.URL.Query().Get("id")
-	id, err := uuid.Parse(idStr)
+func (h *TaskHandler) GetAllByProjectId(ctx context.Context, req *proto.GetAllTasksReq) (*proto.GetAllTasksRes, error) {
+	allTasks, err := h.service.GetTasksByProjectId(req.Id)
 	if err != nil {
-		http.Error(w, "Invalid ID", http.StatusBadRequest)
-		return
+		return nil, status.Errorf(codes.Internal, "Failed to fetch tasks")
 	}
-
-	if err := h.repo.Delete(id); err != nil {
-		http.Error(w, "Failed to delete task", http.StatusInternalServerError)
-		return
-	}
-
-	w.WriteHeader(http.StatusNoContent)
-}
-
-func (h *TaskHandler) DeleteAllByProjectID(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	projectID := vars["project_id"]
-	if err := h.repo.DeleteAllByProjectID(projectID); err != nil {
-		http.Error(w, "Failed to delete task", http.StatusInternalServerError)
-		return
-	}
-
-	w.WriteHeader(http.StatusNoContent)
-}
-
-func (h *TaskHandler) GetAllByProjectID(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	projectID := vars["project_id"]
-
-	// Poziv repoza za dobijanje svih zadataka po projectID
-	tasks, err := h.repo.GetAllByProjectID(projectID)
-	if err != nil {
-		// Greška u pretrazi zadataka, vraća se status 500 i odgovarajuća poruka
-		http.Error(w, "Failed to fetch tasks", http.StatusInternalServerError)
-		return
-	}
-
-	log.Println("repo je prosao")
-	log.Println(tasks)
-	// Vraća uspešan odgovor sa statusom 200 i JSON podacima
-	h.renderJSON(w, tasks, http.StatusOK)
+	response := &proto.GetAllTasksRes{Tasks: allTasks}
+	return response, nil
 }
