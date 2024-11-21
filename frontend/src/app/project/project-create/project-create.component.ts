@@ -42,24 +42,24 @@ export class ProjectCreateComponent{
     futureDateValidator(control: AbstractControl): ValidationErrors | null {
       const selectedDate = new Date(control.value);
       const currentDate = new Date();
-
+  
       // Remove time part for accurate comparison
       currentDate.setHours(0, 0, 0, 0);
-
+  
       if (selectedDate <= currentDate) {
         return { notFutureDate: true };
       }
       return null;
     }
 
-
+  
 
   onSubmit(): void {
 
     let tokenRole = this.authService.getUserRoles();
     if (this.projectForm.valid && tokenRole == "Manager") {
       const projectData: Project = this.projectForm.value;
-
+      
       let completionDate = new Date(projectData.completionDate);
       completionDate.setHours(0, 0, 0);
 
@@ -70,7 +70,6 @@ export class ProjectCreateComponent{
       let tokenId = this.authService.getUserId();
       console.log(tokenId)
       projectData.manager = new UserFP(tokenId,tokenUsername,tokenRole
-
       )
 
       let submittedProject: Project = new Project(
@@ -82,9 +81,9 @@ export class ProjectCreateComponent{
         projectData.manager,
         projectData.members
       );
-
+  
       console.log('Submitted Project Data:', submittedProject);
-
+  
       this.projectService.createProject(submittedProject).subscribe({
         next: (response) => {
           this.router.navigate(['/all-projects'])
@@ -102,6 +101,6 @@ export class ProjectCreateComponent{
       console.error("Error submiting form")
     }
   }
-
+  
 }
 
