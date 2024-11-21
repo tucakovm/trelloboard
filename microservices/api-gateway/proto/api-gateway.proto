@@ -113,8 +113,8 @@ message RegisterReq{
   UserRegister user = 1;
 }
 message UserRegister{
-  string firstName = 1;
-  string lastName = 2;
+  string firstname = 1;
+  string lastname = 2;
   string username = 3;
   string email = 4;
   string password = 5;
@@ -149,8 +149,8 @@ message LoginRes {
 
 message UserL {
   string id = 1;  // Define User fields based on your Go struct
-  string firstName = 2;
-  string lastName = 3;
+  string firstname = 2;
+  string lastname = 3;
   string username = 4;
   string email = 5;
   string password = 6;

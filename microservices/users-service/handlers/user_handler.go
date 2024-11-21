@@ -9,6 +9,7 @@ import (
 	"google.golang.org/grpc/status"
 	"log"
 	"time"
+	"users_module/models"
 	proto "users_module/proto/users"
 	"users_module/services"
 )
@@ -54,7 +55,7 @@ func (h UserHandler) RegisterHandler(ctx context.Context, req *proto.RegisterReq
 	user := req.User
 	password, _ := HashPassword(user.Password)
 
-	err := h.service.RegisterUser(user.FirstName, user.LastName, user.Username, user.Email, password, user.Role)
+	err := h.service.RegisterUser(user.Firstname, user.Lastname, user.Username, user.Email, password, user.Role)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, "bad request ...")
 	}
@@ -110,7 +111,17 @@ func (h UserHandler) GetUserByUsername(ctx context.Context, req *proto.GetUserBy
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, "bad request ...")
 	}
-	response := &proto.GetUserByUsernameRes{User: user}
+	protoUser := &proto.UserL{
+		Id:        user.Id.Hex(), // Konverzija MongoDB ObjectID u string
+		Firstname: user.FirstName,
+		Lastname:  user.LastName,
+		Username:  user.Username,
+		Email:     user.Email,
+		IsActive:  user.IsActive,
+		Code:      user.Code,
+		Role:      user.Role,
+	}
+	response := &proto.GetUserByUsernameRes{User: protoUser}
 	return response, nil
 }
 
@@ -123,7 +134,7 @@ func (h UserHandler) DeleteUserByUsername(ctx context.Context, req *proto.GetUse
 	return nil, nil
 }
 
-func GenerateJWT(user *proto.UserL) (string, error) {
+func GenerateJWT(user *models.User) (string, error) {
 	var secretKey = []byte("matija_AFK")
 	// Kreiraj claims (podatke koji se šalju u tokenu)
 	claims := jwt.MapClaims{

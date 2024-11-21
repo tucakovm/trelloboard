@@ -6,7 +6,6 @@ import (
 	"golang.org/x/crypto/bcrypt"
 	"log"
 	"users_module/models"
-	proto "users_module/proto/users"
 	"users_module/repositories"
 	"users_module/utils"
 )
@@ -64,23 +63,14 @@ func (s UserService) VerifyUser(username, code string) error {
 	return s.repo.ActivateUser(username)
 }
 
-func (s UserService) GetUserByUsername(username string) (*proto.UserL, error) {
+func (s UserService) GetUserByUsername(username string) (*models.User, error) {
 	log.Println("usao u servis")
 	user, err := s.repo.GetUserByUsername(username)
-	protoUser := &proto.UserL{
-		Id:        user.Id.Hex(), // Konverzija MongoDB ObjectID u string
-		FirstName: user.FirstName,
-		LastName:  user.LastName,
-		Username:  user.Username,
-		Email:     user.Email,
-		IsActive:  user.IsActive,
-		Code:      user.Code,
-		Role:      user.Role,
-	}
+
 	if err != nil {
 		return nil, err
 	}
-	return protoUser, nil
+	return user, nil
 }
 
 func (s UserService) DeleteUserByUsername(username string) error {
