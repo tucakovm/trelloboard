@@ -6,6 +6,7 @@ import (
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/timestamppb"
 	"log"
+	"projects_module/domain"
 	proto "projects_module/proto/project"
 	"projects_module/repositories"
 )
