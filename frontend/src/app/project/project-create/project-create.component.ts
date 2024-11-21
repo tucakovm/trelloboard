@@ -68,7 +68,6 @@ export class ProjectCreateComponent{
       let tokenUsername = this.authService.getUserName();
 
       let tokenId = this.authService.getUserId();
-      console.log(tokenId)
       projectData.manager = new UserFP(tokenId,tokenUsername,tokenRole
 
       )

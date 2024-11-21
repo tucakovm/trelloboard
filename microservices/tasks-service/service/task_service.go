@@ -18,15 +18,14 @@ func NewTaskService(repo repository.TaskRepo) *TaskService {
 }
 
 func (s *TaskService) Create(taskReq *proto.Task) error {
-	log.Println("SERVICE CALL TASKS")
-	newTask := domain.Task{
+	newTask := &domain.Task{
 		Name:        taskReq.Name,
 		Description: taskReq.Description,
 		Status:      0,
 		ProjectID:   taskReq.ProjectId,
 	}
 	log.Println(newTask)
-	return s.repo.Create(newTask)
+	return s.repo.Create(*newTask)
 }
 
 func (s *TaskService) GetAllTasks() ([]domain.Task, error) {
@@ -46,7 +45,7 @@ func (s *TaskService) GetById(id string) (*proto.Task, error) {
 		Id:          task.Id.Hex(),
 		Name:        task.Name,
 		Description: task.Description,
-		Status:      int32(task.Status),
+		Status:      task.Status.String(),
 		ProjectId:   task.ProjectID,
 	}
 
@@ -70,7 +69,7 @@ func (s *TaskService) GetTasksByProjectId(id string) ([]*proto.Task, error) {
 			Id:          dp.Id.Hex(),
 			Name:        dp.Name,
 			Description: dp.Description,
-			Status:      int32(dp.Status),
+			Status:      dp.Status.String(),
 			ProjectId:   dp.ProjectID,
 		})
 	}

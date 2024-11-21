@@ -1,0 +1,54 @@
+/* Global styles */
+body {
+  background: linear-gradient(120deg, #f0f4f8, #d9e4f5);
+  font-family: 'Roboto', sans-serif;
+}
+
+/* Task card styles */
+.task-card {
+  border: 2px solid #0d6efd;
+  border-radius: 15px;
+  overflow: hidden;
+  transition: transform 0.3s, box-shadow 0.3s;
+}
+
+.task-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+}
+
+/* Card header styles */
+.bg-gradient-primary {
+  background: linear-gradient(90deg, #007bff, #1a73e8);
+}
+
+/* Input and textarea styles */
+input.form-control, textarea.form-control {
+  transition: border-color 0.3s, box-shadow 0.3s;
+}
+
+input.form-control:focus, textarea.form-control:focus {
+  border-color: #007bff;
+  box-shadow: 0 0 5px rgba(0, 123, 255, 0.5);
+}
+
+/* Text enhancements */
+label.form-label {
+  font-weight: bold;
+  font-size: 1rem;
+}
+
+/* Placeholder text for "no tasks" */
+.text-muted {
+  animation: fadeIn 1.5s ease-in-out;
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}

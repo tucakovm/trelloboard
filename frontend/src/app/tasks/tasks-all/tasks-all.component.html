@@ -1,21 +1,46 @@
 <div class="container mt-5">
-    <h2 class="text-center mb-4">My tasks</h2>
-    <div *ngIf="tasks && tasks.length; else noTasks" class="row row-cols-1 row-cols-md-2 g-4">
-        <div *ngFor="let task of tasks" class="col">
-            <div class="card h-100 shadow-sm">
-                <div class="card-body">
-                    <h5 class="card-title">{{ task.name }}</h5>
-                    <p class="card-text">
-                        <strong>Description:</strong> {{ task.description }}
-                    </p>
-                    <p class="card-text">
-                        <strong>Status:</strong> {{ task.status }}
-                    </p>
-                </div>
-            </div>
+  <h2 class="text-center mb-4 text-primary display-4">My Tasks</h2>
+  <div *ngIf="tasks && tasks.length; else noTasks" class="row row-cols-1 row-cols-md-2 g-4">
+    <div *ngFor="let task of tasks" class="col">
+      <div class="card h-100 shadow-sm task-card">
+        <div class="card-header bg-gradient-primary text-white text-center fw-bold">
         </div>
+        <div class="card-body">
+          <h5 class="card-title">
+            <label for="taskName-{{ task.id }}" class="form-label text-primary">Name:</label>
+            <input
+              id="taskName-{{ task.id }}"
+              type="text"
+              class="form-control border-primary shadow-sm"
+              [(ngModel)]="task.name"
+              name="taskName-{{ task.id }}"
+            />
+          </h5>
+          <p class="card-text">
+            <label for="taskDescription-{{ task.id }}" class="form-label text-primary">Description:</label>
+            <textarea
+              id="taskDescription-{{ task.id }}"
+              class="form-control border-primary shadow-sm"
+              [(ngModel)]="task.description"
+              name="taskDescription-{{ task.id }}"
+              rows="3"
+            ></textarea>
+          </p>
+          <p class="card-text">
+            <label for="taskStatus-{{ task.id }}" class="form-label text-primary">Status:</label>
+            <input
+              id="taskStatus-{{ task.id }}"
+              type="text"
+              class="form-control border-primary shadow-sm"
+              [(ngModel)]="task.status"
+              name="taskStatus-{{ task.id }}"
+            />
+          </p>
+        </div>
+      </div>
     </div>
-    <ng-template #noTasks>
-        <p class="text-center text-muted">No tasks available</p>
-    </ng-template>
+  </div>
+  <ng-template #noTasks>
+    <p class="text-center text-muted fs-4">No tasks available</p>
+  </ng-template>
 </div>

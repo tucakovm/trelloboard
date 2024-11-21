@@ -5,11 +5,11 @@ import (
 )
 
 type Task struct {
-	Id          primitive.ObjectID `json:"id,omitempty" bson:"id"`
-	Name        string             `json:"name" bson:"name"`
-	Description string             `json:"description" bson:"description"`
-	Status      Status             `json:"status" bson:"status"`
-	ProjectID   string             `json:"project_id" bson:"project_id"`
+	Id          primitive.ObjectID `bson:"_id,omitempty" json:"id"`
+	Name        string             `bson:"name" json:"name"`
+	Description string             `bson:"description" json:"description"`
+	Status      Status             `bson:"status" json:"status"`
+	ProjectID   string             `bson:"project_id" json:"project_id"`
 }
 
 type Tasks []*Task

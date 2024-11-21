@@ -1,14 +1,14 @@
 import { Status } from "./status";
 
 export class Task{
-    id : string;
+    id : string | null;
     name: string;
     description: string;
     status: string;
     project_id?: string
 
   constructor(
-    id : string,
+    id : string | null,
     name: string,
     description: string,
     status: string,

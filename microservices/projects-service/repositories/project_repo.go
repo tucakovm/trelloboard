@@ -2,12 +2,10 @@ package repositories
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"log"
 	"os"
 	"projects_module/domain"
-	proto "projects_module/proto/project"
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
@@ -145,35 +143,14 @@ func New(ctx context.Context, logger *log.Logger) (*ProjectRepo, error) {
 	}, nil
 }
 
-func (pr *ProjectRepo) Create(project *proto.Project) error {
+func (pr *ProjectRepo) Create(project *domain.Project) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-
-	// Provera CompletionDate pre poziva AsTime()
-	if project.CompletionDate == nil {
-		log.Println("CompletionDate is nil")
-		return errors.New("completionDate is required")
-	}
-
-	completionDate := project.CompletionDate.AsTime()
-
-	// Konvertuj proto.Project u domain.Project
-	prj := &domain.Project{
-		Name:           project.Name,
-		CompletionDate: completionDate.UTC(), // Osigurajte da je u UTC
-		MinMembers:     project.MinMembers,
-		MaxMembers:     project.MaxMembers,
-		Manager: domain.User{
-			Id:       project.Manager.Id,
-			Username: project.Manager.Username,
-			Role:     project.Manager.Role,
-		}, Members: make([]domain.User, 0),
-	}
 
 	// Ubaci konvertovani domain.Project u MongoDB
 	projectsCollection := pr.getCollection()
 
-	result, err := projectsCollection.InsertOne(ctx, prj)
+	result, err := projectsCollection.InsertOne(ctx, project)
 	if err != nil {
 		log.Printf("Error inserting document: %v\n", err)
 		return err

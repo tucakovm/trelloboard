@@ -1,7 +1,6 @@
 package services
 
 import (
-	"errors"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -22,13 +21,22 @@ func NewProjectService(repo repositories.ProjectRepo) (ProjectService, error) {
 }
 
 func (s ProjectService) Create(req *proto.Project) error {
-	if req == nil {
-		log.Println("Received nil project.")
-		return errors.New("received nil project")
+	completionDate := req.CompletionDate.AsTime()
+
+	prj := &domain.Project{
+		Name:           req.Name,
+		CompletionDate: completionDate.UTC(),
+		MinMembers:     req.MinMembers,
+		MaxMembers:     req.MaxMembers,
+		Manager: domain.User{
+			Id:       req.Manager.Id,
+			Username: req.Manager.Username,
+			Role:     req.Manager.Role,
+		}, Members: make([]domain.User, 0),
 	}
 
 	log.Printf("SERVICE Received Create Project request: %v", req)
-	return s.repo.Create(req)
+	return s.repo.Create(prj)
 }
 
 func (s ProjectService) GetAllProjects(id string) ([]*proto.Project, error) {

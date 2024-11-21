@@ -39,6 +39,6 @@ message Task {
   string id = 1;
   string name = 2;
   string description = 3;
-  int32 status = 4;
+  string status = 4;
   string project_id = 5;
 }
