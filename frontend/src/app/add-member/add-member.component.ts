@@ -26,11 +26,12 @@ export class AddMemberComponent implements OnInit {
     this.id = this.route.snapshot.paramMap.get('projectId');
     if (this.addMemberForm.valid) {
       this.userService.getUserByUsername(this.addMemberForm.value.username).subscribe((resp)=>{
-        let user:UserFP = new UserFP(resp.id,resp.username,resp.role);
-        console.log(this.id)
-        if(this.id){
-          console.log("id:" + this.id + "user:" + user +" uslo u submit 2");
-          this.projectService.createMember(this.id,user).subscribe(resp=>console.log(resp));
+        console.log("user resp: "+ JSON.stringify(resp) , resp);
+        let user:UserFP = new UserFP(resp.user.id,resp.user.username,resp.user.role);
+        console.log(user)
+        if(this.id && user){
+          console.log("id:" + this.id + "user:" + JSON.stringify(user) +" uslo u submit 2");
+          this.projectService.createMember(this.id,user).subscribe(resp=>console.log("Member successfully added"));
       }
       })
     }

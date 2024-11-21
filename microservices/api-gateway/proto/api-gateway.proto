@@ -28,6 +28,17 @@ service ProjectService {
       get: "/api/project/{id}"
     };
   }
+  rpc AddMember(AddMembersRequest) returns (EmptyResponse) {
+    option (google.api.http) = {
+      put: "/api/projects/{id}/members"
+      body: "user"
+    };
+  }
+}
+
+message AddMembersRequest{
+  string id = 1;  // Project ID (path parameter)
+  User user = 2;  // User details (body)
 }
 
 message EmptyResponse {}

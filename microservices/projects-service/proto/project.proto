@@ -9,6 +9,7 @@ service ProjectService {
   rpc Create(CreateProjectReq) returns (EmptyResponse) {}
   rpc Delete(DeleteProjectReq) returns (EmptyResponse) {}
   rpc GetById(GetByIdReq) returns (GetByIdRes) {}
+  rpc AddMember(AddMembersRequest) returns (EmptyResponse) {}
 }
 
 message EmptyResponse {}
@@ -30,6 +31,10 @@ message GetByIdReq {
 }
 message GetByIdRes {
   Project project = 1;
+}
+message AddMembersRequest{
+  string id = 1;  // Project ID (path parameter)
+  User user = 2;  // User details (body)
 }
 
 

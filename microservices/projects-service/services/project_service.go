@@ -97,6 +97,13 @@ func (s ProjectService) GetById(id string) (*proto.Project, error) {
 	return protoProject, nil
 }
 
-func (s ProjectService) AddMember(projectId string, user domain.User) error {
-	return s.repo.AddMember(projectId, user)
+func (s ProjectService) AddMember(projectId string, protoUser *proto.User) error {
+	log.Printf("PROTOUSER: %+v\n", protoUser)
+	user := &domain.User{
+		Id:       protoUser.Id,
+		Username: protoUser.Username,
+		Role:     protoUser.Role,
+	}
+	log.Printf("USER: %+v\n", user)
+	return s.repo.AddMember(projectId, *user)
 }

@@ -327,6 +327,59 @@ func (x *GetByIdRes) GetProject() *Project {
 	return nil
 }
 
+type AddMembersRequest struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Id   string `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`     // Project ID (path parameter)
+	User *User  `protobuf:"bytes,2,opt,name=user,proto3" json:"user,omitempty"` // User details (body)
+}
+
+func (x *AddMembersRequest) Reset() {
+	*x = AddMembersRequest{}
+	mi := &file_project_proto_msgTypes[7]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *AddMembersRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AddMembersRequest) ProtoMessage() {}
+
+func (x *AddMembersRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_project_proto_msgTypes[7]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use AddMembersRequest.ProtoReflect.Descriptor instead.
+func (*AddMembersRequest) Descriptor() ([]byte, []int) {
+	return file_project_proto_rawDescGZIP(), []int{7}
+}
+
+func (x *AddMembersRequest) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+func (x *AddMembersRequest) GetUser() *User {
+	if x != nil {
+		return x.User
+	}
+	return nil
+}
+
 type Project struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -343,7 +396,7 @@ type Project struct {
 
 func (x *Project) Reset() {
 	*x = Project{}
-	mi := &file_project_proto_msgTypes[7]
+	mi := &file_project_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -355,7 +408,7 @@ func (x *Project) String() string {
 func (*Project) ProtoMessage() {}
 
 func (x *Project) ProtoReflect() protoreflect.Message {
-	mi := &file_project_proto_msgTypes[7]
+	mi := &file_project_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -368,7 +421,7 @@ func (x *Project) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Project.ProtoReflect.Descriptor instead.
 func (*Project) Descriptor() ([]byte, []int) {
-	return file_project_proto_rawDescGZIP(), []int{7}
+	return file_project_proto_rawDescGZIP(), []int{8}
 }
 
 func (x *Project) GetId() string {
@@ -432,7 +485,7 @@ type User struct {
 
 func (x *User) Reset() {
 	*x = User{}
-	mi := &file_project_proto_msgTypes[8]
+	mi := &file_project_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -444,7 +497,7 @@ func (x *User) String() string {
 func (*User) ProtoMessage() {}
 
 func (x *User) ProtoReflect() protoreflect.Message {
-	mi := &file_project_proto_msgTypes[8]
+	mi := &file_project_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -457,7 +510,7 @@ func (x *User) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use User.ProtoReflect.Descriptor instead.
 func (*User) Descriptor() ([]byte, []int) {
-	return file_project_proto_rawDescGZIP(), []int{8}
+	return file_project_proto_rawDescGZIP(), []int{9}
 }
 
 func (x *User) GetId() string {
@@ -505,7 +558,11 @@ var file_project_proto_rawDesc = []byte{
 	0x01, 0x28, 0x09, 0x52, 0x02, 0x69, 0x64, 0x22, 0x30, 0x0a, 0x0a, 0x47, 0x65, 0x74, 0x42, 0x79,
 	0x49, 0x64, 0x52, 0x65, 0x73, 0x12, 0x22, 0x0a, 0x07, 0x70, 0x72, 0x6f, 0x6a, 0x65, 0x63, 0x74,
 	0x18, 0x01, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x08, 0x2e, 0x50, 0x72, 0x6f, 0x6a, 0x65, 0x63, 0x74,
-	0x52, 0x07, 0x70, 0x72, 0x6f, 0x6a, 0x65, 0x63, 0x74, 0x22, 0xf3, 0x01, 0x0a, 0x07, 0x50, 0x72,
+	0x52, 0x07, 0x70, 0x72, 0x6f, 0x6a, 0x65, 0x63, 0x74, 0x22, 0x3e, 0x0a, 0x11, 0x41, 0x64, 0x64,
+	0x4d, 0x65, 0x6d, 0x62, 0x65, 0x72, 0x73, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x12, 0x0e,
+	0x0a, 0x02, 0x69, 0x64, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x02, 0x69, 0x64, 0x12, 0x19,
+	0x0a, 0x04, 0x75, 0x73, 0x65, 0x72, 0x18, 0x02, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x05, 0x2e, 0x55,
+	0x73, 0x65, 0x72, 0x52, 0x04, 0x75, 0x73, 0x65, 0x72, 0x22, 0xf3, 0x01, 0x0a, 0x07, 0x50, 0x72,
 	0x6f, 0x6a, 0x65, 0x63, 0x74, 0x12, 0x0e, 0x0a, 0x02, 0x69, 0x64, 0x18, 0x01, 0x20, 0x01, 0x28,
 	0x09, 0x52, 0x02, 0x69, 0x64, 0x12, 0x12, 0x0a, 0x04, 0x6e, 0x61, 0x6d, 0x65, 0x18, 0x02, 0x20,
 	0x01, 0x28, 0x09, 0x52, 0x04, 0x6e, 0x61, 0x6d, 0x65, 0x12, 0x42, 0x0a, 0x0e, 0x63, 0x6f, 0x6d,
@@ -525,7 +582,7 @@ var file_project_proto_rawDesc = []byte{
 	0x01, 0x28, 0x09, 0x52, 0x02, 0x69, 0x64, 0x12, 0x1a, 0x0a, 0x08, 0x75, 0x73, 0x65, 0x72, 0x6e,
 	0x61, 0x6d, 0x65, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x52, 0x08, 0x75, 0x73, 0x65, 0x72, 0x6e,
 	0x61, 0x6d, 0x65, 0x12, 0x12, 0x0a, 0x04, 0x72, 0x6f, 0x6c, 0x65, 0x18, 0x03, 0x20, 0x01, 0x28,
-	0x09, 0x52, 0x04, 0x72, 0x6f, 0x6c, 0x65, 0x32, 0xd1, 0x01, 0x0a, 0x0e, 0x50, 0x72, 0x6f, 0x6a,
+	0x09, 0x52, 0x04, 0x72, 0x6f, 0x6c, 0x65, 0x32, 0x84, 0x02, 0x0a, 0x0e, 0x50, 0x72, 0x6f, 0x6a,
 	0x65, 0x63, 0x74, 0x53, 0x65, 0x72, 0x76, 0x69, 0x63, 0x65, 0x12, 0x3a, 0x0a, 0x0e, 0x47, 0x65,
 	0x74, 0x41, 0x6c, 0x6c, 0x50, 0x72, 0x6f, 0x6a, 0x65, 0x63, 0x74, 0x73, 0x12, 0x12, 0x2e, 0x47,
 	0x65, 0x74, 0x41, 0x6c, 0x6c, 0x50, 0x72, 0x6f, 0x6a, 0x65, 0x63, 0x74, 0x73, 0x52, 0x65, 0x71,
@@ -538,9 +595,12 @@ var file_project_proto_rawDesc = []byte{
 	0x65, 0x71, 0x1a, 0x0e, 0x2e, 0x45, 0x6d, 0x70, 0x74, 0x79, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e,
 	0x73, 0x65, 0x22, 0x00, 0x12, 0x25, 0x0a, 0x07, 0x47, 0x65, 0x74, 0x42, 0x79, 0x49, 0x64, 0x12,
 	0x0b, 0x2e, 0x47, 0x65, 0x74, 0x42, 0x79, 0x49, 0x64, 0x52, 0x65, 0x71, 0x1a, 0x0b, 0x2e, 0x47,
-	0x65, 0x74, 0x42, 0x79, 0x49, 0x64, 0x52, 0x65, 0x73, 0x22, 0x00, 0x42, 0x0f, 0x5a, 0x0d, 0x70,
-	0x72, 0x6f, 0x74, 0x6f, 0x2f, 0x70, 0x72, 0x6f, 0x6a, 0x65, 0x63, 0x74, 0x62, 0x06, 0x70, 0x72,
-	0x6f, 0x74, 0x6f, 0x33,
+	0x65, 0x74, 0x42, 0x79, 0x49, 0x64, 0x52, 0x65, 0x73, 0x22, 0x00, 0x12, 0x31, 0x0a, 0x09, 0x41,
+	0x64, 0x64, 0x4d, 0x65, 0x6d, 0x62, 0x65, 0x72, 0x12, 0x12, 0x2e, 0x41, 0x64, 0x64, 0x4d, 0x65,
+	0x6d, 0x62, 0x65, 0x72, 0x73, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x0e, 0x2e, 0x45,
+	0x6d, 0x70, 0x74, 0x79, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x00, 0x42, 0x0f,
+	0x5a, 0x0d, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x2f, 0x70, 0x72, 0x6f, 0x6a, 0x65, 0x63, 0x74, 0x62,
+	0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
 }
 
 var (
@@ -555,7 +615,7 @@ func file_project_proto_rawDescGZIP() []byte {
 	return file_project_proto_rawDescData
 }
 
-var file_project_proto_msgTypes = make([]protoimpl.MessageInfo, 9)
+var file_project_proto_msgTypes = make([]protoimpl.MessageInfo, 10)
 var file_project_proto_goTypes = []any{
 	(*EmptyResponse)(nil),         // 0: EmptyResponse
 	(*GetAllProjectsReq)(nil),     // 1: GetAllProjectsReq
@@ -564,30 +624,34 @@ var file_project_proto_goTypes = []any{
 	(*DeleteProjectReq)(nil),      // 4: DeleteProjectReq
 	(*GetByIdReq)(nil),            // 5: GetByIdReq
 	(*GetByIdRes)(nil),            // 6: GetByIdRes
-	(*Project)(nil),               // 7: Project
-	(*User)(nil),                  // 8: User
-	(*timestamppb.Timestamp)(nil), // 9: google.protobuf.Timestamp
+	(*AddMembersRequest)(nil),     // 7: AddMembersRequest
+	(*Project)(nil),               // 8: Project
+	(*User)(nil),                  // 9: User
+	(*timestamppb.Timestamp)(nil), // 10: google.protobuf.Timestamp
 }
 var file_project_proto_depIdxs = []int32{
-	7,  // 0: GetAllProjectsRes.projects:type_name -> Project
-	7,  // 1: CreateProjectReq.project:type_name -> Project
-	7,  // 2: GetByIdRes.project:type_name -> Project
-	9,  // 3: Project.completionDate:type_name -> google.protobuf.Timestamp
-	8,  // 4: Project.manager:type_name -> User
-	8,  // 5: Project.members:type_name -> User
-	1,  // 6: ProjectService.GetAllProjects:input_type -> GetAllProjectsReq
-	3,  // 7: ProjectService.Create:input_type -> CreateProjectReq
-	4,  // 8: ProjectService.Delete:input_type -> DeleteProjectReq
-	5,  // 9: ProjectService.GetById:input_type -> GetByIdReq
-	2,  // 10: ProjectService.GetAllProjects:output_type -> GetAllProjectsRes
-	0,  // 11: ProjectService.Create:output_type -> EmptyResponse
-	0,  // 12: ProjectService.Delete:output_type -> EmptyResponse
-	6,  // 13: ProjectService.GetById:output_type -> GetByIdRes
-	10, // [10:14] is the sub-list for method output_type
-	6,  // [6:10] is the sub-list for method input_type
-	6,  // [6:6] is the sub-list for extension type_name
-	6,  // [6:6] is the sub-list for extension extendee
-	0,  // [0:6] is the sub-list for field type_name
+	8,  // 0: GetAllProjectsRes.projects:type_name -> Project
+	8,  // 1: CreateProjectReq.project:type_name -> Project
+	8,  // 2: GetByIdRes.project:type_name -> Project
+	9,  // 3: AddMembersRequest.user:type_name -> User
+	10, // 4: Project.completionDate:type_name -> google.protobuf.Timestamp
+	9,  // 5: Project.manager:type_name -> User
+	9,  // 6: Project.members:type_name -> User
+	1,  // 7: ProjectService.GetAllProjects:input_type -> GetAllProjectsReq
+	3,  // 8: ProjectService.Create:input_type -> CreateProjectReq
+	4,  // 9: ProjectService.Delete:input_type -> DeleteProjectReq
+	5,  // 10: ProjectService.GetById:input_type -> GetByIdReq
+	7,  // 11: ProjectService.AddMember:input_type -> AddMembersRequest
+	2,  // 12: ProjectService.GetAllProjects:output_type -> GetAllProjectsRes
+	0,  // 13: ProjectService.Create:output_type -> EmptyResponse
+	0,  // 14: ProjectService.Delete:output_type -> EmptyResponse
+	6,  // 15: ProjectService.GetById:output_type -> GetByIdRes
+	0,  // 16: ProjectService.AddMember:output_type -> EmptyResponse
+	12, // [12:17] is the sub-list for method output_type
+	7,  // [7:12] is the sub-list for method input_type
+	7,  // [7:7] is the sub-list for extension type_name
+	7,  // [7:7] is the sub-list for extension extendee
+	0,  // [0:7] is the sub-list for field type_name
 }
 
 func init() { file_project_proto_init() }
@@ -601,7 +665,7 @@ func file_project_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_project_proto_rawDesc,
 			NumEnums:      0,
-			NumMessages:   9,
+			NumMessages:   10,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

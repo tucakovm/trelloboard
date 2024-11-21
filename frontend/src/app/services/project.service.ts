@@ -102,7 +102,7 @@ export class ProjectService{
     createMember(id:string, member:UserFP){
       console.log("Pozvan createmember servis na frontu");
       console.log("id:" + id + " member: "+UserFP)
-      return this.http.post<any>(`${this.apiUrl}/projects/${id}/members`,member)
+      return this.http.put<any>(`${this.apiUrl}/projects/${id}/members`,member)
     }
   }
 

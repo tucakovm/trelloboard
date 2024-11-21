@@ -2,13 +2,9 @@ package handlers
 
 import (
 	"context"
-	"encoding/json"
-	"github.com/gorilla/mux"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"log"
-	"net/http"
-	"projects_module/domain"
 	proto "projects_module/proto/project"
 	"projects_module/services"
 )
@@ -83,37 +79,15 @@ func (h ProjectHandler) GetById(ctx context.Context, req *proto.GetByIdReq) (*pr
 	return response, nil
 }
 
-func (h ProjectHandler) AddMember(w http.ResponseWriter, r *http.Request) {
-	if r.Method == http.MethodOptions {
-		w.WriteHeader(http.StatusNoContent)
-		return
-	}
+func (h ProjectHandler) AddMember(ctx context.Context, req *proto.AddMembersRequest) (*proto.EmptyResponse, error) {
 
-	// Get the projectId from URL parameter
-	vars := mux.Vars(r)
-	projectId := vars["id"]
-	if projectId == "" {
-		http.Error(w, "Project ID is required", http.StatusBadRequest)
-		return
-	}
+	log.Printf("PROTOUSER HANDLER: %+v\n", req.User)
+	projectId := req.Id
 
-	// Parse user from request body
-	var user domain.User
-	err := json.NewDecoder(r.Body).Decode(&user)
+	err := h.service.AddMember(projectId, req.User)
 	if err != nil {
-		http.Error(w, "Invalid user data", http.StatusBadRequest)
-		return
+		log.Printf("Error creating project: %v", err)
+		return nil, status.Error(codes.InvalidArgument, "bad request ...")
 	}
-
-	// Call the service to add the member to the project
-	err = h.service.AddMember(projectId, user)
-	if err != nil {
-		http.Error(w, "Error adding member to project", http.StatusInternalServerError)
-		return
-	}
-
-	// Respond with success message
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	w.Write([]byte(`{"message": "Member added successfully"}`))
+	return nil, nil
 }

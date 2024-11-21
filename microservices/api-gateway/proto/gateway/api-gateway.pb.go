@@ -22,6 +22,59 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+type AddMembersRequest struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Id   string `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`     // Project ID (path parameter)
+	User *User  `protobuf:"bytes,2,opt,name=user,proto3" json:"user,omitempty"` // User details (body)
+}
+
+func (x *AddMembersRequest) Reset() {
+	*x = AddMembersRequest{}
+	mi := &file_api_gateway_proto_msgTypes[0]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *AddMembersRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AddMembersRequest) ProtoMessage() {}
+
+func (x *AddMembersRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_api_gateway_proto_msgTypes[0]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use AddMembersRequest.ProtoReflect.Descriptor instead.
+func (*AddMembersRequest) Descriptor() ([]byte, []int) {
+	return file_api_gateway_proto_rawDescGZIP(), []int{0}
+}
+
+func (x *AddMembersRequest) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+func (x *AddMembersRequest) GetUser() *User {
+	if x != nil {
+		return x.User
+	}
+	return nil
+}
+
 type EmptyResponse struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -30,7 +83,7 @@ type EmptyResponse struct {
 
 func (x *EmptyResponse) Reset() {
 	*x = EmptyResponse{}
-	mi := &file_api_gateway_proto_msgTypes[0]
+	mi := &file_api_gateway_proto_msgTypes[1]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -42,7 +95,7 @@ func (x *EmptyResponse) String() string {
 func (*EmptyResponse) ProtoMessage() {}
 
 func (x *EmptyResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_api_gateway_proto_msgTypes[0]
+	mi := &file_api_gateway_proto_msgTypes[1]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -55,7 +108,7 @@ func (x *EmptyResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use EmptyResponse.ProtoReflect.Descriptor instead.
 func (*EmptyResponse) Descriptor() ([]byte, []int) {
-	return file_api_gateway_proto_rawDescGZIP(), []int{0}
+	return file_api_gateway_proto_rawDescGZIP(), []int{1}
 }
 
 type Project struct {
@@ -74,7 +127,7 @@ type Project struct {
 
 func (x *Project) Reset() {
 	*x = Project{}
-	mi := &file_api_gateway_proto_msgTypes[1]
+	mi := &file_api_gateway_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -86,7 +139,7 @@ func (x *Project) String() string {
 func (*Project) ProtoMessage() {}
 
 func (x *Project) ProtoReflect() protoreflect.Message {
-	mi := &file_api_gateway_proto_msgTypes[1]
+	mi := &file_api_gateway_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -99,7 +152,7 @@ func (x *Project) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Project.ProtoReflect.Descriptor instead.
 func (*Project) Descriptor() ([]byte, []int) {
-	return file_api_gateway_proto_rawDescGZIP(), []int{1}
+	return file_api_gateway_proto_rawDescGZIP(), []int{2}
 }
 
 func (x *Project) GetId() string {
@@ -163,7 +216,7 @@ type User struct {
 
 func (x *User) Reset() {
 	*x = User{}
-	mi := &file_api_gateway_proto_msgTypes[2]
+	mi := &file_api_gateway_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -175,7 +228,7 @@ func (x *User) String() string {
 func (*User) ProtoMessage() {}
 
 func (x *User) ProtoReflect() protoreflect.Message {
-	mi := &file_api_gateway_proto_msgTypes[2]
+	mi := &file_api_gateway_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -188,7 +241,7 @@ func (x *User) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use User.ProtoReflect.Descriptor instead.
 func (*User) Descriptor() ([]byte, []int) {
-	return file_api_gateway_proto_rawDescGZIP(), []int{2}
+	return file_api_gateway_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *User) GetId() string {
@@ -222,7 +275,7 @@ type GetAllProjectsRes struct {
 
 func (x *GetAllProjectsRes) Reset() {
 	*x = GetAllProjectsRes{}
-	mi := &file_api_gateway_proto_msgTypes[3]
+	mi := &file_api_gateway_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -234,7 +287,7 @@ func (x *GetAllProjectsRes) String() string {
 func (*GetAllProjectsRes) ProtoMessage() {}
 
 func (x *GetAllProjectsRes) ProtoReflect() protoreflect.Message {
-	mi := &file_api_gateway_proto_msgTypes[3]
+	mi := &file_api_gateway_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -247,7 +300,7 @@ func (x *GetAllProjectsRes) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetAllProjectsRes.ProtoReflect.Descriptor instead.
 func (*GetAllProjectsRes) Descriptor() ([]byte, []int) {
-	return file_api_gateway_proto_rawDescGZIP(), []int{3}
+	return file_api_gateway_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *GetAllProjectsRes) GetProjects() []*Project {
@@ -267,7 +320,7 @@ type GetAllProjectsReq struct {
 
 func (x *GetAllProjectsReq) Reset() {
 	*x = GetAllProjectsReq{}
-	mi := &file_api_gateway_proto_msgTypes[4]
+	mi := &file_api_gateway_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -279,7 +332,7 @@ func (x *GetAllProjectsReq) String() string {
 func (*GetAllProjectsReq) ProtoMessage() {}
 
 func (x *GetAllProjectsReq) ProtoReflect() protoreflect.Message {
-	mi := &file_api_gateway_proto_msgTypes[4]
+	mi := &file_api_gateway_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -292,7 +345,7 @@ func (x *GetAllProjectsReq) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetAllProjectsReq.ProtoReflect.Descriptor instead.
 func (*GetAllProjectsReq) Descriptor() ([]byte, []int) {
-	return file_api_gateway_proto_rawDescGZIP(), []int{4}
+	return file_api_gateway_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *GetAllProjectsReq) GetUsername() string {
@@ -312,7 +365,7 @@ type CreateProjectReq struct {
 
 func (x *CreateProjectReq) Reset() {
 	*x = CreateProjectReq{}
-	mi := &file_api_gateway_proto_msgTypes[5]
+	mi := &file_api_gateway_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -324,7 +377,7 @@ func (x *CreateProjectReq) String() string {
 func (*CreateProjectReq) ProtoMessage() {}
 
 func (x *CreateProjectReq) ProtoReflect() protoreflect.Message {
-	mi := &file_api_gateway_proto_msgTypes[5]
+	mi := &file_api_gateway_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -337,7 +390,7 @@ func (x *CreateProjectReq) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateProjectReq.ProtoReflect.Descriptor instead.
 func (*CreateProjectReq) Descriptor() ([]byte, []int) {
-	return file_api_gateway_proto_rawDescGZIP(), []int{5}
+	return file_api_gateway_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *CreateProjectReq) GetProject() *Project {
@@ -357,7 +410,7 @@ type DeleteProjectReq struct {
 
 func (x *DeleteProjectReq) Reset() {
 	*x = DeleteProjectReq{}
-	mi := &file_api_gateway_proto_msgTypes[6]
+	mi := &file_api_gateway_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -369,7 +422,7 @@ func (x *DeleteProjectReq) String() string {
 func (*DeleteProjectReq) ProtoMessage() {}
 
 func (x *DeleteProjectReq) ProtoReflect() protoreflect.Message {
-	mi := &file_api_gateway_proto_msgTypes[6]
+	mi := &file_api_gateway_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -382,7 +435,7 @@ func (x *DeleteProjectReq) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeleteProjectReq.ProtoReflect.Descriptor instead.
 func (*DeleteProjectReq) Descriptor() ([]byte, []int) {
-	return file_api_gateway_proto_rawDescGZIP(), []int{6}
+	return file_api_gateway_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *DeleteProjectReq) GetId() string {
@@ -402,7 +455,7 @@ type GetProjectByIdRes struct {
 
 func (x *GetProjectByIdRes) Reset() {
 	*x = GetProjectByIdRes{}
-	mi := &file_api_gateway_proto_msgTypes[7]
+	mi := &file_api_gateway_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -414,7 +467,7 @@ func (x *GetProjectByIdRes) String() string {
 func (*GetProjectByIdRes) ProtoMessage() {}
 
 func (x *GetProjectByIdRes) ProtoReflect() protoreflect.Message {
-	mi := &file_api_gateway_proto_msgTypes[7]
+	mi := &file_api_gateway_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -427,7 +480,7 @@ func (x *GetProjectByIdRes) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetProjectByIdRes.ProtoReflect.Descriptor instead.
 func (*GetProjectByIdRes) Descriptor() ([]byte, []int) {
-	return file_api_gateway_proto_rawDescGZIP(), []int{7}
+	return file_api_gateway_proto_rawDescGZIP(), []int{8}
 }
 
 func (x *GetProjectByIdRes) GetProject() *Project {
@@ -447,7 +500,7 @@ type GetProjectByIdReq struct {
 
 func (x *GetProjectByIdReq) Reset() {
 	*x = GetProjectByIdReq{}
-	mi := &file_api_gateway_proto_msgTypes[8]
+	mi := &file_api_gateway_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -459,7 +512,7 @@ func (x *GetProjectByIdReq) String() string {
 func (*GetProjectByIdReq) ProtoMessage() {}
 
 func (x *GetProjectByIdReq) ProtoReflect() protoreflect.Message {
-	mi := &file_api_gateway_proto_msgTypes[8]
+	mi := &file_api_gateway_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -472,7 +525,7 @@ func (x *GetProjectByIdReq) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetProjectByIdReq.ProtoReflect.Descriptor instead.
 func (*GetProjectByIdReq) Descriptor() ([]byte, []int) {
-	return file_api_gateway_proto_rawDescGZIP(), []int{8}
+	return file_api_gateway_proto_rawDescGZIP(), []int{9}
 }
 
 func (x *GetProjectByIdReq) GetId() string {
@@ -496,7 +549,7 @@ type Task struct {
 
 func (x *Task) Reset() {
 	*x = Task{}
-	mi := &file_api_gateway_proto_msgTypes[9]
+	mi := &file_api_gateway_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -508,7 +561,7 @@ func (x *Task) String() string {
 func (*Task) ProtoMessage() {}
 
 func (x *Task) ProtoReflect() protoreflect.Message {
-	mi := &file_api_gateway_proto_msgTypes[9]
+	mi := &file_api_gateway_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -521,7 +574,7 @@ func (x *Task) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Task.ProtoReflect.Descriptor instead.
 func (*Task) Descriptor() ([]byte, []int) {
-	return file_api_gateway_proto_rawDescGZIP(), []int{9}
+	return file_api_gateway_proto_rawDescGZIP(), []int{10}
 }
 
 func (x *Task) GetId() string {
@@ -569,7 +622,7 @@ type GetAllTasksRes struct {
 
 func (x *GetAllTasksRes) Reset() {
 	*x = GetAllTasksRes{}
-	mi := &file_api_gateway_proto_msgTypes[10]
+	mi := &file_api_gateway_proto_msgTypes[11]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -581,7 +634,7 @@ func (x *GetAllTasksRes) String() string {
 func (*GetAllTasksRes) ProtoMessage() {}
 
 func (x *GetAllTasksRes) ProtoReflect() protoreflect.Message {
-	mi := &file_api_gateway_proto_msgTypes[10]
+	mi := &file_api_gateway_proto_msgTypes[11]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -594,7 +647,7 @@ func (x *GetAllTasksRes) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetAllTasksRes.ProtoReflect.Descriptor instead.
 func (*GetAllTasksRes) Descriptor() ([]byte, []int) {
-	return file_api_gateway_proto_rawDescGZIP(), []int{10}
+	return file_api_gateway_proto_rawDescGZIP(), []int{11}
 }
 
 func (x *GetAllTasksRes) GetTasks() []*Task {
@@ -614,7 +667,7 @@ type GetAllTasksReq struct {
 
 func (x *GetAllTasksReq) Reset() {
 	*x = GetAllTasksReq{}
-	mi := &file_api_gateway_proto_msgTypes[11]
+	mi := &file_api_gateway_proto_msgTypes[12]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -626,7 +679,7 @@ func (x *GetAllTasksReq) String() string {
 func (*GetAllTasksReq) ProtoMessage() {}
 
 func (x *GetAllTasksReq) ProtoReflect() protoreflect.Message {
-	mi := &file_api_gateway_proto_msgTypes[11]
+	mi := &file_api_gateway_proto_msgTypes[12]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -639,7 +692,7 @@ func (x *GetAllTasksReq) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetAllTasksReq.ProtoReflect.Descriptor instead.
 func (*GetAllTasksReq) Descriptor() ([]byte, []int) {
-	return file_api_gateway_proto_rawDescGZIP(), []int{11}
+	return file_api_gateway_proto_rawDescGZIP(), []int{12}
 }
 
 func (x *GetAllTasksReq) GetId() string {
@@ -659,7 +712,7 @@ type CreateTaskReq struct {
 
 func (x *CreateTaskReq) Reset() {
 	*x = CreateTaskReq{}
-	mi := &file_api_gateway_proto_msgTypes[12]
+	mi := &file_api_gateway_proto_msgTypes[13]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -671,7 +724,7 @@ func (x *CreateTaskReq) String() string {
 func (*CreateTaskReq) ProtoMessage() {}
 
 func (x *CreateTaskReq) ProtoReflect() protoreflect.Message {
-	mi := &file_api_gateway_proto_msgTypes[12]
+	mi := &file_api_gateway_proto_msgTypes[13]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -684,7 +737,7 @@ func (x *CreateTaskReq) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateTaskReq.ProtoReflect.Descriptor instead.
 func (*CreateTaskReq) Descriptor() ([]byte, []int) {
-	return file_api_gateway_proto_rawDescGZIP(), []int{12}
+	return file_api_gateway_proto_rawDescGZIP(), []int{13}
 }
 
 func (x *CreateTaskReq) GetTask() *Task {
@@ -704,7 +757,7 @@ type DeleteTaskReq struct {
 
 func (x *DeleteTaskReq) Reset() {
 	*x = DeleteTaskReq{}
-	mi := &file_api_gateway_proto_msgTypes[13]
+	mi := &file_api_gateway_proto_msgTypes[14]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -716,7 +769,7 @@ func (x *DeleteTaskReq) String() string {
 func (*DeleteTaskReq) ProtoMessage() {}
 
 func (x *DeleteTaskReq) ProtoReflect() protoreflect.Message {
-	mi := &file_api_gateway_proto_msgTypes[13]
+	mi := &file_api_gateway_proto_msgTypes[14]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -729,7 +782,7 @@ func (x *DeleteTaskReq) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeleteTaskReq.ProtoReflect.Descriptor instead.
 func (*DeleteTaskReq) Descriptor() ([]byte, []int) {
-	return file_api_gateway_proto_rawDescGZIP(), []int{13}
+	return file_api_gateway_proto_rawDescGZIP(), []int{14}
 }
 
 func (x *DeleteTaskReq) GetId() string {
@@ -749,7 +802,7 @@ type GetByIdTaskRes struct {
 
 func (x *GetByIdTaskRes) Reset() {
 	*x = GetByIdTaskRes{}
-	mi := &file_api_gateway_proto_msgTypes[14]
+	mi := &file_api_gateway_proto_msgTypes[15]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -761,7 +814,7 @@ func (x *GetByIdTaskRes) String() string {
 func (*GetByIdTaskRes) ProtoMessage() {}
 
 func (x *GetByIdTaskRes) ProtoReflect() protoreflect.Message {
-	mi := &file_api_gateway_proto_msgTypes[14]
+	mi := &file_api_gateway_proto_msgTypes[15]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -774,7 +827,7 @@ func (x *GetByIdTaskRes) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetByIdTaskRes.ProtoReflect.Descriptor instead.
 func (*GetByIdTaskRes) Descriptor() ([]byte, []int) {
-	return file_api_gateway_proto_rawDescGZIP(), []int{14}
+	return file_api_gateway_proto_rawDescGZIP(), []int{15}
 }
 
 func (x *GetByIdTaskRes) GetTask() *Task {
@@ -794,7 +847,7 @@ type GetByIdTaskReq struct {
 
 func (x *GetByIdTaskReq) Reset() {
 	*x = GetByIdTaskReq{}
-	mi := &file_api_gateway_proto_msgTypes[15]
+	mi := &file_api_gateway_proto_msgTypes[16]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -806,7 +859,7 @@ func (x *GetByIdTaskReq) String() string {
 func (*GetByIdTaskReq) ProtoMessage() {}
 
 func (x *GetByIdTaskReq) ProtoReflect() protoreflect.Message {
-	mi := &file_api_gateway_proto_msgTypes[15]
+	mi := &file_api_gateway_proto_msgTypes[16]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -819,7 +872,7 @@ func (x *GetByIdTaskReq) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetByIdTaskReq.ProtoReflect.Descriptor instead.
 func (*GetByIdTaskReq) Descriptor() ([]byte, []int) {
-	return file_api_gateway_proto_rawDescGZIP(), []int{15}
+	return file_api_gateway_proto_rawDescGZIP(), []int{16}
 }
 
 func (x *GetByIdTaskReq) GetId() string {
@@ -839,7 +892,7 @@ type RegisterReq struct {
 
 func (x *RegisterReq) Reset() {
 	*x = RegisterReq{}
-	mi := &file_api_gateway_proto_msgTypes[16]
+	mi := &file_api_gateway_proto_msgTypes[17]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -851,7 +904,7 @@ func (x *RegisterReq) String() string {
 func (*RegisterReq) ProtoMessage() {}
 
 func (x *RegisterReq) ProtoReflect() protoreflect.Message {
-	mi := &file_api_gateway_proto_msgTypes[16]
+	mi := &file_api_gateway_proto_msgTypes[17]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -864,7 +917,7 @@ func (x *RegisterReq) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RegisterReq.ProtoReflect.Descriptor instead.
 func (*RegisterReq) Descriptor() ([]byte, []int) {
-	return file_api_gateway_proto_rawDescGZIP(), []int{16}
+	return file_api_gateway_proto_rawDescGZIP(), []int{17}
 }
 
 func (x *RegisterReq) GetUser() *UserRegister {
@@ -889,7 +942,7 @@ type UserRegister struct {
 
 func (x *UserRegister) Reset() {
 	*x = UserRegister{}
-	mi := &file_api_gateway_proto_msgTypes[17]
+	mi := &file_api_gateway_proto_msgTypes[18]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -901,7 +954,7 @@ func (x *UserRegister) String() string {
 func (*UserRegister) ProtoMessage() {}
 
 func (x *UserRegister) ProtoReflect() protoreflect.Message {
-	mi := &file_api_gateway_proto_msgTypes[17]
+	mi := &file_api_gateway_proto_msgTypes[18]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -914,7 +967,7 @@ func (x *UserRegister) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UserRegister.ProtoReflect.Descriptor instead.
 func (*UserRegister) Descriptor() ([]byte, []int) {
-	return file_api_gateway_proto_rawDescGZIP(), []int{17}
+	return file_api_gateway_proto_rawDescGZIP(), []int{18}
 }
 
 func (x *UserRegister) GetFirstname() string {
@@ -969,7 +1022,7 @@ type VerifyReq struct {
 
 func (x *VerifyReq) Reset() {
 	*x = VerifyReq{}
-	mi := &file_api_gateway_proto_msgTypes[18]
+	mi := &file_api_gateway_proto_msgTypes[19]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -981,7 +1034,7 @@ func (x *VerifyReq) String() string {
 func (*VerifyReq) ProtoMessage() {}
 
 func (x *VerifyReq) ProtoReflect() protoreflect.Message {
-	mi := &file_api_gateway_proto_msgTypes[18]
+	mi := &file_api_gateway_proto_msgTypes[19]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -994,7 +1047,7 @@ func (x *VerifyReq) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use VerifyReq.ProtoReflect.Descriptor instead.
 func (*VerifyReq) Descriptor() ([]byte, []int) {
-	return file_api_gateway_proto_rawDescGZIP(), []int{18}
+	return file_api_gateway_proto_rawDescGZIP(), []int{19}
 }
 
 func (x *VerifyReq) GetVerifyUser() *UserVerifyReq {
@@ -1015,7 +1068,7 @@ type UserVerifyReq struct {
 
 func (x *UserVerifyReq) Reset() {
 	*x = UserVerifyReq{}
-	mi := &file_api_gateway_proto_msgTypes[19]
+	mi := &file_api_gateway_proto_msgTypes[20]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1027,7 +1080,7 @@ func (x *UserVerifyReq) String() string {
 func (*UserVerifyReq) ProtoMessage() {}
 
 func (x *UserVerifyReq) ProtoReflect() protoreflect.Message {
-	mi := &file_api_gateway_proto_msgTypes[19]
+	mi := &file_api_gateway_proto_msgTypes[20]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1040,7 +1093,7 @@ func (x *UserVerifyReq) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UserVerifyReq.ProtoReflect.Descriptor instead.
 func (*UserVerifyReq) Descriptor() ([]byte, []int) {
-	return file_api_gateway_proto_rawDescGZIP(), []int{19}
+	return file_api_gateway_proto_rawDescGZIP(), []int{20}
 }
 
 func (x *UserVerifyReq) GetUsername() string {
@@ -1067,7 +1120,7 @@ type LoginReq struct {
 
 func (x *LoginReq) Reset() {
 	*x = LoginReq{}
-	mi := &file_api_gateway_proto_msgTypes[20]
+	mi := &file_api_gateway_proto_msgTypes[21]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1079,7 +1132,7 @@ func (x *LoginReq) String() string {
 func (*LoginReq) ProtoMessage() {}
 
 func (x *LoginReq) ProtoReflect() protoreflect.Message {
-	mi := &file_api_gateway_proto_msgTypes[20]
+	mi := &file_api_gateway_proto_msgTypes[21]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1092,7 +1145,7 @@ func (x *LoginReq) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use LoginReq.ProtoReflect.Descriptor instead.
 func (*LoginReq) Descriptor() ([]byte, []int) {
-	return file_api_gateway_proto_rawDescGZIP(), []int{20}
+	return file_api_gateway_proto_rawDescGZIP(), []int{21}
 }
 
 func (x *LoginReq) GetLoginUser() *LoginUserR {
@@ -1113,7 +1166,7 @@ type LoginUserR struct {
 
 func (x *LoginUserR) Reset() {
 	*x = LoginUserR{}
-	mi := &file_api_gateway_proto_msgTypes[21]
+	mi := &file_api_gateway_proto_msgTypes[22]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1125,7 +1178,7 @@ func (x *LoginUserR) String() string {
 func (*LoginUserR) ProtoMessage() {}
 
 func (x *LoginUserR) ProtoReflect() protoreflect.Message {
-	mi := &file_api_gateway_proto_msgTypes[21]
+	mi := &file_api_gateway_proto_msgTypes[22]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1138,7 +1191,7 @@ func (x *LoginUserR) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use LoginUserR.ProtoReflect.Descriptor instead.
 func (*LoginUserR) Descriptor() ([]byte, []int) {
-	return file_api_gateway_proto_rawDescGZIP(), []int{21}
+	return file_api_gateway_proto_rawDescGZIP(), []int{22}
 }
 
 func (x *LoginUserR) GetUsername() string {
@@ -1165,7 +1218,7 @@ type GetUserByUsernameReq struct {
 
 func (x *GetUserByUsernameReq) Reset() {
 	*x = GetUserByUsernameReq{}
-	mi := &file_api_gateway_proto_msgTypes[22]
+	mi := &file_api_gateway_proto_msgTypes[23]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1177,7 +1230,7 @@ func (x *GetUserByUsernameReq) String() string {
 func (*GetUserByUsernameReq) ProtoMessage() {}
 
 func (x *GetUserByUsernameReq) ProtoReflect() protoreflect.Message {
-	mi := &file_api_gateway_proto_msgTypes[22]
+	mi := &file_api_gateway_proto_msgTypes[23]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1190,7 +1243,7 @@ func (x *GetUserByUsernameReq) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetUserByUsernameReq.ProtoReflect.Descriptor instead.
 func (*GetUserByUsernameReq) Descriptor() ([]byte, []int) {
-	return file_api_gateway_proto_rawDescGZIP(), []int{22}
+	return file_api_gateway_proto_rawDescGZIP(), []int{23}
 }
 
 func (x *GetUserByUsernameReq) GetUsername() string {
@@ -1210,7 +1263,7 @@ type GetUserByUsernameRes struct {
 
 func (x *GetUserByUsernameRes) Reset() {
 	*x = GetUserByUsernameRes{}
-	mi := &file_api_gateway_proto_msgTypes[23]
+	mi := &file_api_gateway_proto_msgTypes[24]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1222,7 +1275,7 @@ func (x *GetUserByUsernameRes) String() string {
 func (*GetUserByUsernameRes) ProtoMessage() {}
 
 func (x *GetUserByUsernameRes) ProtoReflect() protoreflect.Message {
-	mi := &file_api_gateway_proto_msgTypes[23]
+	mi := &file_api_gateway_proto_msgTypes[24]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1235,7 +1288,7 @@ func (x *GetUserByUsernameRes) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetUserByUsernameRes.ProtoReflect.Descriptor instead.
 func (*GetUserByUsernameRes) Descriptor() ([]byte, []int) {
-	return file_api_gateway_proto_rawDescGZIP(), []int{23}
+	return file_api_gateway_proto_rawDescGZIP(), []int{24}
 }
 
 func (x *GetUserByUsernameRes) GetUser() *UserL {
@@ -1256,7 +1309,7 @@ type LoginRes struct {
 
 func (x *LoginRes) Reset() {
 	*x = LoginRes{}
-	mi := &file_api_gateway_proto_msgTypes[24]
+	mi := &file_api_gateway_proto_msgTypes[25]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1268,7 +1321,7 @@ func (x *LoginRes) String() string {
 func (*LoginRes) ProtoMessage() {}
 
 func (x *LoginRes) ProtoReflect() protoreflect.Message {
-	mi := &file_api_gateway_proto_msgTypes[24]
+	mi := &file_api_gateway_proto_msgTypes[25]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1281,7 +1334,7 @@ func (x *LoginRes) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use LoginRes.ProtoReflect.Descriptor instead.
 func (*LoginRes) Descriptor() ([]byte, []int) {
-	return file_api_gateway_proto_rawDescGZIP(), []int{24}
+	return file_api_gateway_proto_rawDescGZIP(), []int{25}
 }
 
 func (x *LoginRes) GetMessage() string {
@@ -1316,7 +1369,7 @@ type UserL struct {
 
 func (x *UserL) Reset() {
 	*x = UserL{}
-	mi := &file_api_gateway_proto_msgTypes[25]
+	mi := &file_api_gateway_proto_msgTypes[26]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1328,7 +1381,7 @@ func (x *UserL) String() string {
 func (*UserL) ProtoMessage() {}
 
 func (x *UserL) ProtoReflect() protoreflect.Message {
-	mi := &file_api_gateway_proto_msgTypes[25]
+	mi := &file_api_gateway_proto_msgTypes[26]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1341,7 +1394,7 @@ func (x *UserL) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UserL.ProtoReflect.Descriptor instead.
 func (*UserL) Descriptor() ([]byte, []int) {
-	return file_api_gateway_proto_rawDescGZIP(), []int{25}
+	return file_api_gateway_proto_rawDescGZIP(), []int{26}
 }
 
 func (x *UserL) GetId() string {
@@ -1417,7 +1470,7 @@ type ChangePasswordReq struct {
 
 func (x *ChangePasswordReq) Reset() {
 	*x = ChangePasswordReq{}
-	mi := &file_api_gateway_proto_msgTypes[26]
+	mi := &file_api_gateway_proto_msgTypes[27]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1429,7 +1482,7 @@ func (x *ChangePasswordReq) String() string {
 func (*ChangePasswordReq) ProtoMessage() {}
 
 func (x *ChangePasswordReq) ProtoReflect() protoreflect.Message {
-	mi := &file_api_gateway_proto_msgTypes[26]
+	mi := &file_api_gateway_proto_msgTypes[27]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1442,7 +1495,7 @@ func (x *ChangePasswordReq) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ChangePasswordReq.ProtoReflect.Descriptor instead.
 func (*ChangePasswordReq) Descriptor() ([]byte, []int) {
-	return file_api_gateway_proto_rawDescGZIP(), []int{26}
+	return file_api_gateway_proto_rawDescGZIP(), []int{27}
 }
 
 func (x *ChangePasswordReq) GetChangeUser() *ChangePasswordUser {
@@ -1464,7 +1517,7 @@ type ChangePasswordUser struct {
 
 func (x *ChangePasswordUser) Reset() {
 	*x = ChangePasswordUser{}
-	mi := &file_api_gateway_proto_msgTypes[27]
+	mi := &file_api_gateway_proto_msgTypes[28]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1476,7 +1529,7 @@ func (x *ChangePasswordUser) String() string {
 func (*ChangePasswordUser) ProtoMessage() {}
 
 func (x *ChangePasswordUser) ProtoReflect() protoreflect.Message {
-	mi := &file_api_gateway_proto_msgTypes[27]
+	mi := &file_api_gateway_proto_msgTypes[28]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1489,7 +1542,7 @@ func (x *ChangePasswordUser) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ChangePasswordUser.ProtoReflect.Descriptor instead.
 func (*ChangePasswordUser) Descriptor() ([]byte, []int) {
-	return file_api_gateway_proto_rawDescGZIP(), []int{27}
+	return file_api_gateway_proto_rawDescGZIP(), []int{28}
 }
 
 func (x *ChangePasswordUser) GetUsername() string {
@@ -1521,7 +1574,11 @@ var file_api_gateway_proto_rawDesc = []byte{
 	0x6f, 0x62, 0x75, 0x66, 0x2f, 0x74, 0x69, 0x6d, 0x65, 0x73, 0x74, 0x61, 0x6d, 0x70, 0x2e, 0x70,
 	0x72, 0x6f, 0x74, 0x6f, 0x1a, 0x1c, 0x67, 0x6f, 0x6f, 0x67, 0x6c, 0x65, 0x2f, 0x61, 0x70, 0x69,
 	0x2f, 0x61, 0x6e, 0x6e, 0x6f, 0x74, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x2e, 0x70, 0x72, 0x6f,
-	0x74, 0x6f, 0x22, 0x0f, 0x0a, 0x0d, 0x45, 0x6d, 0x70, 0x74, 0x79, 0x52, 0x65, 0x73, 0x70, 0x6f,
+	0x74, 0x6f, 0x22, 0x3e, 0x0a, 0x11, 0x41, 0x64, 0x64, 0x4d, 0x65, 0x6d, 0x62, 0x65, 0x72, 0x73,
+	0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x12, 0x0e, 0x0a, 0x02, 0x69, 0x64, 0x18, 0x01, 0x20,
+	0x01, 0x28, 0x09, 0x52, 0x02, 0x69, 0x64, 0x12, 0x19, 0x0a, 0x04, 0x75, 0x73, 0x65, 0x72, 0x18,
+	0x02, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x05, 0x2e, 0x55, 0x73, 0x65, 0x72, 0x52, 0x04, 0x75, 0x73,
+	0x65, 0x72, 0x22, 0x0f, 0x0a, 0x0d, 0x45, 0x6d, 0x70, 0x74, 0x79, 0x52, 0x65, 0x73, 0x70, 0x6f,
 	0x6e, 0x73, 0x65, 0x22, 0xf3, 0x01, 0x0a, 0x07, 0x50, 0x72, 0x6f, 0x6a, 0x65, 0x63, 0x74, 0x12,
 	0x0e, 0x0a, 0x02, 0x69, 0x64, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x02, 0x69, 0x64, 0x12,
 	0x12, 0x0a, 0x04, 0x6e, 0x61, 0x6d, 0x65, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x52, 0x04, 0x6e,
@@ -1650,7 +1707,7 @@ var file_api_gateway_proto_rawDesc = []byte{
 	0x01, 0x28, 0x09, 0x52, 0x0f, 0x63, 0x75, 0x72, 0x72, 0x65, 0x6e, 0x74, 0x50, 0x61, 0x73, 0x73,
 	0x77, 0x6f, 0x72, 0x64, 0x12, 0x20, 0x0a, 0x0b, 0x6e, 0x65, 0x77, 0x50, 0x61, 0x73, 0x73, 0x77,
 	0x6f, 0x72, 0x64, 0x18, 0x03, 0x20, 0x01, 0x28, 0x09, 0x52, 0x0b, 0x6e, 0x65, 0x77, 0x50, 0x61,
-	0x73, 0x73, 0x77, 0x6f, 0x72, 0x64, 0x32, 0xce, 0x02, 0x0a, 0x0e, 0x50, 0x72, 0x6f, 0x6a, 0x65,
+	0x73, 0x73, 0x77, 0x6f, 0x72, 0x64, 0x32, 0xa9, 0x03, 0x0a, 0x0e, 0x50, 0x72, 0x6f, 0x6a, 0x65,
 	0x63, 0x74, 0x53, 0x65, 0x72, 0x76, 0x69, 0x63, 0x65, 0x12, 0x5a, 0x0a, 0x0e, 0x47, 0x65, 0x74,
 	0x41, 0x6c, 0x6c, 0x50, 0x72, 0x6f, 0x6a, 0x65, 0x63, 0x74, 0x73, 0x12, 0x12, 0x2e, 0x47, 0x65,
 	0x74, 0x41, 0x6c, 0x6c, 0x50, 0x72, 0x6f, 0x6a, 0x65, 0x63, 0x74, 0x73, 0x52, 0x65, 0x71, 0x1a,
@@ -1671,62 +1728,68 @@ var file_api_gateway_proto_rawDesc = []byte{
 	0x74, 0x42, 0x79, 0x49, 0x64, 0x52, 0x65, 0x71, 0x1a, 0x12, 0x2e, 0x47, 0x65, 0x74, 0x50, 0x72,
 	0x6f, 0x6a, 0x65, 0x63, 0x74, 0x42, 0x79, 0x49, 0x64, 0x52, 0x65, 0x73, 0x22, 0x19, 0x82, 0xd3,
 	0xe4, 0x93, 0x02, 0x13, 0x12, 0x11, 0x2f, 0x61, 0x70, 0x69, 0x2f, 0x70, 0x72, 0x6f, 0x6a, 0x65,
-	0x63, 0x74, 0x2f, 0x7b, 0x69, 0x64, 0x7d, 0x32, 0xa7, 0x02, 0x0a, 0x0b, 0x54, 0x61, 0x73, 0x6b,
-	0x53, 0x65, 0x72, 0x76, 0x69, 0x63, 0x65, 0x12, 0x4e, 0x0a, 0x11, 0x47, 0x65, 0x74, 0x41, 0x6c,
-	0x6c, 0x42, 0x79, 0x50, 0x72, 0x6f, 0x6a, 0x65, 0x63, 0x74, 0x49, 0x64, 0x12, 0x0f, 0x2e, 0x47,
-	0x65, 0x74, 0x41, 0x6c, 0x6c, 0x54, 0x61, 0x73, 0x6b, 0x73, 0x52, 0x65, 0x71, 0x1a, 0x0f, 0x2e,
-	0x47, 0x65, 0x74, 0x41, 0x6c, 0x6c, 0x54, 0x61, 0x73, 0x6b, 0x73, 0x52, 0x65, 0x73, 0x22, 0x17,
-	0x82, 0xd3, 0xe4, 0x93, 0x02, 0x11, 0x12, 0x0f, 0x2f, 0x61, 0x70, 0x69, 0x2f, 0x74, 0x61, 0x73,
-	0x6b, 0x73, 0x2f, 0x7b, 0x69, 0x64, 0x7d, 0x12, 0x41, 0x0a, 0x06, 0x43, 0x72, 0x65, 0x61, 0x74,
-	0x65, 0x12, 0x0e, 0x2e, 0x43, 0x72, 0x65, 0x61, 0x74, 0x65, 0x54, 0x61, 0x73, 0x6b, 0x52, 0x65,
-	0x71, 0x1a, 0x0e, 0x2e, 0x45, 0x6d, 0x70, 0x74, 0x79, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73,
-	0x65, 0x22, 0x17, 0x82, 0xd3, 0xe4, 0x93, 0x02, 0x11, 0x3a, 0x04, 0x74, 0x61, 0x73, 0x6b, 0x22,
-	0x09, 0x2f, 0x61, 0x70, 0x69, 0x2f, 0x74, 0x61, 0x73, 0x6b, 0x12, 0x40, 0x0a, 0x06, 0x44, 0x65,
-	0x6c, 0x65, 0x74, 0x65, 0x12, 0x0e, 0x2e, 0x44, 0x65, 0x6c, 0x65, 0x74, 0x65, 0x54, 0x61, 0x73,
-	0x6b, 0x52, 0x65, 0x71, 0x1a, 0x0e, 0x2e, 0x45, 0x6d, 0x70, 0x74, 0x79, 0x52, 0x65, 0x73, 0x70,
-	0x6f, 0x6e, 0x73, 0x65, 0x22, 0x16, 0x82, 0xd3, 0xe4, 0x93, 0x02, 0x10, 0x2a, 0x0e, 0x2f, 0x61,
-	0x70, 0x69, 0x2f, 0x74, 0x61, 0x73, 0x6b, 0x2f, 0x7b, 0x69, 0x64, 0x7d, 0x12, 0x43, 0x0a, 0x07,
-	0x47, 0x65, 0x74, 0x42, 0x79, 0x49, 0x64, 0x12, 0x0f, 0x2e, 0x47, 0x65, 0x74, 0x42, 0x79, 0x49,
-	0x64, 0x54, 0x61, 0x73, 0x6b, 0x52, 0x65, 0x71, 0x1a, 0x0f, 0x2e, 0x47, 0x65, 0x74, 0x42, 0x79,
-	0x49, 0x64, 0x54, 0x61, 0x73, 0x6b, 0x52, 0x65, 0x73, 0x22, 0x16, 0x82, 0xd3, 0xe4, 0x93, 0x02,
-	0x10, 0x12, 0x0e, 0x2f, 0x61, 0x70, 0x69, 0x2f, 0x74, 0x61, 0x73, 0x6b, 0x2f, 0x7b, 0x69, 0x64,
-	0x7d, 0x32, 0xab, 0x04, 0x0a, 0x0c, 0x55, 0x73, 0x65, 0x72, 0x73, 0x53, 0x65, 0x72, 0x76, 0x69,
-	0x63, 0x65, 0x12, 0x52, 0x0a, 0x0f, 0x52, 0x65, 0x67, 0x69, 0x73, 0x74, 0x65, 0x72, 0x48, 0x61,
-	0x6e, 0x64, 0x6c, 0x65, 0x72, 0x12, 0x0c, 0x2e, 0x52, 0x65, 0x67, 0x69, 0x73, 0x74, 0x65, 0x72,
-	0x52, 0x65, 0x71, 0x1a, 0x0e, 0x2e, 0x45, 0x6d, 0x70, 0x74, 0x79, 0x52, 0x65, 0x73, 0x70, 0x6f,
-	0x6e, 0x73, 0x65, 0x22, 0x21, 0x82, 0xd3, 0xe4, 0x93, 0x02, 0x1b, 0x3a, 0x04, 0x75, 0x73, 0x65,
-	0x72, 0x22, 0x13, 0x2f, 0x61, 0x70, 0x69, 0x2f, 0x75, 0x73, 0x65, 0x72, 0x73, 0x2f, 0x72, 0x65,
-	0x67, 0x69, 0x73, 0x74, 0x65, 0x72, 0x12, 0x52, 0x0a, 0x0d, 0x56, 0x65, 0x72, 0x69, 0x66, 0x79,
-	0x48, 0x61, 0x6e, 0x64, 0x6c, 0x65, 0x72, 0x12, 0x0a, 0x2e, 0x56, 0x65, 0x72, 0x69, 0x66, 0x79,
-	0x52, 0x65, 0x71, 0x1a, 0x0e, 0x2e, 0x45, 0x6d, 0x70, 0x74, 0x79, 0x52, 0x65, 0x73, 0x70, 0x6f,
-	0x6e, 0x73, 0x65, 0x22, 0x25, 0x82, 0xd3, 0xe4, 0x93, 0x02, 0x1f, 0x3a, 0x0a, 0x76, 0x65, 0x72,
-	0x69, 0x66, 0x79, 0x55, 0x73, 0x65, 0x72, 0x22, 0x11, 0x2f, 0x61, 0x70, 0x69, 0x2f, 0x75, 0x73,
-	0x65, 0x72, 0x73, 0x2f, 0x76, 0x65, 0x72, 0x69, 0x66, 0x79, 0x12, 0x4d, 0x0a, 0x10, 0x4c, 0x6f,
-	0x67, 0x69, 0x6e, 0x55, 0x73, 0x65, 0x72, 0x48, 0x61, 0x6e, 0x64, 0x6c, 0x65, 0x72, 0x12, 0x09,
-	0x2e, 0x4c, 0x6f, 0x67, 0x69, 0x6e, 0x52, 0x65, 0x71, 0x1a, 0x09, 0x2e, 0x4c, 0x6f, 0x67, 0x69,
-	0x6e, 0x52, 0x65, 0x73, 0x22, 0x23, 0x82, 0xd3, 0xe4, 0x93, 0x02, 0x1d, 0x3a, 0x09, 0x6c, 0x6f,
-	0x67, 0x69, 0x6e, 0x55, 0x73, 0x65, 0x72, 0x22, 0x10, 0x2f, 0x61, 0x70, 0x69, 0x2f, 0x75, 0x73,
-	0x65, 0x72, 0x73, 0x2f, 0x6c, 0x6f, 0x67, 0x69, 0x6e, 0x12, 0x60, 0x0a, 0x11, 0x47, 0x65, 0x74,
+	0x63, 0x74, 0x2f, 0x7b, 0x69, 0x64, 0x7d, 0x12, 0x59, 0x0a, 0x09, 0x41, 0x64, 0x64, 0x4d, 0x65,
+	0x6d, 0x62, 0x65, 0x72, 0x12, 0x12, 0x2e, 0x41, 0x64, 0x64, 0x4d, 0x65, 0x6d, 0x62, 0x65, 0x72,
+	0x73, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x0e, 0x2e, 0x45, 0x6d, 0x70, 0x74, 0x79,
+	0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x28, 0x82, 0xd3, 0xe4, 0x93, 0x02, 0x22,
+	0x3a, 0x04, 0x75, 0x73, 0x65, 0x72, 0x1a, 0x1a, 0x2f, 0x61, 0x70, 0x69, 0x2f, 0x70, 0x72, 0x6f,
+	0x6a, 0x65, 0x63, 0x74, 0x73, 0x2f, 0x7b, 0x69, 0x64, 0x7d, 0x2f, 0x6d, 0x65, 0x6d, 0x62, 0x65,
+	0x72, 0x73, 0x32, 0xa7, 0x02, 0x0a, 0x0b, 0x54, 0x61, 0x73, 0x6b, 0x53, 0x65, 0x72, 0x76, 0x69,
+	0x63, 0x65, 0x12, 0x4e, 0x0a, 0x11, 0x47, 0x65, 0x74, 0x41, 0x6c, 0x6c, 0x42, 0x79, 0x50, 0x72,
+	0x6f, 0x6a, 0x65, 0x63, 0x74, 0x49, 0x64, 0x12, 0x0f, 0x2e, 0x47, 0x65, 0x74, 0x41, 0x6c, 0x6c,
+	0x54, 0x61, 0x73, 0x6b, 0x73, 0x52, 0x65, 0x71, 0x1a, 0x0f, 0x2e, 0x47, 0x65, 0x74, 0x41, 0x6c,
+	0x6c, 0x54, 0x61, 0x73, 0x6b, 0x73, 0x52, 0x65, 0x73, 0x22, 0x17, 0x82, 0xd3, 0xe4, 0x93, 0x02,
+	0x11, 0x12, 0x0f, 0x2f, 0x61, 0x70, 0x69, 0x2f, 0x74, 0x61, 0x73, 0x6b, 0x73, 0x2f, 0x7b, 0x69,
+	0x64, 0x7d, 0x12, 0x41, 0x0a, 0x06, 0x43, 0x72, 0x65, 0x61, 0x74, 0x65, 0x12, 0x0e, 0x2e, 0x43,
+	0x72, 0x65, 0x61, 0x74, 0x65, 0x54, 0x61, 0x73, 0x6b, 0x52, 0x65, 0x71, 0x1a, 0x0e, 0x2e, 0x45,
+	0x6d, 0x70, 0x74, 0x79, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x17, 0x82, 0xd3,
+	0xe4, 0x93, 0x02, 0x11, 0x3a, 0x04, 0x74, 0x61, 0x73, 0x6b, 0x22, 0x09, 0x2f, 0x61, 0x70, 0x69,
+	0x2f, 0x74, 0x61, 0x73, 0x6b, 0x12, 0x40, 0x0a, 0x06, 0x44, 0x65, 0x6c, 0x65, 0x74, 0x65, 0x12,
+	0x0e, 0x2e, 0x44, 0x65, 0x6c, 0x65, 0x74, 0x65, 0x54, 0x61, 0x73, 0x6b, 0x52, 0x65, 0x71, 0x1a,
+	0x0e, 0x2e, 0x45, 0x6d, 0x70, 0x74, 0x79, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22,
+	0x16, 0x82, 0xd3, 0xe4, 0x93, 0x02, 0x10, 0x2a, 0x0e, 0x2f, 0x61, 0x70, 0x69, 0x2f, 0x74, 0x61,
+	0x73, 0x6b, 0x2f, 0x7b, 0x69, 0x64, 0x7d, 0x12, 0x43, 0x0a, 0x07, 0x47, 0x65, 0x74, 0x42, 0x79,
+	0x49, 0x64, 0x12, 0x0f, 0x2e, 0x47, 0x65, 0x74, 0x42, 0x79, 0x49, 0x64, 0x54, 0x61, 0x73, 0x6b,
+	0x52, 0x65, 0x71, 0x1a, 0x0f, 0x2e, 0x47, 0x65, 0x74, 0x42, 0x79, 0x49, 0x64, 0x54, 0x61, 0x73,
+	0x6b, 0x52, 0x65, 0x73, 0x22, 0x16, 0x82, 0xd3, 0xe4, 0x93, 0x02, 0x10, 0x12, 0x0e, 0x2f, 0x61,
+	0x70, 0x69, 0x2f, 0x74, 0x61, 0x73, 0x6b, 0x2f, 0x7b, 0x69, 0x64, 0x7d, 0x32, 0xab, 0x04, 0x0a,
+	0x0c, 0x55, 0x73, 0x65, 0x72, 0x73, 0x53, 0x65, 0x72, 0x76, 0x69, 0x63, 0x65, 0x12, 0x52, 0x0a,
+	0x0f, 0x52, 0x65, 0x67, 0x69, 0x73, 0x74, 0x65, 0x72, 0x48, 0x61, 0x6e, 0x64, 0x6c, 0x65, 0x72,
+	0x12, 0x0c, 0x2e, 0x52, 0x65, 0x67, 0x69, 0x73, 0x74, 0x65, 0x72, 0x52, 0x65, 0x71, 0x1a, 0x0e,
+	0x2e, 0x45, 0x6d, 0x70, 0x74, 0x79, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x21,
+	0x82, 0xd3, 0xe4, 0x93, 0x02, 0x1b, 0x3a, 0x04, 0x75, 0x73, 0x65, 0x72, 0x22, 0x13, 0x2f, 0x61,
+	0x70, 0x69, 0x2f, 0x75, 0x73, 0x65, 0x72, 0x73, 0x2f, 0x72, 0x65, 0x67, 0x69, 0x73, 0x74, 0x65,
+	0x72, 0x12, 0x52, 0x0a, 0x0d, 0x56, 0x65, 0x72, 0x69, 0x66, 0x79, 0x48, 0x61, 0x6e, 0x64, 0x6c,
+	0x65, 0x72, 0x12, 0x0a, 0x2e, 0x56, 0x65, 0x72, 0x69, 0x66, 0x79, 0x52, 0x65, 0x71, 0x1a, 0x0e,
+	0x2e, 0x45, 0x6d, 0x70, 0x74, 0x79, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x25,
+	0x82, 0xd3, 0xe4, 0x93, 0x02, 0x1f, 0x3a, 0x0a, 0x76, 0x65, 0x72, 0x69, 0x66, 0x79, 0x55, 0x73,
+	0x65, 0x72, 0x22, 0x11, 0x2f, 0x61, 0x70, 0x69, 0x2f, 0x75, 0x73, 0x65, 0x72, 0x73, 0x2f, 0x76,
+	0x65, 0x72, 0x69, 0x66, 0x79, 0x12, 0x4d, 0x0a, 0x10, 0x4c, 0x6f, 0x67, 0x69, 0x6e, 0x55, 0x73,
+	0x65, 0x72, 0x48, 0x61, 0x6e, 0x64, 0x6c, 0x65, 0x72, 0x12, 0x09, 0x2e, 0x4c, 0x6f, 0x67, 0x69,
+	0x6e, 0x52, 0x65, 0x71, 0x1a, 0x09, 0x2e, 0x4c, 0x6f, 0x67, 0x69, 0x6e, 0x52, 0x65, 0x73, 0x22,
+	0x23, 0x82, 0xd3, 0xe4, 0x93, 0x02, 0x1d, 0x3a, 0x09, 0x6c, 0x6f, 0x67, 0x69, 0x6e, 0x55, 0x73,
+	0x65, 0x72, 0x22, 0x10, 0x2f, 0x61, 0x70, 0x69, 0x2f, 0x75, 0x73, 0x65, 0x72, 0x73, 0x2f, 0x6c,
+	0x6f, 0x67, 0x69, 0x6e, 0x12, 0x60, 0x0a, 0x11, 0x47, 0x65, 0x74, 0x55, 0x73, 0x65, 0x72, 0x42,
+	0x79, 0x55, 0x73, 0x65, 0x72, 0x6e, 0x61, 0x6d, 0x65, 0x12, 0x15, 0x2e, 0x47, 0x65, 0x74, 0x55,
+	0x73, 0x65, 0x72, 0x42, 0x79, 0x55, 0x73, 0x65, 0x72, 0x6e, 0x61, 0x6d, 0x65, 0x52, 0x65, 0x71,
+	0x1a, 0x15, 0x2e, 0x47, 0x65, 0x74, 0x55, 0x73, 0x65, 0x72, 0x42, 0x79, 0x55, 0x73, 0x65, 0x72,
+	0x6e, 0x61, 0x6d, 0x65, 0x52, 0x65, 0x73, 0x22, 0x1d, 0x82, 0xd3, 0xe4, 0x93, 0x02, 0x17, 0x12,
+	0x15, 0x2f, 0x61, 0x70, 0x69, 0x2f, 0x75, 0x73, 0x65, 0x72, 0x73, 0x2f, 0x7b, 0x75, 0x73, 0x65,
+	0x72, 0x6e, 0x61, 0x6d, 0x65, 0x7d, 0x12, 0x5c, 0x0a, 0x14, 0x44, 0x65, 0x6c, 0x65, 0x74, 0x65,
 	0x55, 0x73, 0x65, 0x72, 0x42, 0x79, 0x55, 0x73, 0x65, 0x72, 0x6e, 0x61, 0x6d, 0x65, 0x12, 0x15,
 	0x2e, 0x47, 0x65, 0x74, 0x55, 0x73, 0x65, 0x72, 0x42, 0x79, 0x55, 0x73, 0x65, 0x72, 0x6e, 0x61,
-	0x6d, 0x65, 0x52, 0x65, 0x71, 0x1a, 0x15, 0x2e, 0x47, 0x65, 0x74, 0x55, 0x73, 0x65, 0x72, 0x42,
-	0x79, 0x55, 0x73, 0x65, 0x72, 0x6e, 0x61, 0x6d, 0x65, 0x52, 0x65, 0x73, 0x22, 0x1d, 0x82, 0xd3,
-	0xe4, 0x93, 0x02, 0x17, 0x12, 0x15, 0x2f, 0x61, 0x70, 0x69, 0x2f, 0x75, 0x73, 0x65, 0x72, 0x73,
-	0x2f, 0x7b, 0x75, 0x73, 0x65, 0x72, 0x6e, 0x61, 0x6d, 0x65, 0x7d, 0x12, 0x5c, 0x0a, 0x14, 0x44,
-	0x65, 0x6c, 0x65, 0x74, 0x65, 0x55, 0x73, 0x65, 0x72, 0x42, 0x79, 0x55, 0x73, 0x65, 0x72, 0x6e,
-	0x61, 0x6d, 0x65, 0x12, 0x15, 0x2e, 0x47, 0x65, 0x74, 0x55, 0x73, 0x65, 0x72, 0x42, 0x79, 0x55,
-	0x73, 0x65, 0x72, 0x6e, 0x61, 0x6d, 0x65, 0x52, 0x65, 0x71, 0x1a, 0x0e, 0x2e, 0x45, 0x6d, 0x70,
-	0x74, 0x79, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x1d, 0x82, 0xd3, 0xe4, 0x93,
-	0x02, 0x17, 0x2a, 0x15, 0x2f, 0x61, 0x70, 0x69, 0x2f, 0x75, 0x73, 0x65, 0x72, 0x73, 0x2f, 0x7b,
-	0x75, 0x73, 0x65, 0x72, 0x6e, 0x61, 0x6d, 0x65, 0x7d, 0x12, 0x64, 0x0a, 0x0e, 0x43, 0x68, 0x61,
-	0x6e, 0x67, 0x65, 0x50, 0x61, 0x73, 0x73, 0x77, 0x6f, 0x72, 0x64, 0x12, 0x12, 0x2e, 0x43, 0x68,
-	0x61, 0x6e, 0x67, 0x65, 0x50, 0x61, 0x73, 0x73, 0x77, 0x6f, 0x72, 0x64, 0x52, 0x65, 0x71, 0x1a,
-	0x0e, 0x2e, 0x45, 0x6d, 0x70, 0x74, 0x79, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22,
-	0x2e, 0x82, 0xd3, 0xe4, 0x93, 0x02, 0x28, 0x3a, 0x0a, 0x63, 0x68, 0x61, 0x6e, 0x67, 0x65, 0x55,
-	0x73, 0x65, 0x72, 0x1a, 0x1a, 0x2f, 0x61, 0x70, 0x69, 0x2f, 0x75, 0x73, 0x65, 0x72, 0x73, 0x2f,
-	0x63, 0x68, 0x61, 0x6e, 0x67, 0x65, 0x2d, 0x70, 0x61, 0x73, 0x73, 0x77, 0x6f, 0x72, 0x64, 0x42,
-	0x13, 0x5a, 0x11, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x2f, 0x61, 0x70, 0x69, 0x2d, 0x67, 0x61, 0x74,
-	0x65, 0x77, 0x61, 0x79, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
+	0x6d, 0x65, 0x52, 0x65, 0x71, 0x1a, 0x0e, 0x2e, 0x45, 0x6d, 0x70, 0x74, 0x79, 0x52, 0x65, 0x73,
+	0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x1d, 0x82, 0xd3, 0xe4, 0x93, 0x02, 0x17, 0x2a, 0x15, 0x2f,
+	0x61, 0x70, 0x69, 0x2f, 0x75, 0x73, 0x65, 0x72, 0x73, 0x2f, 0x7b, 0x75, 0x73, 0x65, 0x72, 0x6e,
+	0x61, 0x6d, 0x65, 0x7d, 0x12, 0x64, 0x0a, 0x0e, 0x43, 0x68, 0x61, 0x6e, 0x67, 0x65, 0x50, 0x61,
+	0x73, 0x73, 0x77, 0x6f, 0x72, 0x64, 0x12, 0x12, 0x2e, 0x43, 0x68, 0x61, 0x6e, 0x67, 0x65, 0x50,
+	0x61, 0x73, 0x73, 0x77, 0x6f, 0x72, 0x64, 0x52, 0x65, 0x71, 0x1a, 0x0e, 0x2e, 0x45, 0x6d, 0x70,
+	0x74, 0x79, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x2e, 0x82, 0xd3, 0xe4, 0x93,
+	0x02, 0x28, 0x3a, 0x0a, 0x63, 0x68, 0x61, 0x6e, 0x67, 0x65, 0x55, 0x73, 0x65, 0x72, 0x1a, 0x1a,
+	0x2f, 0x61, 0x70, 0x69, 0x2f, 0x75, 0x73, 0x65, 0x72, 0x73, 0x2f, 0x63, 0x68, 0x61, 0x6e, 0x67,
+	0x65, 0x2d, 0x70, 0x61, 0x73, 0x73, 0x77, 0x6f, 0x72, 0x64, 0x42, 0x13, 0x5a, 0x11, 0x70, 0x72,
+	0x6f, 0x74, 0x6f, 0x2f, 0x61, 0x70, 0x69, 0x2d, 0x67, 0x61, 0x74, 0x65, 0x77, 0x61, 0x79, 0x62,
+	0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
 }
 
 var (
@@ -1741,86 +1804,90 @@ func file_api_gateway_proto_rawDescGZIP() []byte {
 	return file_api_gateway_proto_rawDescData
 }
 
-var file_api_gateway_proto_msgTypes = make([]protoimpl.MessageInfo, 28)
+var file_api_gateway_proto_msgTypes = make([]protoimpl.MessageInfo, 29)
 var file_api_gateway_proto_goTypes = []any{
-	(*EmptyResponse)(nil),         // 0: EmptyResponse
-	(*Project)(nil),               // 1: Project
-	(*User)(nil),                  // 2: User
-	(*GetAllProjectsRes)(nil),     // 3: GetAllProjectsRes
-	(*GetAllProjectsReq)(nil),     // 4: GetAllProjectsReq
-	(*CreateProjectReq)(nil),      // 5: CreateProjectReq
-	(*DeleteProjectReq)(nil),      // 6: DeleteProjectReq
-	(*GetProjectByIdRes)(nil),     // 7: GetProjectByIdRes
-	(*GetProjectByIdReq)(nil),     // 8: GetProjectByIdReq
-	(*Task)(nil),                  // 9: Task
-	(*GetAllTasksRes)(nil),        // 10: GetAllTasksRes
-	(*GetAllTasksReq)(nil),        // 11: GetAllTasksReq
-	(*CreateTaskReq)(nil),         // 12: CreateTaskReq
-	(*DeleteTaskReq)(nil),         // 13: DeleteTaskReq
-	(*GetByIdTaskRes)(nil),        // 14: GetByIdTaskRes
-	(*GetByIdTaskReq)(nil),        // 15: GetByIdTaskReq
-	(*RegisterReq)(nil),           // 16: RegisterReq
-	(*UserRegister)(nil),          // 17: UserRegister
-	(*VerifyReq)(nil),             // 18: VerifyReq
-	(*UserVerifyReq)(nil),         // 19: UserVerifyReq
-	(*LoginReq)(nil),              // 20: LoginReq
-	(*LoginUserR)(nil),            // 21: LoginUserR
-	(*GetUserByUsernameReq)(nil),  // 22: GetUserByUsernameReq
-	(*GetUserByUsernameRes)(nil),  // 23: GetUserByUsernameRes
-	(*LoginRes)(nil),              // 24: LoginRes
-	(*UserL)(nil),                 // 25: UserL
-	(*ChangePasswordReq)(nil),     // 26: ChangePasswordReq
-	(*ChangePasswordUser)(nil),    // 27: ChangePasswordUser
-	(*timestamppb.Timestamp)(nil), // 28: google.protobuf.Timestamp
+	(*AddMembersRequest)(nil),     // 0: AddMembersRequest
+	(*EmptyResponse)(nil),         // 1: EmptyResponse
+	(*Project)(nil),               // 2: Project
+	(*User)(nil),                  // 3: User
+	(*GetAllProjectsRes)(nil),     // 4: GetAllProjectsRes
+	(*GetAllProjectsReq)(nil),     // 5: GetAllProjectsReq
+	(*CreateProjectReq)(nil),      // 6: CreateProjectReq
+	(*DeleteProjectReq)(nil),      // 7: DeleteProjectReq
+	(*GetProjectByIdRes)(nil),     // 8: GetProjectByIdRes
+	(*GetProjectByIdReq)(nil),     // 9: GetProjectByIdReq
+	(*Task)(nil),                  // 10: Task
+	(*GetAllTasksRes)(nil),        // 11: GetAllTasksRes
+	(*GetAllTasksReq)(nil),        // 12: GetAllTasksReq
+	(*CreateTaskReq)(nil),         // 13: CreateTaskReq
+	(*DeleteTaskReq)(nil),         // 14: DeleteTaskReq
+	(*GetByIdTaskRes)(nil),        // 15: GetByIdTaskRes
+	(*GetByIdTaskReq)(nil),        // 16: GetByIdTaskReq
+	(*RegisterReq)(nil),           // 17: RegisterReq
+	(*UserRegister)(nil),          // 18: UserRegister
+	(*VerifyReq)(nil),             // 19: VerifyReq
+	(*UserVerifyReq)(nil),         // 20: UserVerifyReq
+	(*LoginReq)(nil),              // 21: LoginReq
+	(*LoginUserR)(nil),            // 22: LoginUserR
+	(*GetUserByUsernameReq)(nil),  // 23: GetUserByUsernameReq
+	(*GetUserByUsernameRes)(nil),  // 24: GetUserByUsernameRes
+	(*LoginRes)(nil),              // 25: LoginRes
+	(*UserL)(nil),                 // 26: UserL
+	(*ChangePasswordReq)(nil),     // 27: ChangePasswordReq
+	(*ChangePasswordUser)(nil),    // 28: ChangePasswordUser
+	(*timestamppb.Timestamp)(nil), // 29: google.protobuf.Timestamp
 }
 var file_api_gateway_proto_depIdxs = []int32{
-	28, // 0: Project.completionDate:type_name -> google.protobuf.Timestamp
-	2,  // 1: Project.manager:type_name -> User
-	2,  // 2: Project.members:type_name -> User
-	1,  // 3: GetAllProjectsRes.projects:type_name -> Project
-	1,  // 4: CreateProjectReq.project:type_name -> Project
-	1,  // 5: GetProjectByIdRes.project:type_name -> Project
-	9,  // 6: GetAllTasksRes.tasks:type_name -> Task
-	9,  // 7: CreateTaskReq.task:type_name -> Task
-	9,  // 8: GetByIdTaskRes.task:type_name -> Task
-	17, // 9: RegisterReq.user:type_name -> UserRegister
-	19, // 10: VerifyReq.verifyUser:type_name -> UserVerifyReq
-	21, // 11: LoginReq.loginUser:type_name -> LoginUserR
-	25, // 12: GetUserByUsernameRes.user:type_name -> UserL
-	27, // 13: ChangePasswordReq.changeUser:type_name -> ChangePasswordUser
-	4,  // 14: ProjectService.GetAllProjects:input_type -> GetAllProjectsReq
-	5,  // 15: ProjectService.Create:input_type -> CreateProjectReq
-	6,  // 16: ProjectService.Delete:input_type -> DeleteProjectReq
-	8,  // 17: ProjectService.GetById:input_type -> GetProjectByIdReq
-	11, // 18: TaskService.GetAllByProjectId:input_type -> GetAllTasksReq
-	12, // 19: TaskService.Create:input_type -> CreateTaskReq
-	13, // 20: TaskService.Delete:input_type -> DeleteTaskReq
-	15, // 21: TaskService.GetById:input_type -> GetByIdTaskReq
-	16, // 22: UsersService.RegisterHandler:input_type -> RegisterReq
-	18, // 23: UsersService.VerifyHandler:input_type -> VerifyReq
-	20, // 24: UsersService.LoginUserHandler:input_type -> LoginReq
-	22, // 25: UsersService.GetUserByUsername:input_type -> GetUserByUsernameReq
-	22, // 26: UsersService.DeleteUserByUsername:input_type -> GetUserByUsernameReq
-	26, // 27: UsersService.ChangePassword:input_type -> ChangePasswordReq
-	3,  // 28: ProjectService.GetAllProjects:output_type -> GetAllProjectsRes
-	0,  // 29: ProjectService.Create:output_type -> EmptyResponse
-	0,  // 30: ProjectService.Delete:output_type -> EmptyResponse
-	7,  // 31: ProjectService.GetById:output_type -> GetProjectByIdRes
-	10, // 32: TaskService.GetAllByProjectId:output_type -> GetAllTasksRes
-	0,  // 33: TaskService.Create:output_type -> EmptyResponse
-	0,  // 34: TaskService.Delete:output_type -> EmptyResponse
-	14, // 35: TaskService.GetById:output_type -> GetByIdTaskRes
-	0,  // 36: UsersService.RegisterHandler:output_type -> EmptyResponse
-	0,  // 37: UsersService.VerifyHandler:output_type -> EmptyResponse
-	24, // 38: UsersService.LoginUserHandler:output_type -> LoginRes
-	23, // 39: UsersService.GetUserByUsername:output_type -> GetUserByUsernameRes
-	0,  // 40: UsersService.DeleteUserByUsername:output_type -> EmptyResponse
-	0,  // 41: UsersService.ChangePassword:output_type -> EmptyResponse
-	28, // [28:42] is the sub-list for method output_type
-	14, // [14:28] is the sub-list for method input_type
-	14, // [14:14] is the sub-list for extension type_name
-	14, // [14:14] is the sub-list for extension extendee
-	0,  // [0:14] is the sub-list for field type_name
+	3,  // 0: AddMembersRequest.user:type_name -> User
+	29, // 1: Project.completionDate:type_name -> google.protobuf.Timestamp
+	3,  // 2: Project.manager:type_name -> User
+	3,  // 3: Project.members:type_name -> User
+	2,  // 4: GetAllProjectsRes.projects:type_name -> Project
+	2,  // 5: CreateProjectReq.project:type_name -> Project
+	2,  // 6: GetProjectByIdRes.project:type_name -> Project
+	10, // 7: GetAllTasksRes.tasks:type_name -> Task
+	10, // 8: CreateTaskReq.task:type_name -> Task
+	10, // 9: GetByIdTaskRes.task:type_name -> Task
+	18, // 10: RegisterReq.user:type_name -> UserRegister
+	20, // 11: VerifyReq.verifyUser:type_name -> UserVerifyReq
+	22, // 12: LoginReq.loginUser:type_name -> LoginUserR
+	26, // 13: GetUserByUsernameRes.user:type_name -> UserL
+	28, // 14: ChangePasswordReq.changeUser:type_name -> ChangePasswordUser
+	5,  // 15: ProjectService.GetAllProjects:input_type -> GetAllProjectsReq
+	6,  // 16: ProjectService.Create:input_type -> CreateProjectReq
+	7,  // 17: ProjectService.Delete:input_type -> DeleteProjectReq
+	9,  // 18: ProjectService.GetById:input_type -> GetProjectByIdReq
+	0,  // 19: ProjectService.AddMember:input_type -> AddMembersRequest
+	12, // 20: TaskService.GetAllByProjectId:input_type -> GetAllTasksReq
+	13, // 21: TaskService.Create:input_type -> CreateTaskReq
+	14, // 22: TaskService.Delete:input_type -> DeleteTaskReq
+	16, // 23: TaskService.GetById:input_type -> GetByIdTaskReq
+	17, // 24: UsersService.RegisterHandler:input_type -> RegisterReq
+	19, // 25: UsersService.VerifyHandler:input_type -> VerifyReq
+	21, // 26: UsersService.LoginUserHandler:input_type -> LoginReq
+	23, // 27: UsersService.GetUserByUsername:input_type -> GetUserByUsernameReq
+	23, // 28: UsersService.DeleteUserByUsername:input_type -> GetUserByUsernameReq
+	27, // 29: UsersService.ChangePassword:input_type -> ChangePasswordReq
+	4,  // 30: ProjectService.GetAllProjects:output_type -> GetAllProjectsRes
+	1,  // 31: ProjectService.Create:output_type -> EmptyResponse
+	1,  // 32: ProjectService.Delete:output_type -> EmptyResponse
+	8,  // 33: ProjectService.GetById:output_type -> GetProjectByIdRes
+	1,  // 34: ProjectService.AddMember:output_type -> EmptyResponse
+	11, // 35: TaskService.GetAllByProjectId:output_type -> GetAllTasksRes
+	1,  // 36: TaskService.Create:output_type -> EmptyResponse
+	1,  // 37: TaskService.Delete:output_type -> EmptyResponse
+	15, // 38: TaskService.GetById:output_type -> GetByIdTaskRes
+	1,  // 39: UsersService.RegisterHandler:output_type -> EmptyResponse
+	1,  // 40: UsersService.VerifyHandler:output_type -> EmptyResponse
+	25, // 41: UsersService.LoginUserHandler:output_type -> LoginRes
+	24, // 42: UsersService.GetUserByUsername:output_type -> GetUserByUsernameRes
+	1,  // 43: UsersService.DeleteUserByUsername:output_type -> EmptyResponse
+	1,  // 44: UsersService.ChangePassword:output_type -> EmptyResponse
+	30, // [30:45] is the sub-list for method output_type
+	15, // [15:30] is the sub-list for method input_type
+	15, // [15:15] is the sub-list for extension type_name
+	15, // [15:15] is the sub-list for extension extendee
+	0,  // [0:15] is the sub-list for field type_name
 }
 
 func init() { file_api_gateway_proto_init() }
@@ -1834,7 +1901,7 @@ func file_api_gateway_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_api_gateway_proto_rawDesc,
 			NumEnums:      0,
-			NumMessages:   28,
+			NumMessages:   29,
 			NumExtensions: 0,
 			NumServices:   3,
 		},
