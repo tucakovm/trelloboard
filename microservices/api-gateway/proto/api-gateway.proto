@@ -85,7 +85,7 @@ service UsersService {
       body: "verifyUser"
     };
   }
-  rpc LoginUser(LoginReq) returns (LoginRes) {
+  rpc LoginUserHandler(LoginReq) returns (LoginRes) {
     option (google.api.http) = {
       post: "/api/users/login",
       body: "loginUser"

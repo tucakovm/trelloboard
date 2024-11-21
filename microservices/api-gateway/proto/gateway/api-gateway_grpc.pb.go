@@ -237,7 +237,7 @@ var ProjectService_ServiceDesc = grpc.ServiceDesc{
 const (
 	UsersService_RegisterHandler_FullMethodName      = "/UsersService/RegisterHandler"
 	UsersService_VerifyHandler_FullMethodName        = "/UsersService/VerifyHandler"
-	UsersService_LoginUser_FullMethodName            = "/UsersService/LoginUser"
+	UsersService_LoginUserHandler_FullMethodName     = "/UsersService/LoginUserHandler"
 	UsersService_GetUserByUsername_FullMethodName    = "/UsersService/GetUserByUsername"
 	UsersService_DeleteUserByUsername_FullMethodName = "/UsersService/DeleteUserByUsername"
 	UsersService_ChangePassword_FullMethodName       = "/UsersService/ChangePassword"
@@ -249,7 +249,7 @@ const (
 type UsersServiceClient interface {
 	RegisterHandler(ctx context.Context, in *RegisterReq, opts ...grpc.CallOption) (*EmptyResponse, error)
 	VerifyHandler(ctx context.Context, in *VerifyReq, opts ...grpc.CallOption) (*EmptyResponse, error)
-	LoginUser(ctx context.Context, in *LoginReq, opts ...grpc.CallOption) (*LoginRes, error)
+	LoginUserHandler(ctx context.Context, in *LoginReq, opts ...grpc.CallOption) (*LoginRes, error)
 	GetUserByUsername(ctx context.Context, in *GetUserByUsernameReq, opts ...grpc.CallOption) (*GetUserByUsernameRes, error)
 	DeleteUserByUsername(ctx context.Context, in *GetUserByUsernameReq, opts ...grpc.CallOption) (*EmptyResponse, error)
 	ChangePassword(ctx context.Context, in *ChangePasswordReq, opts ...grpc.CallOption) (*EmptyResponse, error)
@@ -283,10 +283,10 @@ func (c *usersServiceClient) VerifyHandler(ctx context.Context, in *VerifyReq, o
 	return out, nil
 }
 
-func (c *usersServiceClient) LoginUser(ctx context.Context, in *LoginReq, opts ...grpc.CallOption) (*LoginRes, error) {
+func (c *usersServiceClient) LoginUserHandler(ctx context.Context, in *LoginReq, opts ...grpc.CallOption) (*LoginRes, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(LoginRes)
-	err := c.cc.Invoke(ctx, UsersService_LoginUser_FullMethodName, in, out, cOpts...)
+	err := c.cc.Invoke(ctx, UsersService_LoginUserHandler_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -329,7 +329,7 @@ func (c *usersServiceClient) ChangePassword(ctx context.Context, in *ChangePassw
 type UsersServiceServer interface {
 	RegisterHandler(context.Context, *RegisterReq) (*EmptyResponse, error)
 	VerifyHandler(context.Context, *VerifyReq) (*EmptyResponse, error)
-	LoginUser(context.Context, *LoginReq) (*LoginRes, error)
+	LoginUserHandler(context.Context, *LoginReq) (*LoginRes, error)
 	GetUserByUsername(context.Context, *GetUserByUsernameReq) (*GetUserByUsernameRes, error)
 	DeleteUserByUsername(context.Context, *GetUserByUsernameReq) (*EmptyResponse, error)
 	ChangePassword(context.Context, *ChangePasswordReq) (*EmptyResponse, error)
@@ -349,8 +349,8 @@ func (UnimplementedUsersServiceServer) RegisterHandler(context.Context, *Registe
 func (UnimplementedUsersServiceServer) VerifyHandler(context.Context, *VerifyReq) (*EmptyResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method VerifyHandler not implemented")
 }
-func (UnimplementedUsersServiceServer) LoginUser(context.Context, *LoginReq) (*LoginRes, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method LoginUser not implemented")
+func (UnimplementedUsersServiceServer) LoginUserHandler(context.Context, *LoginReq) (*LoginRes, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method LoginUserHandler not implemented")
 }
 func (UnimplementedUsersServiceServer) GetUserByUsername(context.Context, *GetUserByUsernameReq) (*GetUserByUsernameRes, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetUserByUsername not implemented")
@@ -418,20 +418,20 @@ func _UsersService_VerifyHandler_Handler(srv interface{}, ctx context.Context, d
 	return interceptor(ctx, in, info, handler)
 }
 
-func _UsersService_LoginUser_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _UsersService_LoginUserHandler_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(LoginReq)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(UsersServiceServer).LoginUser(ctx, in)
+		return srv.(UsersServiceServer).LoginUserHandler(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: UsersService_LoginUser_FullMethodName,
+		FullMethod: UsersService_LoginUserHandler_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(UsersServiceServer).LoginUser(ctx, req.(*LoginReq))
+		return srv.(UsersServiceServer).LoginUserHandler(ctx, req.(*LoginReq))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -506,8 +506,8 @@ var UsersService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _UsersService_VerifyHandler_Handler,
 		},
 		{
-			MethodName: "LoginUser",
-			Handler:    _UsersService_LoginUser_Handler,
+			MethodName: "LoginUserHandler",
+			Handler:    _UsersService_LoginUserHandler_Handler,
 		},
 		{
 			MethodName: "GetUserByUsername",

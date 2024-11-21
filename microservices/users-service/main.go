@@ -7,7 +7,8 @@ import (
 	"log"
 	"net"
 	"os"
-	"time"
+	"os/signal"
+	"syscall"
 	"users_module/config"
 	h "users_module/handlers"
 	users "users_module/proto/users"
@@ -22,46 +23,43 @@ func main() {
 
 	listener, err := net.Listen("tcp", ":8003")
 	if err != nil {
-		log.Fatalln(err)
+		log.Fatalln("Failed to create listener: ", err)
 	}
 	defer func(listener net.Listener) {
-		err := listener.Close()
-		if err != nil {
-			log.Fatal(err)
+		log.Println("Closing listener")
+		if err := listener.Close(); err != nil {
+			log.Fatal("Error closing listener: ", err)
 		}
 	}(listener)
 
-	timeoutContext, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	timeoutContext, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	//Initialize the logger we are going to use, with prefix and datetime for every log
-	logger := log.New(os.Stdout, "[user-api] ", log.LstdFlags)
-	//storeLogger := log.New(os.Stdout, "[user-store] ", log.LstdFlags)
-
-	// NoSQL: Initialize Product Repository store
+	log.Println("Initializing User Repository...")
 	repoUser, err := repositories.NewUserRepo(timeoutContext)
 	if err != nil {
-		logger.Fatal(err)
+		log.Fatal("Failed to initialize User Repository: ", err)
 	}
 	defer repoUser.Disconnect(timeoutContext)
-	handleErr(err)
+	log.Println("User Repository initialized successfully.")
 
 	serviceUser, err := services.NewUserService(*repoUser)
-	handleErr(err)
-
+	if err != nil {
+		log.Fatal("Failed to initialize User Service: ", err)
+	}
 	handlerUser, err := h.NewUserHandler(serviceUser)
-	handleErr(err)
+	if err != nil {
+		log.Fatal("Failed to initialize User Handler: ", err)
+	}
 
-	// Bootstrap gRPC server.
 	grpcServer := grpc.NewServer()
 	reflection.Register(grpcServer)
-
-	// Bootstrap gRPC service server and respond to request.
 	users.RegisterUsersServiceServer(grpcServer, &handlerUser)
 
 	go func() {
-		if err := grpcServer.Serve(listener); err != nil {
-			log.Fatal("server error: ", err)
+		log.Println("Starting gRPC server...")
+		if err := grpcServer.Serve(listener); err != nil && err != grpc.ErrServerStopped {
+			log.Fatal("gRPC server error: ", err)
 		}
 	}()
 
@@ -88,6 +86,12 @@ func main() {
 	//
 	//// Start the server
 	//log.Fatal(srv.ListenAndServe())
+	stopCh := make(chan os.Signal, 1)
+	signal.Notify(stopCh, syscall.SIGTERM)
+
+	<-stopCh
+
+	grpcServer.Stop()
 }
 
 func handleErr(err error) {

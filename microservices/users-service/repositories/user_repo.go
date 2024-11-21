@@ -132,6 +132,7 @@ func (tr *UserRepo) SaveUser(user models.User) error {
 	return nil
 }
 func (tr *UserRepo) GetUserByUsername(username string) (*models.User, error) {
+	log.Println("usao u repo")
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 

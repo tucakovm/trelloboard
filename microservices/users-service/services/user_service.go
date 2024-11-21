@@ -65,6 +65,7 @@ func (s UserService) VerifyUser(username, code string) error {
 }
 
 func (s UserService) GetUserByUsername(username string) (*proto.UserL, error) {
+	log.Println("usao u servis")
 	user, err := s.repo.GetUserByUsername(username)
 	protoUser := &proto.UserL{
 		Id:        user.Id.Hex(), // Konverzija MongoDB ObjectID u string

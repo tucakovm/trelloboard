@@ -7,6 +7,7 @@ import (
 	"golang.org/x/crypto/bcrypt"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"log"
 	"time"
 	proto "users_module/proto/users"
 	"users_module/services"
@@ -61,8 +62,10 @@ func (h UserHandler) RegisterHandler(ctx context.Context, req *proto.RegisterReq
 	return nil, nil
 }
 
-func (h UserHandler) LoginUser(ctx context.Context, req *proto.LoginReq) (*proto.LoginRes, error) {
+func (h UserHandler) LoginUserHandler(ctx context.Context, req *proto.LoginReq) (*proto.LoginRes, error) {
 	// Pokušaj dohvatanja korisnika
+
+	log.Println("Usao u handler login")
 	user, err := h.service.GetUserByUsername(req.LoginUser.Username)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, "User not found ...")

@@ -5,7 +5,7 @@ option go_package = "proto/users";
 service UsersService {
   rpc RegisterHandler(RegisterReq) returns (EmptyResponse) {}
   rpc VerifyHandler(VerifyReq) returns (EmptyResponse) {}
-  rpc LoginUser(LoginReq) returns (LoginRes) {}
+  rpc LoginUserHandler(LoginReq) returns (LoginRes) {}
   rpc GetUserByUsername(GetUserByUsernameReq) returns (GetUserByUsernameRes) {}
   rpc DeleteUserByUsername(GetUserByUsernameReq) returns (EmptyResponse) {}
   rpc ChangePassword(ChangePasswordReq) returns (EmptyResponse) {}
