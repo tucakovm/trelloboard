@@ -10,22 +10,22 @@
               <input
                 type="text"
                 id="first_name"
-                formControlName="first_name"
+                formControlName="firstname"
                 class="form-control"
               />
               <div
                 *ngIf="
-                  registerForm.get('first_name')?.invalid &&
-                  registerForm.get('first_name')?.touched
+                  registerForm.get('firstname')?.invalid &&
+                  registerForm.get('firstname')?.touched
                 "
                 class="text-danger small"
               >
                 <small
-                  *ngIf="registerForm.get('first_name')?.errors?.['required']"
+                  *ngIf="registerForm.get('firstname')?.errors?.['required']"
                 >First name is required.</small
                 >
                 <small
-                  *ngIf="registerForm.get('first_name')?.errors?.['minlength']"
+                  *ngIf="registerForm.get('firstname')?.errors?.['minlength']"
                 >First name must be at least 2 characters long.</small
                 >
               </div>
@@ -36,22 +36,22 @@
               <input
                 type="text"
                 id="last_name"
-                formControlName="last_name"
+                formControlName="lastname"
                 class="form-control"
               />
               <div
                 *ngIf="
-                  registerForm.get('last_name')?.invalid &&
-                  registerForm.get('last_name')?.touched
+                  registerForm.get('lastname')?.invalid &&
+                  registerForm.get('lastname')?.touched
                 "
                 class="text-danger small"
               >
                 <small
-                  *ngIf="registerForm.get('last_name')?.errors?.['required']"
+                  *ngIf="registerForm.get('lastname')?.errors?.['required']"
                 >Last name is required.</small
                 >
                 <small
-                  *ngIf="registerForm.get('last_name')?.errors?.['minlength']"
+                  *ngIf="registerForm.get('lastname')?.errors?.['minlength']"
                 >Last name must be at least 2 characters long.</small
                 >
               </div>

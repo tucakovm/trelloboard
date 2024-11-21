@@ -17,8 +17,8 @@ export class RegisterComponent {
   constructor(private fb: FormBuilder, private http: HttpClient, private router: Router) {
     this.registerForm = this.fb.group(
       {
-        first_name: ['', [Validators.required, Validators.minLength(2)]],
-        last_name: ['', [Validators.required, Validators.minLength(2)]],
+        firstname: ['', [Validators.required, Validators.minLength(2)]],
+        lastname: ['', [Validators.required, Validators.minLength(2)]],
         username: ['', [Validators.required, Validators.minLength(4)]],
         email: ['', [Validators.required, Validators.email]],
         password: ['', [Validators.required, Validators.minLength(6)]],
@@ -39,7 +39,7 @@ export class RegisterComponent {
       });
 
       this.http
-        .post('http://localhost:8003/register', formData, { headers })
+        .post('http://localhost:8000/api/users/register', formData, { headers })
         .subscribe(
           (response) => {
             this.successMessage = 'Registration successful! Verification email sent.';

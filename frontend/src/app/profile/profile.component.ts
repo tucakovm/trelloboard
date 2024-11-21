@@ -40,7 +40,8 @@ export class ProfileComponent implements OnInit {
     const username = this.authService.getUserName();
     this.userService.getUserByUsername(username).subscribe(
       (response) => {
-        this.user = response;
+        this.user = response.user;
+        console.log(this.user);
       },
       (error) => {
         console.error('Error fetching user by username', error);

@@ -64,7 +64,9 @@ func (s UserService) VerifyUser(username, code string) error {
 }
 
 func (s UserService) GetUserByUsername(username string) (*models.User, error) {
+	log.Println("usao u servis")
 	user, err := s.repo.GetUserByUsername(username)
+
 	if err != nil {
 		return nil, err
 	}
