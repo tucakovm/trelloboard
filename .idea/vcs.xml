@@ -3,7 +3,12 @@
   <component name="VcsDirectoryMappings">
     <mapping directory="" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/microservices/api-gateway/proto/googleapis" vcs="Git" />
+<<<<<<< HEAD
     <mapping directory="$PROJECT_DIR$/microservices/tasks-service/proto/googleapis" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/microservices/users-service/proto/googleapis" vcs="Git" />
+=======
+    <mapping directory="$PROJECT_DIR$/microservices/projects-service/proto/googleapis" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/microservices/tasks-service/proto/googleapis" vcs="Git" />
+>>>>>>> feature/RBAC-delete-acc-member
   </component>
 </project>

@@ -9,8 +9,6 @@ import (
 	"projects_module/services"
 )
 
-type KeyProduct struct{}
-
 type ProjectHandler struct {
 	service services.ProjectService
 	proto.UnimplementedProjectServiceServer
@@ -35,27 +33,11 @@ func (h ProjectHandler) Create(ctx context.Context, req *proto.CreateProjectReq)
 
 func (h ProjectHandler) GetAllProjects(ctx context.Context, req *proto.GetAllProjectsReq) (*proto.GetAllProjectsRes, error) {
 	allProducts, err := h.service.GetAllProjects(req.Username)
-	//log.Println("project handler getAll")
-	//log.Println(allProducts)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, "bad request ...")
 	}
 
 	response := &proto.GetAllProjectsRes{Projects: allProducts}
-	//data, err := p.Marshal(response)
-	//if err != nil {
-	//	log.Println("Error serializing response:", err)
-	//} else {
-	//	log.Println("Serialized response:", data)
-	//	// Try unmarshaling back to verify the integrity of data
-	//	var deserializedResponse proto.GetAllProjectsRes
-	//	err := p.Unmarshal(data, &deserializedResponse)
-	//	if err != nil {
-	//		log.Println("Error unmarshaling response:", err)
-	//	} else {
-	//		log.Println("Deserialized response:", deserializedResponse)
-	//	}
-	//}
 	log.Println(response)
 
 	return response, nil
@@ -80,7 +62,6 @@ func (h ProjectHandler) GetById(ctx context.Context, req *proto.GetByIdReq) (*pr
 }
 
 func (h ProjectHandler) AddMember(ctx context.Context, req *proto.AddMembersRequest) (*proto.EmptyResponse, error) {
-
 	log.Printf("PROTOUSER HANDLER: %+v\n", req.User)
 	projectId := req.Id
 
@@ -90,4 +71,14 @@ func (h ProjectHandler) AddMember(ctx context.Context, req *proto.AddMembersRequ
 		return nil, status.Error(codes.InvalidArgument, "bad request ...")
 	}
 	return nil, nil
+}
+
+func (h ProjectHandler) UserOnProject(ctx context.Context, req *proto.UserOnProjectReq) (*proto.UserOnProjectRes, error) {
+	// Call the service method that checks if the user is on a project
+	res, err := h.service.UserOnProject(req.Username)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, "DB exception.")
+	}
+
+	return &proto.UserOnProjectRes{OnProject: res}, err
 }

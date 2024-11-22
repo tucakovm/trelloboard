@@ -3,12 +3,14 @@ package main
 import (
 	"context"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/reflection"
 	"log"
 	"net"
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 	"users_module/config"
 	h "users_module/handlers"
 	users "users_module/proto/users"
@@ -19,9 +21,11 @@ import (
 func main() {
 
 	cfg, _ := config.LoadConfig()
-	log.Println(cfg.UserPort)
 
-	listener, err := net.Listen("tcp", ":8003")
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	listener, err := net.Listen("tcp", cfg.UserPort)
 	if err != nil {
 		log.Fatalln("Failed to create listener: ", err)
 	}
@@ -31,6 +35,16 @@ func main() {
 			log.Fatal("Error closing listener: ", err)
 		}
 	}(listener)
+
+	// ProjectService connection
+	projectConn, err := grpc.DialContext(
+		ctx,
+		cfg.FullProjectServiceAddress(),
+		grpc.WithBlock(),
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
+	)
+	projectClient := users.NewProjectServiceClient(projectConn)
+	log.Println("ProjectService Gateway registered successfully.")
 
 	timeoutContext, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -47,7 +61,7 @@ func main() {
 	if err != nil {
 		log.Fatal("Failed to initialize User Service: ", err)
 	}
-	handlerUser, err := h.NewUserHandler(serviceUser)
+	handlerUser, err := h.NewUserHandler(serviceUser, projectClient)
 	if err != nil {
 		log.Fatal("Failed to initialize User Handler: ", err)
 	}

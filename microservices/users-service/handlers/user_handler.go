@@ -20,13 +20,15 @@ import (
 )
 
 type UserHandler struct {
-	service services.UserService
+	service        services.UserService
+	projectService proto.ProjectServiceClient
 	proto.UnimplementedUsersServiceServer
 }
 
-func NewUserHandler(service services.UserService) (UserHandler, error) {
+func NewUserHandler(service services.UserService, projectService proto.ProjectServiceClient) (UserHandler, error) {
 	return UserHandler{
-		service: service,
+		service:        service,
+		projectService: projectService,
 	}, nil
 }
 
@@ -140,10 +142,19 @@ func (h UserHandler) GetUserByUsername(ctx context.Context, req *proto.GetUserBy
 }
 
 func (h UserHandler) DeleteUserByUsername(ctx context.Context, req *proto.GetUserByUsernameReq) (*proto.EmptyResponse, error) {
-
-	err := h.service.DeleteUserByUsername(req.Username)
+	userOnProjectReq := &proto.UserOnProjectReq{
+		Id: req.Username,
+	}
+	projServiceResponse, err := h.projectService.UserOnProject(ctx, userOnProjectReq)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, "bad request ...")
+		return nil, status.Error(codes.Internal, "Error checking project")
+	}
+	if projServiceResponse.OnProject {
+		return nil, status.Error(codes.Internal, "User is assigned to a project.")
+	}
+	err = h.service.DeleteUserById(req.Username)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, "Bad request.")
 	}
 	return nil, nil
 }

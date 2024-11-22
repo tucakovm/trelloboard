@@ -249,6 +249,31 @@ func (tr *UserRepo) Delete(username string) error {
 	return nil
 }
 
+func (tr *UserRepo) DeleteById(id string) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	collection := tr.getCollection()
+	if collection == nil {
+		return fmt.Errorf("failed to retrieve collection")
+	}
+
+	filter := bson.M{"username": id}
+	result, err := collection.DeleteOne(ctx, filter)
+	if err != nil {
+		log.Println("Error deleting user:", err)
+		return err
+	}
+
+	if result.DeletedCount == 0 {
+		log.Println("No user found with id:", id)
+		return fmt.Errorf("no user found with the provided id")
+	}
+
+	log.Printf("User deleted successfully", id)
+	return nil
+}
+
 func (tr *UserRepo) UpdatePassword(username, hashedPassword string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
