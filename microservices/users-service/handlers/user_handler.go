@@ -4,15 +4,18 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/golang-jwt/jwt/v4"
 	"golang.org/x/crypto/bcrypt"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
+	"strings"
 	"time"
 	"users_module/models"
 	proto "users_module/proto/users"
@@ -142,8 +145,30 @@ func (h UserHandler) GetUserByUsername(ctx context.Context, req *proto.GetUserBy
 }
 
 func (h UserHandler) DeleteUserByUsername(ctx context.Context, req *proto.GetUserByUsernameReq) (*proto.EmptyResponse, error) {
+	md, ok := metadata.FromIncomingContext(ctx)
+	if !ok {
+		return nil, status.Error(codes.Unauthenticated, "missing metadata")
+	}
+	authHeader := md.Get("authorization")
+	if len(authHeader) == 0 {
+		return nil, status.Error(codes.Unauthenticated, "missing authorization header")
+	}
+	tokenString := strings.TrimPrefix(authHeader[0], "Bearer ")
+	if tokenString == "" {
+		return nil, status.Error(codes.Unauthenticated, "invalid token format")
+	}
+	claims, err := parseJWT(tokenString)
+	if err != nil {
+		return nil, status.Error(codes.Unauthenticated, "invalid or expired token")
+	}
+	role, ok := claims["user_role"].(string)
+	if !ok || role == "" {
+		return nil, status.Error(codes.Unauthenticated, "role not found in token")
+	}
+
 	userOnProjectReq := &proto.UserOnProjectReq{
-		Id: req.Username,
+		Id:   req.Username,
+		Role: role,
 	}
 	projServiceResponse, err := h.projectService.UserOnProject(ctx, userOnProjectReq)
 	if err != nil {
@@ -236,4 +261,22 @@ func (h UserHandler) verifyCaptcha(captchaResponse string) (bool, error) {
 		return true, nil
 	}
 	return false, nil
+}
+
+func parseJWT(tokenString string) (jwt.MapClaims, error) {
+	secret := []byte("matija_AFK") // Replace with your actual secret
+	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, errors.New("unexpected signing method")
+		}
+		return secret, nil
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
+		return claims, nil
+	}
+	return nil, errors.New("invalid token")
 }

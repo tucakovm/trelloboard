@@ -10,6 +10,7 @@ import (
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/grpc/metadata"
 	"log"
 	"net/http"
 	"os"
@@ -156,8 +157,12 @@ func authMiddleware(next http.Handler) http.Handler {
 			return
 		}
 
-		// Pass the context with claims to the next handler
-		ctx := context.WithValue(r.Context(), "claims", claims)
+		// Dodavanje roli u gRPC metapodatke
+		md := metadata.Pairs("user_role", role)
+		log.Println("Role u api gatewayu: " + role)
+		ctx := metadata.NewOutgoingContext(r.Context(), md)
+
+		// Prosleđivanje novog konteksta sa rolom
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }
@@ -225,7 +230,7 @@ func enableCORS(h http.Handler) http.Handler {
 	})
 }
 
-//func forwardClaimsToServices(ctx context.Context) context.Context {
-//	claims := ctx.Value("claims").(jwt.MapClaims)
-//	return context.WithValue(ctx, "role", claims["role"])
-//}
+func forwardClaimsToServices(ctx context.Context) context.Context {
+	claims := ctx.Value("claims").(jwt.MapClaims)
+	return context.WithValue(ctx, "role", claims["role"])
+}

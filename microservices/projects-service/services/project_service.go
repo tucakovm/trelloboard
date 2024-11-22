@@ -44,6 +44,10 @@ func (s ProjectService) UserOnProject(username string) (bool, error) {
 	return s.repo.DoesManagerExistOnProject(username)
 }
 
+func (s ProjectService) UserOnProjectUser(username string) (bool, error) {
+	return s.repo.DoesUserExistOnProject(username)
+}
+
 func (s ProjectService) GetAllProjects(id string) ([]*proto.Project, error) {
 	projects, err := s.repo.GetAllProjects(id)
 	if err != nil {

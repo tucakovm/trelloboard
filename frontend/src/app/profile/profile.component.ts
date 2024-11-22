@@ -87,7 +87,12 @@ export class ProfileComponent implements OnInit {
         },
         (error) => {
           console.error('Error deleting profile', error);
-          this.errorMessage = 'You can\'t delete your account, you have projects that you are in charge of.';
+          if(this.authService.getUserRoles() == "Manager"){
+            this.errorMessage = 'You can\'t delete your account, you have projects that you are in charge of.';
+
+          }else {
+            this.errorMessage = 'You can\'t delete your account, you have unfinished work on some project.';
+          }
           const modalElement = document.getElementById('errorModal');
           if (modalElement) {
             const modal = new Modal(modalElement);

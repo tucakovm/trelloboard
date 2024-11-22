@@ -74,8 +74,15 @@ func (h ProjectHandler) AddMember(ctx context.Context, req *proto.AddMembersRequ
 }
 
 func (h ProjectHandler) UserOnProject(ctx context.Context, req *proto.UserOnProjectReq) (*proto.UserOnProjectRes, error) {
-	// Call the service method that checks if the user is on a project
-	res, err := h.service.UserOnProject(req.Username)
+	if req.Role == "Manager" {
+		res, err := h.service.UserOnProject(req.Username)
+		if err != nil {
+			return nil, status.Error(codes.InvalidArgument, "DB exception.")
+		}
+
+		return &proto.UserOnProjectRes{OnProject: res}, err
+	}
+	res, err := h.service.UserOnProjectUser(req.Username)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, "DB exception.")
 	}

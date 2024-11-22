@@ -17,6 +17,7 @@ message UserOnProjectRes{
 }
 message UserOnProjectReq{
   string username = 1;
+  string role = 2;
 }
 message Project {
   string id = 1;  // primitive.ObjectID is represented as a string
