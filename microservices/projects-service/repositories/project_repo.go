@@ -185,6 +185,24 @@ func (pr *ProjectRepo) GetAllProjects(id string) (domain.Projects, error) {
 	return projects, nil
 }
 
+func (pr *ProjectRepo) DoesManagerExistOnProject(id string) (bool, error) {
+	// Initialize context (after 5 seconds timeout, abort operation)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	projectsCollection := pr.getCollection()
+
+	// Query to find a project where the manager's ID matches the provided id
+	filter := bson.M{"manager.username": id}
+	count, err := projectsCollection.CountDocuments(ctx, filter)
+	if err != nil {
+		log.Println("Error counting projects:", err)
+		return false, err
+	}
+
+	return count > 0, nil
+}
+
 func (pr *ProjectRepo) Delete(id string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()

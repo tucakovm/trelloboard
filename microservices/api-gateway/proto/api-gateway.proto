@@ -136,7 +136,8 @@ service UsersService {
   rpc LoginUserHandler(LoginReq) returns (LoginRes) {
     option (google.api.http) = {
       post: "/api/users/login",
-      body: "loginUser"
+      body: "loginUser",
+
     };
   }
   rpc GetUserByUsername(GetUserByUsernameReq) returns (GetUserByUsernameRes) {

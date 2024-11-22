@@ -9,6 +9,7 @@ service ProjectService {
   rpc Create(CreateProjectReq) returns (EmptyResponse) {}
   rpc Delete(DeleteProjectReq) returns (EmptyResponse) {}
   rpc GetById(GetByIdReq) returns (GetByIdRes) {}
+  rpc UserOnProject(UserOnProjectReq) returns (UserOnProjectRes) {}
 }
 
 message EmptyResponse {}
@@ -30,6 +31,12 @@ message GetByIdReq {
 }
 message GetByIdRes {
   Project project = 1;
+}
+message UserOnProjectRes{
+  bool onProject = 1;
+}
+message UserOnProjectReq{
+  string username = 1;
 }
 
 

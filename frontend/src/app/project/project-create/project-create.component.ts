@@ -66,17 +66,8 @@ export class ProjectCreateComponent{
       let isoDate = completionDate.toISOString();
 
       let tokenUsername = this.authService.getUserName();
-<<<<<<< HEAD
-=======
-
->>>>>>> feature/grpc/task
       let tokenId = this.authService.getUserId();
-      projectData.manager = new UserFP(tokenId,tokenUsername,tokenRole
-<<<<<<< HEAD
-=======
-
->>>>>>> feature/grpc/task
-      )
+      projectData.manager = new UserFP(tokenId,tokenUsername,tokenRole)
 
       let submittedProject: Project = new Project(
         "",

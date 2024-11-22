@@ -5,6 +5,7 @@ import { Project } from "../model/project";
 import { UserFP } from "../model/userForProject";
 import { catchError } from 'rxjs/operators';
 import { of } from 'rxjs';
+import {AuthService} from "./auth.service";
 
 
 @Injectable({
@@ -12,11 +13,11 @@ import { of } from 'rxjs';
   })
 export class ProjectService{
     private apiUrl = "http://localhost:8000/api"
-    constructor(private http:HttpClient){}
+    constructor(private http:HttpClient,private authService : AuthService) { }
 
     createProject(project: Project): Observable<Project> {
         return this.http.post<Project>(this.apiUrl+"/project", project, {
-          headers: new HttpHeaders({ 'Content-Type': 'application/json' })
+          headers: new HttpHeaders({ 'Content-Type': 'application/json' , 'Authorization': 'Bearer ' + this.authService.getToken() })
         });
       }
 

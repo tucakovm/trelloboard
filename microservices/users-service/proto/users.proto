@@ -69,3 +69,15 @@ message ChangePasswordUser{
   string currentPassword = 2;
   string newPassword = 3;
 }
+
+service ProjectService {
+  rpc UserOnProject(UserOnProjectReq) returns (UserOnProjectRes) {}
+}
+
+message UserOnProjectReq{
+  string id = 1;
+}
+
+message UserOnProjectRes{
+  bool onProject = 1;
+}

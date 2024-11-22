@@ -23,6 +23,7 @@ const (
 	ProjectService_Create_FullMethodName         = "/ProjectService/Create"
 	ProjectService_Delete_FullMethodName         = "/ProjectService/Delete"
 	ProjectService_GetById_FullMethodName        = "/ProjectService/GetById"
+	ProjectService_UserOnProject_FullMethodName  = "/ProjectService/UserOnProject"
 )
 
 // ProjectServiceClient is the client API for ProjectService service.
@@ -33,6 +34,7 @@ type ProjectServiceClient interface {
 	Create(ctx context.Context, in *CreateProjectReq, opts ...grpc.CallOption) (*EmptyResponse, error)
 	Delete(ctx context.Context, in *DeleteProjectReq, opts ...grpc.CallOption) (*EmptyResponse, error)
 	GetById(ctx context.Context, in *GetByIdReq, opts ...grpc.CallOption) (*GetByIdRes, error)
+	UserOnProject(ctx context.Context, in *UserOnProjectReq, opts ...grpc.CallOption) (*UserOnProjectRes, error)
 }
 
 type projectServiceClient struct {
@@ -83,6 +85,16 @@ func (c *projectServiceClient) GetById(ctx context.Context, in *GetByIdReq, opts
 	return out, nil
 }
 
+func (c *projectServiceClient) UserOnProject(ctx context.Context, in *UserOnProjectReq, opts ...grpc.CallOption) (*UserOnProjectRes, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(UserOnProjectRes)
+	err := c.cc.Invoke(ctx, ProjectService_UserOnProject_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // ProjectServiceServer is the server API for ProjectService service.
 // All implementations must embed UnimplementedProjectServiceServer
 // for forward compatibility.
@@ -91,6 +103,7 @@ type ProjectServiceServer interface {
 	Create(context.Context, *CreateProjectReq) (*EmptyResponse, error)
 	Delete(context.Context, *DeleteProjectReq) (*EmptyResponse, error)
 	GetById(context.Context, *GetByIdReq) (*GetByIdRes, error)
+	UserOnProject(context.Context, *UserOnProjectReq) (*UserOnProjectRes, error)
 	mustEmbedUnimplementedProjectServiceServer()
 }
 
@@ -112,6 +125,9 @@ func (UnimplementedProjectServiceServer) Delete(context.Context, *DeleteProjectR
 }
 func (UnimplementedProjectServiceServer) GetById(context.Context, *GetByIdReq) (*GetByIdRes, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetById not implemented")
+}
+func (UnimplementedProjectServiceServer) UserOnProject(context.Context, *UserOnProjectReq) (*UserOnProjectRes, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UserOnProject not implemented")
 }
 func (UnimplementedProjectServiceServer) mustEmbedUnimplementedProjectServiceServer() {}
 func (UnimplementedProjectServiceServer) testEmbeddedByValue()                        {}
@@ -206,6 +222,24 @@ func _ProjectService_GetById_Handler(srv interface{}, ctx context.Context, dec f
 	return interceptor(ctx, in, info, handler)
 }
 
+func _ProjectService_UserOnProject_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UserOnProjectReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ProjectServiceServer).UserOnProject(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ProjectService_UserOnProject_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ProjectServiceServer).UserOnProject(ctx, req.(*UserOnProjectReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // ProjectService_ServiceDesc is the grpc.ServiceDesc for ProjectService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -228,6 +262,10 @@ var ProjectService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetById",
 			Handler:    _ProjectService_GetById_Handler,
+		},
+		{
+			MethodName: "UserOnProject",
+			Handler:    _ProjectService_UserOnProject_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

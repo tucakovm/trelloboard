@@ -81,6 +81,14 @@ func (s UserService) DeleteUserByUsername(username string) error {
 	return nil
 }
 
+func (s UserService) DeleteUserById(id string) error {
+	err := s.repo.DeleteById(id)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func (s UserService) VerifyAndActivateUser(username, code string) error {
 	if err := s.VerifyUser(username, code); err != nil {
 		return errors.New("verification failed")
