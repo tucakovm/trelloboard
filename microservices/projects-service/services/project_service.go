@@ -8,6 +8,7 @@ import (
 	"projects_module/domain"
 	proto "projects_module/proto/project"
 	"projects_module/repositories"
+	"strings"
 )
 
 type ProjectService struct {
@@ -81,6 +82,15 @@ func (s ProjectService) GetById(id string) (*proto.Project, error) {
 	if err != nil {
 		return nil, status.Error(codes.Internal, "DB exception.")
 	}
+	var protoMembers []*proto.User
+	for _, member := range prj.Members {
+		protoMembers = append(protoMembers, &proto.User{
+			Id:       member.Id,
+			Username: member.Username,
+			Role:     member.Role,
+		})
+	}
+
 	protoProject := &proto.Project{
 		Id:             prj.Id.Hex(),
 		Name:           prj.Name,
@@ -92,18 +102,34 @@ func (s ProjectService) GetById(id string) (*proto.Project, error) {
 			Username: prj.Manager.Username,
 			Role:     prj.Manager.Role,
 		},
+		Members: protoMembers,
 	}
 
 	return protoProject, nil
 }
 
 func (s ProjectService) AddMember(projectId string, protoUser *proto.User) error {
-	log.Printf("PROTOUSER: %+v\n", protoUser)
+	project, err := s.GetById(projectId)
+	if err != nil {
+		return status.Error(codes.NotFound, "Project not found")
+	}
+	log.Println("len project members:", len(project.Members))
+	log.Println("max members:", project.MaxMembers)
+	log.Println("uslov membera:", len(project.Members) >= int(project.MaxMembers))
+	if len(project.Members) >= int(project.MaxMembers) {
+		return status.Error(codes.FailedPrecondition, "Maximum number of members reached")
+	}
 	user := &domain.User{
 		Id:       protoUser.Id,
 		Username: protoUser.Username,
 		Role:     protoUser.Role,
 	}
-	log.Printf("USER: %+v\n", user)
+	for _, member := range project.Members {
+		log.Println("member.username:", member.Username)
+		log.Println("user.username:", user.Username)
+		if strings.EqualFold(strings.TrimSpace(member.Username), strings.TrimSpace(user.Username)) {
+			return status.Error(codes.AlreadyExists, "Member already part of the project")
+		}
+	}
 	return s.repo.AddMember(projectId, *user)
 }

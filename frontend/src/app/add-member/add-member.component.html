@@ -1,11 +1,24 @@
 <div class="container add-member-form">
-    <h2 class="text-center">Add Member</h2>
-    <form (ngSubmit)="onSubmit()" [formGroup]="addMemberForm" class="form-container">
-      <div class="mb-3">
-        <label for="username" class="form-label">Username</label>
-        <input type="text" id="username" class="form-control" formControlName="username" placeholder="Enter username" />
-      </div>
-      <button type="submit" class="btn btn-primary w-100">Submit</button>
-    </form>
-  </div>
-  
+  <h2 class="text-center">Add Member</h2>
+  <form (ngSubmit)="onSubmit()" [formGroup]="addMemberForm" class="form-container">
+    <div class="mb-3">
+      <label for="username" class="form-label">Username</label>
+      <input
+        type="text"
+        id="username"
+        class="form-control"
+        formControlName="username"
+        placeholder="Enter username"
+      />
+    </div>
+    <!-- Prikaz greške ako korisnik već postoji -->
+    <div *ngIf="userAlreadyExists" class="alert alert-danger">
+      A member with the same username is already part of the project.
+    </div>
+    <!-- Prikaz greške ako je premašen maksimalan broj članova -->
+    <div *ngIf="maximumNumber" class="alert alert-warning">
+      Maximum number of members reached.
+    </div>
+    <button type="submit" class="btn btn-primary w-100">Submit</button>
+  </form>
+</div>
