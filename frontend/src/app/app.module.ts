@@ -15,8 +15,7 @@ import { ProfileComponent } from './profile/profile.component';
 import { ProjectDetailsComponent } from './project/project-details/project-details.component';
 import { TasksAllComponent } from './tasks/tasks-all/tasks-all.component';
 import { AddMemberComponent } from './add-member/add-member.component';
-
-
+import { RecaptchaModule } from 'ng-recaptcha';
 
 @NgModule({
   declarations: [
@@ -38,6 +37,7 @@ import { AddMemberComponent } from './add-member/add-member.component';
     ReactiveFormsModule,
     HttpClientModule,
     FormsModule,
+    RecaptchaModule,
   ],
   providers: [
     { provide: JWT_OPTIONS, useValue: JWT_OPTIONS }, // This is necessary for JwtHelperService to work

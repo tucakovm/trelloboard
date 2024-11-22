@@ -22,6 +22,7 @@ message UserRegister{
   string email = 4;
   string password = 5;
   string role = 6;
+  string key = 7;
 }
 message VerifyReq{
   UserVerifyReq verifyUser = 1;
@@ -36,6 +37,7 @@ message LoginReq{
 message LoginUserR{
   string username = 1;
   string password = 2;
+  string key = 3;
 }
 message GetUserByUsernameReq{
   string username = 1;
@@ -52,7 +54,7 @@ message LoginRes {
 
 
 message UserL {
-  string id = 1;  // Define User fields based on your Go struct
+  string id = 1;
   string firstname = 2;
   string lastname = 3;
   string username = 4;

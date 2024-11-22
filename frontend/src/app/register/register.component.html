@@ -22,11 +22,11 @@
               >
                 <small
                   *ngIf="registerForm.get('firstname')?.errors?.['required']"
-                >First name is required.</small
+                  >First name is required.</small
                 >
                 <small
                   *ngIf="registerForm.get('firstname')?.errors?.['minlength']"
-                >First name must be at least 2 characters long.</small
+                  >First name must be at least 2 characters long.</small
                 >
               </div>
             </div>
@@ -48,11 +48,11 @@
               >
                 <small
                   *ngIf="registerForm.get('lastname')?.errors?.['required']"
-                >Last name is required.</small
+                  >Last name is required.</small
                 >
                 <small
                   *ngIf="registerForm.get('lastname')?.errors?.['minlength']"
-                >Last name must be at least 2 characters long.</small
+                  >Last name must be at least 2 characters long.</small
                 >
               </div>
             </div>
@@ -74,11 +74,11 @@
               >
                 <small
                   *ngIf="registerForm.get('username')?.errors?.['required']"
-                >Username is required.</small
+                  >Username is required.</small
                 >
                 <small
                   *ngIf="registerForm.get('username')?.errors?.['minlength']"
-                >Username must be at least 4 characters long.</small
+                  >Username must be at least 4 characters long.</small
                 >
               </div>
             </div>
@@ -99,10 +99,10 @@
                 class="text-danger small"
               >
                 <small *ngIf="registerForm.get('email')?.errors?.['required']"
-                >Email is required.</small
+                  >Email is required.</small
                 >
                 <small *ngIf="registerForm.get('email')?.errors?.['email']"
-                >Please enter a valid email address.</small
+                  >Please enter a valid email address.</small
                 >
               </div>
             </div>
@@ -122,7 +122,7 @@
                 class="text-danger small"
               >
                 <small *ngIf="registerForm.get('role')?.errors?.['required']"
-                >Role is required.</small
+                  >Role is required.</small
                 >
               </div>
             </div>
@@ -144,17 +144,19 @@
               >
                 <small
                   *ngIf="registerForm.get('password')?.errors?.['required']"
-                >Password is required.</small
+                  >Password is required.</small
                 >
                 <small
                   *ngIf="registerForm.get('password')?.errors?.['minlength']"
-                >Password must be at least 6 characters long.</small
+                  >Password must be at least 6 characters long.</small
                 >
               </div>
             </div>
 
             <div class="mb-3">
-              <label for="repeatPassword" class="form-label">Repeat Password</label>
+              <label for="repeatPassword" class="form-label"
+                >Repeat Password</label
+              >
               <input
                 type="password"
                 id="repeatPassword"
@@ -163,23 +165,35 @@
               />
               <div
                 *ngIf="
-                    registerForm.get('repeatPassword')?.invalid &&
-                     registerForm.get('repeatPassword')?.touched "
+                  registerForm.get('repeatPassword')?.invalid &&
+                  registerForm.get('repeatPassword')?.touched
+                "
                 class="text-danger small"
               >
-                <small *ngIf="registerForm.get('repeatPassword')?.errors?.['required']">
+                <small
+                  *ngIf="registerForm.get('repeatPassword')?.errors?.['required']"
+                >
                   Repeat password is required.
                 </small>
-                <small *ngIf="registerForm.get('repeatPassword')?.errors?.['mismatch']">
+                <small
+                  *ngIf="registerForm.get('repeatPassword')?.errors?.['mismatch']"
+                >
                   Passwords do not match.
                 </small>
+              </div>
+
+              <div class="mb-3">
+                <re-captcha
+                  (resolved)="onCaptchaResolved($event)"
+                  siteKey="6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI"
+                ></re-captcha>
               </div>
             </div>
 
             <button
               type="submit"
               class="btn btn-primary w-100"
-              [disabled]="registerForm.invalid"
+              [disabled]="registerForm.invalid || !captchaResolved"
             >
               Register
             </button>

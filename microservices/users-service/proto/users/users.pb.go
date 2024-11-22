@@ -112,6 +112,7 @@ type UserRegister struct {
 	Email     string `protobuf:"bytes,4,opt,name=email,proto3" json:"email,omitempty"`
 	Password  string `protobuf:"bytes,5,opt,name=password,proto3" json:"password,omitempty"`
 	Role      string `protobuf:"bytes,6,opt,name=role,proto3" json:"role,omitempty"`
+	Key       string `protobuf:"bytes,7,opt,name=key,proto3" json:"key,omitempty"`
 }
 
 func (x *UserRegister) Reset() {
@@ -336,6 +337,7 @@ type LoginUserR struct {
 
 	Username string `protobuf:"bytes,1,opt,name=username,proto3" json:"username,omitempty"`
 	Password string `protobuf:"bytes,2,opt,name=password,proto3" json:"password,omitempty"`
+	Key      string `protobuf: "bytes,2,opt,name=key,proto3" json:"key,omitempty"`
 }
 
 func (x *LoginUserR) Reset() {

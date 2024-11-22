@@ -1,13 +1,18 @@
 package handlers
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"github.com/golang-jwt/jwt/v4"
 	"golang.org/x/crypto/bcrypt"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"io/ioutil"
 	"log"
+	"net/http"
+	"os"
 	"time"
 	"users_module/models"
 	proto "users_module/proto/users"
@@ -51,11 +56,14 @@ type ChangePasswordRequest struct {
 }
 
 func (h UserHandler) RegisterHandler(ctx context.Context, req *proto.RegisterReq) (*proto.EmptyResponse, error) {
-
+	captchaValid, err := h.verifyCaptcha(req.User.Key)
+	if err != nil || !captchaValid {
+		return nil, status.Error(codes.InvalidArgument, "Invalid or failed CAPTCHA verification")
+	}
 	user := req.User
 	password, _ := HashPassword(user.Password)
 
-	err := h.service.RegisterUser(user.Firstname, user.Lastname, user.Username, user.Email, password, user.Role)
+	err = h.service.RegisterUser(user.Firstname, user.Lastname, user.Username, user.Email, password, user.Role)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, "bad request ...")
 	}
@@ -67,6 +75,12 @@ func (h UserHandler) LoginUserHandler(ctx context.Context, req *proto.LoginReq) 
 	// Pokušaj dohvatanja korisnika
 
 	log.Println("Usao u handler login")
+
+	captchaValid, err := h.verifyCaptcha(req.LoginUser.Key)
+	if err != nil || !captchaValid {
+		return nil, status.Error(codes.InvalidArgument, "Invalid or failed CAPTCHA verification")
+	}
+
 	user, err := h.service.GetUserByUsername(req.LoginUser.Username)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, "User not found ...")
@@ -176,4 +190,39 @@ func (h *UserHandler) ChangePassword(ctx context.Context, req *proto.ChangePassw
 	}
 
 	return nil, nil
+}
+
+func (h UserHandler) verifyCaptcha(captchaResponse string) (bool, error) {
+
+	secretKey := os.Getenv("CAPTCHA_SECRET_KEY_TEST")
+
+	verificationURL := "https://www.google.com/recaptcha/api/siteverify"
+
+	// Request body
+	data := fmt.Sprintf("secret=%s&response=%s", secretKey, captchaResponse)
+
+	// Salje post za verifikaciju
+	resp, err := http.Post(verificationURL, "application/x-www-form-urlencoded", bytes.NewBuffer([]byte(data)))
+	if err != nil {
+		return false, fmt.Errorf("failed to verify CAPTCHA: %v", err)
+	}
+	defer resp.Body.Close()
+
+	// Cita response
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return false, fmt.Errorf("failed to read CAPTCHA verification response: %v", err)
+	}
+
+	// Parsira JSON
+	var response map[string]interface{}
+	if err := json.Unmarshal(body, &response); err != nil {
+		return false, fmt.Errorf("failed to parse CAPTCHA verification response: %v", err)
+	}
+
+	// Provjera uspjeha
+	if success, ok := response["success"].(bool); ok && success {
+		return true, nil
+	}
+	return false, nil
 }

@@ -15,6 +15,9 @@ export class LoginComponent {
   taskForm: FormGroup;
   errorOccurred: boolean = false;
   errorMessage: string = '';
+  captchaResolved: boolean = false;
+  captchaToken: string = '';
+  captchaResponse: string = '';
 
   constructor(
     private loginService: LoginService,
@@ -28,12 +31,27 @@ export class LoginComponent {
     });
   }
 
+  onCaptchaResolved(captchaResponse: string | null) {
+    this.captchaToken = captchaResponse || '';
+    this.captchaResponse = captchaResponse || '';
+    this.captchaResolved = !!captchaResponse;
+  }
+
   onSubmit() {
-    if (this.taskForm.valid) {
+    if (this.taskForm.valid && this.captchaResolved) {
       let loggedUser: LoggedUser = new LoggedUser(
         this.taskForm.value.username,
         this.taskForm.value.password
       );
+      if (!this.captchaResponse) {
+        console.error('Captcha not resolved.');
+        return;
+      }
+
+      const loginRequest = {
+        ...loggedUser,
+        captchaToken: this.captchaToken,
+      };
 
       const observer: Observer<any> = {
         next: (res: any) => {
@@ -41,7 +59,6 @@ export class LoginComponent {
 
           localStorage.setItem('jwt', res.token);
           this.router.navigate(['/all-projects']);
-    
         },
         error: (error: any) => {
           this.errorOccurred = true;
@@ -52,7 +69,9 @@ export class LoginComponent {
         complete: () => {},
       };
 
-      this.loginService.login(loggedUser).subscribe(observer);
+      this.loginService
+        .login({ ...loggedUser, key: this.captchaToken })
+        .subscribe(observer);
     }
   }
 }

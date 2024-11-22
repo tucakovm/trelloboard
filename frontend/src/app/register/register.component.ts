@@ -1,8 +1,14 @@
 import { Component } from '@angular/core';
-import { AbstractControl, FormBuilder, FormGroup, ValidationErrors, Validators } from '@angular/forms';
+import {
+  AbstractControl,
+  FormBuilder,
+  FormGroup,
+  ValidationErrors,
+  Validators,
+} from '@angular/forms';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
-import { passwordMatchValidator } from "../validators/password-match.validator";
-import { Router } from '@angular/router';  // Import Router for navigation
+import { passwordMatchValidator } from '../validators/password-match.validator';
+import { Router } from '@angular/router'; // Import Router for navigation
 
 @Component({
   selector: 'app-register',
@@ -13,8 +19,15 @@ export class RegisterComponent {
   registerForm: FormGroup;
   successMessage: string | null = null;
   errorMessage: string | null = null;
+  captchaResolved: boolean = false;
+  captchaToken: string = '';
+  captchaResponse: string = '';
 
-  constructor(private fb: FormBuilder, private http: HttpClient, private router: Router) {
+  constructor(
+    private fb: FormBuilder,
+    private http: HttpClient,
+    private router: Router
+  ) {
     this.registerForm = this.fb.group(
       {
         firstname: ['', [Validators.required, Validators.minLength(2)]],
@@ -29,20 +42,34 @@ export class RegisterComponent {
     );
   }
 
+  onCaptchaResolved(captchaResponse: string | null) {
+    this.captchaToken = captchaResponse || '';
+    this.captchaResponse = captchaResponse || '';
+    this.captchaResolved = !!captchaResponse;
+  }
+
   onSubmit() {
     if (this.registerForm.valid) {
       const formData = this.registerForm.value;
       console.log('Form Data:', formData);
+
+      const requestBody = {
+        ...formData,
+        captchaResponse: this.captchaToken,
+      };
 
       const headers = new HttpHeaders({
         'Content-Type': 'application/json',
       });
 
       this.http
-        .post('http://localhost:8000/api/users/register', formData, { headers })
+        .post('http://localhost:8000/api/users/register', requestBody, {
+          headers,
+        })
         .subscribe(
           (response) => {
-            this.successMessage = 'Registration successful! Verification email sent.';
+            this.successMessage =
+              'Registration successful! Verification email sent.';
             this.errorMessage = null;
             this.registerForm.reset();
             console.log('Registration successful', response);
