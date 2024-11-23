@@ -1,0 +1,87 @@
+syntax = "proto3";
+
+option go_package = "proto/users";
+
+service UsersService {
+  rpc RegisterHandler(RegisterReq) returns (EmptyResponse) {}
+  rpc VerifyHandler(VerifyReq) returns (EmptyResponse) {}
+  rpc LoginUserHandler(LoginReq) returns (LoginRes) {}
+  rpc GetUserByUsername(GetUserByUsernameReq) returns (GetUserByUsernameRes) {}
+  rpc DeleteUserByUsername(GetUserByUsernameReq) returns (EmptyResponse) {}
+  rpc ChangePassword(ChangePasswordReq) returns (EmptyResponse) {}
+}
+
+message EmptyResponse {}
+message RegisterReq{
+  UserRegister user = 1;
+}
+message UserRegister{
+  string firstname = 1;
+  string lastname = 2;
+  string username = 3;
+  string email = 4;
+  string password = 5;
+  string role = 6;
+  string key = 7;
+}
+message VerifyReq{
+  UserVerifyReq verifyUser = 1;
+}
+message UserVerifyReq{
+  string username = 1;
+  string code = 2;
+}
+message LoginReq{
+  LoginUserR loginUser = 1;
+}
+message LoginUserR{
+  string username = 1;
+  string password = 2;
+  string key = 3;
+}
+message GetUserByUsernameReq{
+  string username = 1;
+}
+
+message GetUserByUsernameRes{
+  UserL user = 1;
+}
+
+message LoginRes {
+  string message = 1;
+  string token = 2;
+}
+
+
+message UserL {
+  string id = 1;
+  string firstname = 2;
+  string lastname = 3;
+  string username = 4;
+  string email = 5;
+  string password = 6;
+  bool isActive = 7;
+  string code = 8;
+  string role = 9;
+}
+message ChangePasswordReq{
+  ChangePasswordUser changeUser = 1;
+}
+message ChangePasswordUser{
+  string username = 1;
+  string currentPassword = 2;
+  string newPassword = 3;
+}
+
+service ProjectService {
+  rpc UserOnProject(UserOnProjectReq) returns (UserOnProjectRes) {}
+}
+
+message UserOnProjectReq{
+  string id = 1;
+  string role = 2;
+}
+
+message UserOnProjectRes{
+  bool onProject = 1;
+}

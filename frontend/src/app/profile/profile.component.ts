@@ -2,6 +2,8 @@ import { Component, OnInit } from '@angular/core';
 import { User } from '../model/user';
 import { AuthService } from '../services/auth.service';
 import { UserService } from '../services/user.service';
+import { Modal } from 'bootstrap';
+import {Router} from "@angular/router";
 
 @Component({
   selector: 'app-profile',
@@ -19,7 +21,7 @@ export class ProfileComponent implements OnInit {
     email: '',
     role: '',
   };
-
+  errorMessage: string = '';
   showChangePassword = false;
   passwordForm = {
     currentPassword: '',
@@ -29,7 +31,8 @@ export class ProfileComponent implements OnInit {
 
   constructor(
     private authService: AuthService,
-    private userService: UserService
+    private userService: UserService,
+    private router: Router,
   ) {}
 
   ngOnInit(): void {
@@ -40,7 +43,8 @@ export class ProfileComponent implements OnInit {
     const username = this.authService.getUserName();
     this.userService.getUserByUsername(username).subscribe(
       (response) => {
-        this.user = response;
+        this.user = response.user;
+        console.log(this.user);
       },
       (error) => {
         console.error('Error fetching user by username', error);
@@ -78,9 +82,23 @@ export class ProfileComponent implements OnInit {
       this.userService.deleteUserByUsername(username).subscribe(
         (response) => {
           console.log('Profile deleted successfully', response);
+          this.authService.logout();
+          this.router.navigate(['/login']);
         },
         (error) => {
           console.error('Error deleting profile', error);
+          if(this.authService.getUserRoles() == "Manager"){
+            this.errorMessage = 'You can\'t delete your account, you have projects that you are in charge of.';
+
+          }else {
+            this.errorMessage = 'You can\'t delete your account, you have unfinished work on some project.';
+          }
+          const modalElement = document.getElementById('errorModal');
+          if (modalElement) {
+            const modal = new Modal(modalElement);
+            modal.show();
+          }
+
         }
       );
     } else {

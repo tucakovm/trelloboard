@@ -60,13 +60,20 @@
               >
                 Please provide a password with at least 4 characters.
               </div>
+
+              <div class="mb-3">
+                <re-captcha
+                  (resolved)="onCaptchaResolved($event)"
+                  siteKey="6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI"
+                ></re-captcha>
+              </div>
             </div>
 
             <div class="d-grid">
               <button
                 type="submit"
                 class="btn btn-primary"
-                [disabled]="taskForm.invalid"
+                [disabled]="taskForm.invalid || !captchaResolved"
               >
                 Submit
               </button>

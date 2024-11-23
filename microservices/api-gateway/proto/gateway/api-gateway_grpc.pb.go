@@ -23,6 +23,7 @@ const (
 	ProjectService_Create_FullMethodName         = "/ProjectService/Create"
 	ProjectService_Delete_FullMethodName         = "/ProjectService/Delete"
 	ProjectService_GetById_FullMethodName        = "/ProjectService/GetById"
+	ProjectService_AddMember_FullMethodName      = "/ProjectService/AddMember"
 )
 
 // ProjectServiceClient is the client API for ProjectService service.
@@ -32,7 +33,8 @@ type ProjectServiceClient interface {
 	GetAllProjects(ctx context.Context, in *GetAllProjectsReq, opts ...grpc.CallOption) (*GetAllProjectsRes, error)
 	Create(ctx context.Context, in *CreateProjectReq, opts ...grpc.CallOption) (*EmptyResponse, error)
 	Delete(ctx context.Context, in *DeleteProjectReq, opts ...grpc.CallOption) (*EmptyResponse, error)
-	GetById(ctx context.Context, in *GetByIdReq, opts ...grpc.CallOption) (*GetByIdRes, error)
+	GetById(ctx context.Context, in *GetProjectByIdReq, opts ...grpc.CallOption) (*GetProjectByIdRes, error)
+	AddMember(ctx context.Context, in *AddMembersRequest, opts ...grpc.CallOption) (*EmptyResponse, error)
 }
 
 type projectServiceClient struct {
@@ -73,10 +75,20 @@ func (c *projectServiceClient) Delete(ctx context.Context, in *DeleteProjectReq,
 	return out, nil
 }
 
-func (c *projectServiceClient) GetById(ctx context.Context, in *GetByIdReq, opts ...grpc.CallOption) (*GetByIdRes, error) {
+func (c *projectServiceClient) GetById(ctx context.Context, in *GetProjectByIdReq, opts ...grpc.CallOption) (*GetProjectByIdRes, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(GetByIdRes)
+	out := new(GetProjectByIdRes)
 	err := c.cc.Invoke(ctx, ProjectService_GetById_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *projectServiceClient) AddMember(ctx context.Context, in *AddMembersRequest, opts ...grpc.CallOption) (*EmptyResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(EmptyResponse)
+	err := c.cc.Invoke(ctx, ProjectService_AddMember_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -90,7 +102,8 @@ type ProjectServiceServer interface {
 	GetAllProjects(context.Context, *GetAllProjectsReq) (*GetAllProjectsRes, error)
 	Create(context.Context, *CreateProjectReq) (*EmptyResponse, error)
 	Delete(context.Context, *DeleteProjectReq) (*EmptyResponse, error)
-	GetById(context.Context, *GetByIdReq) (*GetByIdRes, error)
+	GetById(context.Context, *GetProjectByIdReq) (*GetProjectByIdRes, error)
+	AddMember(context.Context, *AddMembersRequest) (*EmptyResponse, error)
 	mustEmbedUnimplementedProjectServiceServer()
 }
 
@@ -110,8 +123,11 @@ func (UnimplementedProjectServiceServer) Create(context.Context, *CreateProjectR
 func (UnimplementedProjectServiceServer) Delete(context.Context, *DeleteProjectReq) (*EmptyResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Delete not implemented")
 }
-func (UnimplementedProjectServiceServer) GetById(context.Context, *GetByIdReq) (*GetByIdRes, error) {
+func (UnimplementedProjectServiceServer) GetById(context.Context, *GetProjectByIdReq) (*GetProjectByIdRes, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetById not implemented")
+}
+func (UnimplementedProjectServiceServer) AddMember(context.Context, *AddMembersRequest) (*EmptyResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method AddMember not implemented")
 }
 func (UnimplementedProjectServiceServer) mustEmbedUnimplementedProjectServiceServer() {}
 func (UnimplementedProjectServiceServer) testEmbeddedByValue()                        {}
@@ -189,7 +205,7 @@ func _ProjectService_Delete_Handler(srv interface{}, ctx context.Context, dec fu
 }
 
 func _ProjectService_GetById_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GetByIdReq)
+	in := new(GetProjectByIdReq)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -201,7 +217,25 @@ func _ProjectService_GetById_Handler(srv interface{}, ctx context.Context, dec f
 		FullMethod: ProjectService_GetById_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ProjectServiceServer).GetById(ctx, req.(*GetByIdReq))
+		return srv.(ProjectServiceServer).GetById(ctx, req.(*GetProjectByIdReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ProjectService_AddMember_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AddMembersRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ProjectServiceServer).AddMember(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ProjectService_AddMember_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ProjectServiceServer).AddMember(ctx, req.(*AddMembersRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -228,6 +262,518 @@ var ProjectService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetById",
 			Handler:    _ProjectService_GetById_Handler,
+		},
+		{
+			MethodName: "AddMember",
+			Handler:    _ProjectService_AddMember_Handler,
+		},
+	},
+	Streams:  []grpc.StreamDesc{},
+	Metadata: "api-gateway.proto",
+}
+
+const (
+	TaskService_GetAllByProjectId_FullMethodName = "/TaskService/GetAllByProjectId"
+	TaskService_Create_FullMethodName            = "/TaskService/Create"
+	TaskService_Delete_FullMethodName            = "/TaskService/Delete"
+	TaskService_GetById_FullMethodName           = "/TaskService/GetById"
+)
+
+// TaskServiceClient is the client API for TaskService service.
+//
+// For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
+type TaskServiceClient interface {
+	GetAllByProjectId(ctx context.Context, in *GetAllTasksReq, opts ...grpc.CallOption) (*GetAllTasksRes, error)
+	Create(ctx context.Context, in *CreateTaskReq, opts ...grpc.CallOption) (*EmptyResponse, error)
+	Delete(ctx context.Context, in *DeleteTaskReq, opts ...grpc.CallOption) (*EmptyResponse, error)
+	GetById(ctx context.Context, in *GetByIdTaskReq, opts ...grpc.CallOption) (*GetByIdTaskRes, error)
+}
+
+type taskServiceClient struct {
+	cc grpc.ClientConnInterface
+}
+
+func NewTaskServiceClient(cc grpc.ClientConnInterface) TaskServiceClient {
+	return &taskServiceClient{cc}
+}
+
+func (c *taskServiceClient) GetAllByProjectId(ctx context.Context, in *GetAllTasksReq, opts ...grpc.CallOption) (*GetAllTasksRes, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetAllTasksRes)
+	err := c.cc.Invoke(ctx, TaskService_GetAllByProjectId_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *taskServiceClient) Create(ctx context.Context, in *CreateTaskReq, opts ...grpc.CallOption) (*EmptyResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(EmptyResponse)
+	err := c.cc.Invoke(ctx, TaskService_Create_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *taskServiceClient) Delete(ctx context.Context, in *DeleteTaskReq, opts ...grpc.CallOption) (*EmptyResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(EmptyResponse)
+	err := c.cc.Invoke(ctx, TaskService_Delete_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *taskServiceClient) GetById(ctx context.Context, in *GetByIdTaskReq, opts ...grpc.CallOption) (*GetByIdTaskRes, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetByIdTaskRes)
+	err := c.cc.Invoke(ctx, TaskService_GetById_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// TaskServiceServer is the server API for TaskService service.
+// All implementations must embed UnimplementedTaskServiceServer
+// for forward compatibility.
+type TaskServiceServer interface {
+	GetAllByProjectId(context.Context, *GetAllTasksReq) (*GetAllTasksRes, error)
+	Create(context.Context, *CreateTaskReq) (*EmptyResponse, error)
+	Delete(context.Context, *DeleteTaskReq) (*EmptyResponse, error)
+	GetById(context.Context, *GetByIdTaskReq) (*GetByIdTaskRes, error)
+	mustEmbedUnimplementedTaskServiceServer()
+}
+
+// UnimplementedTaskServiceServer must be embedded to have
+// forward compatible implementations.
+//
+// NOTE: this should be embedded by value instead of pointer to avoid a nil
+// pointer dereference when methods are called.
+type UnimplementedTaskServiceServer struct{}
+
+func (UnimplementedTaskServiceServer) GetAllByProjectId(context.Context, *GetAllTasksReq) (*GetAllTasksRes, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetAllByProjectId not implemented")
+}
+func (UnimplementedTaskServiceServer) Create(context.Context, *CreateTaskReq) (*EmptyResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Create not implemented")
+}
+func (UnimplementedTaskServiceServer) Delete(context.Context, *DeleteTaskReq) (*EmptyResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Delete not implemented")
+}
+func (UnimplementedTaskServiceServer) GetById(context.Context, *GetByIdTaskReq) (*GetByIdTaskRes, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetById not implemented")
+}
+func (UnimplementedTaskServiceServer) mustEmbedUnimplementedTaskServiceServer() {}
+func (UnimplementedTaskServiceServer) testEmbeddedByValue()                     {}
+
+// UnsafeTaskServiceServer may be embedded to opt out of forward compatibility for this service.
+// Use of this interface is not recommended, as added methods to TaskServiceServer will
+// result in compilation errors.
+type UnsafeTaskServiceServer interface {
+	mustEmbedUnimplementedTaskServiceServer()
+}
+
+func RegisterTaskServiceServer(s grpc.ServiceRegistrar, srv TaskServiceServer) {
+	// If the following call pancis, it indicates UnimplementedTaskServiceServer was
+	// embedded by pointer and is nil.  This will cause panics if an
+	// unimplemented method is ever invoked, so we test this at initialization
+	// time to prevent it from happening at runtime later due to I/O.
+	if t, ok := srv.(interface{ testEmbeddedByValue() }); ok {
+		t.testEmbeddedByValue()
+	}
+	s.RegisterService(&TaskService_ServiceDesc, srv)
+}
+
+func _TaskService_GetAllByProjectId_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetAllTasksReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(TaskServiceServer).GetAllByProjectId(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: TaskService_GetAllByProjectId_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(TaskServiceServer).GetAllByProjectId(ctx, req.(*GetAllTasksReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _TaskService_Create_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateTaskReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(TaskServiceServer).Create(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: TaskService_Create_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(TaskServiceServer).Create(ctx, req.(*CreateTaskReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _TaskService_Delete_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeleteTaskReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(TaskServiceServer).Delete(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: TaskService_Delete_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(TaskServiceServer).Delete(ctx, req.(*DeleteTaskReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _TaskService_GetById_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetByIdTaskReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(TaskServiceServer).GetById(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: TaskService_GetById_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(TaskServiceServer).GetById(ctx, req.(*GetByIdTaskReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+// TaskService_ServiceDesc is the grpc.ServiceDesc for TaskService service.
+// It's only intended for direct use with grpc.RegisterService,
+// and not to be introspected or modified (even as a copy)
+var TaskService_ServiceDesc = grpc.ServiceDesc{
+	ServiceName: "TaskService",
+	HandlerType: (*TaskServiceServer)(nil),
+	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "GetAllByProjectId",
+			Handler:    _TaskService_GetAllByProjectId_Handler,
+		},
+		{
+			MethodName: "Create",
+			Handler:    _TaskService_Create_Handler,
+		},
+		{
+			MethodName: "Delete",
+			Handler:    _TaskService_Delete_Handler,
+		},
+		{
+			MethodName: "GetById",
+			Handler:    _TaskService_GetById_Handler,
+		},
+	},
+	Streams:  []grpc.StreamDesc{},
+	Metadata: "api-gateway.proto",
+}
+
+const (
+	UsersService_RegisterHandler_FullMethodName      = "/UsersService/RegisterHandler"
+	UsersService_VerifyHandler_FullMethodName        = "/UsersService/VerifyHandler"
+	UsersService_LoginUserHandler_FullMethodName     = "/UsersService/LoginUserHandler"
+	UsersService_GetUserByUsername_FullMethodName    = "/UsersService/GetUserByUsername"
+	UsersService_DeleteUserByUsername_FullMethodName = "/UsersService/DeleteUserByUsername"
+	UsersService_ChangePassword_FullMethodName       = "/UsersService/ChangePassword"
+)
+
+// UsersServiceClient is the client API for UsersService service.
+//
+// For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
+type UsersServiceClient interface {
+	RegisterHandler(ctx context.Context, in *RegisterReq, opts ...grpc.CallOption) (*EmptyResponse, error)
+	VerifyHandler(ctx context.Context, in *VerifyReq, opts ...grpc.CallOption) (*EmptyResponse, error)
+	LoginUserHandler(ctx context.Context, in *LoginReq, opts ...grpc.CallOption) (*LoginRes, error)
+	GetUserByUsername(ctx context.Context, in *GetUserByUsernameReq, opts ...grpc.CallOption) (*GetUserByUsernameRes, error)
+	DeleteUserByUsername(ctx context.Context, in *GetUserByUsernameReq, opts ...grpc.CallOption) (*EmptyResponse, error)
+	ChangePassword(ctx context.Context, in *ChangePasswordReq, opts ...grpc.CallOption) (*EmptyResponse, error)
+}
+
+type usersServiceClient struct {
+	cc grpc.ClientConnInterface
+}
+
+func NewUsersServiceClient(cc grpc.ClientConnInterface) UsersServiceClient {
+	return &usersServiceClient{cc}
+}
+
+func (c *usersServiceClient) RegisterHandler(ctx context.Context, in *RegisterReq, opts ...grpc.CallOption) (*EmptyResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(EmptyResponse)
+	err := c.cc.Invoke(ctx, UsersService_RegisterHandler_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *usersServiceClient) VerifyHandler(ctx context.Context, in *VerifyReq, opts ...grpc.CallOption) (*EmptyResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(EmptyResponse)
+	err := c.cc.Invoke(ctx, UsersService_VerifyHandler_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *usersServiceClient) LoginUserHandler(ctx context.Context, in *LoginReq, opts ...grpc.CallOption) (*LoginRes, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(LoginRes)
+	err := c.cc.Invoke(ctx, UsersService_LoginUserHandler_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *usersServiceClient) GetUserByUsername(ctx context.Context, in *GetUserByUsernameReq, opts ...grpc.CallOption) (*GetUserByUsernameRes, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetUserByUsernameRes)
+	err := c.cc.Invoke(ctx, UsersService_GetUserByUsername_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *usersServiceClient) DeleteUserByUsername(ctx context.Context, in *GetUserByUsernameReq, opts ...grpc.CallOption) (*EmptyResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(EmptyResponse)
+	err := c.cc.Invoke(ctx, UsersService_DeleteUserByUsername_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *usersServiceClient) ChangePassword(ctx context.Context, in *ChangePasswordReq, opts ...grpc.CallOption) (*EmptyResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(EmptyResponse)
+	err := c.cc.Invoke(ctx, UsersService_ChangePassword_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// UsersServiceServer is the server API for UsersService service.
+// All implementations must embed UnimplementedUsersServiceServer
+// for forward compatibility.
+type UsersServiceServer interface {
+	RegisterHandler(context.Context, *RegisterReq) (*EmptyResponse, error)
+	VerifyHandler(context.Context, *VerifyReq) (*EmptyResponse, error)
+	LoginUserHandler(context.Context, *LoginReq) (*LoginRes, error)
+	GetUserByUsername(context.Context, *GetUserByUsernameReq) (*GetUserByUsernameRes, error)
+	DeleteUserByUsername(context.Context, *GetUserByUsernameReq) (*EmptyResponse, error)
+	ChangePassword(context.Context, *ChangePasswordReq) (*EmptyResponse, error)
+	mustEmbedUnimplementedUsersServiceServer()
+}
+
+// UnimplementedUsersServiceServer must be embedded to have
+// forward compatible implementations.
+//
+// NOTE: this should be embedded by value instead of pointer to avoid a nil
+// pointer dereference when methods are called.
+type UnimplementedUsersServiceServer struct{}
+
+func (UnimplementedUsersServiceServer) RegisterHandler(context.Context, *RegisterReq) (*EmptyResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method RegisterHandler not implemented")
+}
+func (UnimplementedUsersServiceServer) VerifyHandler(context.Context, *VerifyReq) (*EmptyResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method VerifyHandler not implemented")
+}
+func (UnimplementedUsersServiceServer) LoginUserHandler(context.Context, *LoginReq) (*LoginRes, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method LoginUserHandler not implemented")
+}
+func (UnimplementedUsersServiceServer) GetUserByUsername(context.Context, *GetUserByUsernameReq) (*GetUserByUsernameRes, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetUserByUsername not implemented")
+}
+func (UnimplementedUsersServiceServer) DeleteUserByUsername(context.Context, *GetUserByUsernameReq) (*EmptyResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method DeleteUserByUsername not implemented")
+}
+func (UnimplementedUsersServiceServer) ChangePassword(context.Context, *ChangePasswordReq) (*EmptyResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ChangePassword not implemented")
+}
+func (UnimplementedUsersServiceServer) mustEmbedUnimplementedUsersServiceServer() {}
+func (UnimplementedUsersServiceServer) testEmbeddedByValue()                      {}
+
+// UnsafeUsersServiceServer may be embedded to opt out of forward compatibility for this service.
+// Use of this interface is not recommended, as added methods to UsersServiceServer will
+// result in compilation errors.
+type UnsafeUsersServiceServer interface {
+	mustEmbedUnimplementedUsersServiceServer()
+}
+
+func RegisterUsersServiceServer(s grpc.ServiceRegistrar, srv UsersServiceServer) {
+	// If the following call pancis, it indicates UnimplementedUsersServiceServer was
+	// embedded by pointer and is nil.  This will cause panics if an
+	// unimplemented method is ever invoked, so we test this at initialization
+	// time to prevent it from happening at runtime later due to I/O.
+	if t, ok := srv.(interface{ testEmbeddedByValue() }); ok {
+		t.testEmbeddedByValue()
+	}
+	s.RegisterService(&UsersService_ServiceDesc, srv)
+}
+
+func _UsersService_RegisterHandler_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RegisterReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UsersServiceServer).RegisterHandler(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: UsersService_RegisterHandler_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UsersServiceServer).RegisterHandler(ctx, req.(*RegisterReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _UsersService_VerifyHandler_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(VerifyReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UsersServiceServer).VerifyHandler(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: UsersService_VerifyHandler_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UsersServiceServer).VerifyHandler(ctx, req.(*VerifyReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _UsersService_LoginUserHandler_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(LoginReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UsersServiceServer).LoginUserHandler(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: UsersService_LoginUserHandler_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UsersServiceServer).LoginUserHandler(ctx, req.(*LoginReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _UsersService_GetUserByUsername_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetUserByUsernameReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UsersServiceServer).GetUserByUsername(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: UsersService_GetUserByUsername_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UsersServiceServer).GetUserByUsername(ctx, req.(*GetUserByUsernameReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _UsersService_DeleteUserByUsername_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetUserByUsernameReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UsersServiceServer).DeleteUserByUsername(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: UsersService_DeleteUserByUsername_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UsersServiceServer).DeleteUserByUsername(ctx, req.(*GetUserByUsernameReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _UsersService_ChangePassword_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ChangePasswordReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UsersServiceServer).ChangePassword(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: UsersService_ChangePassword_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UsersServiceServer).ChangePassword(ctx, req.(*ChangePasswordReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+// UsersService_ServiceDesc is the grpc.ServiceDesc for UsersService service.
+// It's only intended for direct use with grpc.RegisterService,
+// and not to be introspected or modified (even as a copy)
+var UsersService_ServiceDesc = grpc.ServiceDesc{
+	ServiceName: "UsersService",
+	HandlerType: (*UsersServiceServer)(nil),
+	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "RegisterHandler",
+			Handler:    _UsersService_RegisterHandler_Handler,
+		},
+		{
+			MethodName: "VerifyHandler",
+			Handler:    _UsersService_VerifyHandler_Handler,
+		},
+		{
+			MethodName: "LoginUserHandler",
+			Handler:    _UsersService_LoginUserHandler_Handler,
+		},
+		{
+			MethodName: "GetUserByUsername",
+			Handler:    _UsersService_GetUserByUsername_Handler,
+		},
+		{
+			MethodName: "DeleteUserByUsername",
+			Handler:    _UsersService_DeleteUserByUsername_Handler,
+		},
+		{
+			MethodName: "ChangePassword",
+			Handler:    _UsersService_ChangePassword_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

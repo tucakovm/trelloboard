@@ -80,7 +80,7 @@
           </button>
         </div>
         <div class="col-md-4">
-          <button class="btn btn-success w-100 shadow-sm" (click)="addMember()">
+          <button *ngIf="!maxLengthAchieved" class="btn btn-success w-100 shadow-sm" (click)="addMember()">
             Add members
           </button>
         </div>

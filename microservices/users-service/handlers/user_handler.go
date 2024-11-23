@@ -1,26 +1,37 @@
 package handlers
 
 import (
+	"bytes"
+	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
-	"github.com/gorilla/mux"
+	"github.com/golang-jwt/jwt/v4"
 	"golang.org/x/crypto/bcrypt"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/metadata"
+	"google.golang.org/grpc/status"
 	"io/ioutil"
+	"log"
 	"net/http"
+	"os"
+	"strings"
 	"time"
 	"users_module/models"
+	proto "users_module/proto/users"
 	"users_module/services"
-
-	"github.com/golang-jwt/jwt/v4"
 )
 
 type UserHandler struct {
-	service services.UserService
+	service        services.UserService
+	projectService proto.ProjectServiceClient
+	proto.UnimplementedUsersServiceServer
 }
 
-func NewUserHandler(service services.UserService) (UserHandler, error) {
+func NewUserHandler(service services.UserService, projectService proto.ProjectServiceClient) (UserHandler, error) {
 	return UserHandler{
-		service: service,
+		service:        service,
+		projectService: projectService,
 	}, nil
 }
 
@@ -49,169 +60,128 @@ type ChangePasswordRequest struct {
 	NewPassword     string `json:"newPassword" binding:"required,min=6"`
 }
 
-func (h UserHandler) RegisterHandler(w http.ResponseWriter, r *http.Request) {
-	var req RegisterRequest
-
-	w.Header().Set("Access-Control-Allow-Origin", "http://localhost:4200")
-	w.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS")
-	w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
-	w.Header().Set("Content-Type", "application/json")
-
-	if r.Method == http.MethodOptions {
-		w.WriteHeader(http.StatusNoContent)
-		return
+func (h UserHandler) RegisterHandler(ctx context.Context, req *proto.RegisterReq) (*proto.EmptyResponse, error) {
+	captchaValid, err := h.verifyCaptcha(req.User.Key)
+	if err != nil || !captchaValid {
+		return nil, status.Error(codes.InvalidArgument, "Invalid or failed CAPTCHA verification")
 	}
+	user := req.User
+	password, _ := HashPassword(user.Password)
 
-	err := json.NewDecoder(r.Body).Decode(&req)
+	err = h.service.RegisterUser(user.Firstname, user.Lastname, user.Username, user.Email, password, user.Role)
 	if err != nil {
-		http.Error(w, `{"error": "Invalid request payload"}`, http.StatusBadRequest)
-		return
-	}
-	password, _ := HashPassword(req.Password)
-	if err != nil {
-		http.Error(w, `{"error": "Failed to hash password"}`, http.StatusInternalServerError)
-		return
+		return nil, status.Error(codes.InvalidArgument, "bad request ...")
 	}
 
-	err = h.service.RegisterUser(req.FirstName, req.LastName, req.Username, req.Email, password, req.Role)
-	if err != nil {
-		http.Error(w, `{"error": "Registration failed"}`, http.StatusInternalServerError)
-		return
-	}
-
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(map[string]string{"message": "Verification email sent"})
+	return nil, nil
 }
 
-func (h UserHandler) LoginUser(w http.ResponseWriter, r *http.Request) {
-	var req LoginRequest
-
-	w.Header().Set("Access-Control-Allow-Origin", "http://localhost:4200")
-	w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
-	w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
-	w.Header().Set("Content-Type", "application/json")
-
-	if r.Method == http.MethodOptions {
-		w.WriteHeader(http.StatusNoContent)
-		return
-	}
-
-	err := json.NewDecoder(r.Body).Decode(&req)
-	if err != nil {
-		http.Error(w, `{"error": "Invalid request payload"}`, http.StatusBadRequest)
-	}
-
+func (h UserHandler) LoginUserHandler(ctx context.Context, req *proto.LoginReq) (*proto.LoginRes, error) {
 	// Pokušaj dohvatanja korisnika
-	user, err := h.service.GetUserByUsername(req.Username)
+
+	log.Println("Usao u handler login")
+
+	captchaValid, err := h.verifyCaptcha(req.LoginUser.Key)
+	if err != nil || !captchaValid {
+		return nil, status.Error(codes.InvalidArgument, "Invalid or failed CAPTCHA verification")
+	}
+
+	user, err := h.service.GetUserByUsername(req.LoginUser.Username)
 	if err != nil {
-		http.Error(w, `{"error": "User not found"}`, http.StatusUnauthorized)
-		return
+		return nil, status.Error(codes.InvalidArgument, "User not found ...")
 	}
 
-	if !CheckPassword(user.Password, req.Password) {
-		http.Error(w, `{"error": "Invalid username or password"}`, http.StatusInternalServerError)
-		return
+	// Provera lozinke
+	if !CheckPassword(user.Password, req.LoginUser.Password) {
+		return nil, status.Error(codes.Unauthenticated, "Invalid username or password ...")
 	}
 
-	if user.IsActive == false { // assuming Password is an exported field
-		http.Error(w, `{"error": "User is not active"}`, http.StatusUnauthorized)
-		return
+	// Provera da li je korisnik aktivan
+	if !user.IsActive {
+		return nil, status.Error(codes.PermissionDenied, "User is not active ...")
 	}
 
+	// Generisanje JWT tokena
 	token, err := GenerateJWT(user)
 	if err != nil {
-		http.Error(w, `{"error": "Error generating token"}`, http.StatusInternalServerError)
-		return
+		return nil, status.Error(codes.Internal, "Error generating token ...")
 	}
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(map[string]string{
-		"message": "Login successful",
-		"token":   token,
-	})
+
+	// Vraćanje odgovora sa tokenom
+	return &proto.LoginRes{
+		Message: "Login successful",
+		Token:   token,
+	}, nil
 }
 
-func (h UserHandler) VerifyHandler(w http.ResponseWriter, r *http.Request) {
-	var req VerifyRequest
+func (h UserHandler) VerifyHandler(ctx context.Context, req *proto.VerifyReq) (*proto.EmptyResponse, error) {
 
-	w.Header().Set("Access-Control-Allow-Origin", "http://localhost:4200")
-	w.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS")
-	w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
-	w.Header().Set("Content-Type", "application/json")
-
-	if r.Method == http.MethodOptions {
-		w.WriteHeader(http.StatusNoContent)
-		return
-	}
-
-	err := json.NewDecoder(r.Body).Decode(&req)
+	err := h.service.VerifyAndActivateUser(req.VerifyUser.Username, req.VerifyUser.Code)
 	if err != nil {
-		http.Error(w, `{"error": "Invalid request payload"}`, http.StatusBadRequest)
-		return
+		return nil, status.Error(codes.InvalidArgument, "bad request ...")
 	}
 
-	err = h.service.VerifyAndActivateUser(req.Username, req.Code)
-	if err != nil {
-		http.Error(w, `{"error": "Verification or activation failed"}`, http.StatusBadRequest)
-		return
-	}
-
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(map[string]string{"message": "User verified and saved successfully"})
+	return nil, nil
 }
 
-func (h UserHandler) GetUserByUsername(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	username := vars["username"]
+func (h UserHandler) GetUserByUsername(ctx context.Context, req *proto.GetUserByUsernameReq) (*proto.GetUserByUsernameRes, error) {
 
-	w.Header().Set("Access-Control-Allow-Origin", "http://localhost:4200")
-	w.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS")
-	w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
-	w.Header().Set("Content-Type", "application/json")
-
-	if r.Method == http.MethodOptions {
-		w.WriteHeader(http.StatusNoContent)
-		return
-	}
-
-	user, err := h.service.GetUserByUsername(username)
+	user, err := h.service.GetUserByUsername(req.Username)
 	if err != nil {
-		http.Error(w, `{"Bad request"}`, http.StatusBadRequest)
-		return
+		return nil, status.Error(codes.InvalidArgument, "bad request ...")
 	}
-
-	userJson, err := json.Marshal(user)
-	if err != nil {
-		http.Error(w, `{"error": "Decoding error"}`, http.StatusInternalServerError)
-		return
+	protoUser := &proto.UserL{
+		Id:        user.Id.Hex(), // Konverzija MongoDB ObjectID u string
+		Firstname: user.FirstName,
+		Lastname:  user.LastName,
+		Username:  user.Username,
+		Email:     user.Email,
+		IsActive:  user.IsActive,
+		Code:      user.Code,
+		Role:      user.Role,
 	}
-
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	w.Write(userJson)
+	response := &proto.GetUserByUsernameRes{User: protoUser}
+	return response, nil
 }
 
-func (h UserHandler) DeleteUserByUsername(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	username := vars["username"]
-
-	w.Header().Set("Access-Control-Allow-Origin", "http://localhost:4200")
-	w.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS , DELETE")
-	w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
-	w.Header().Set("Content-Type", "application/json")
-
-	if r.Method == http.MethodOptions {
-		w.WriteHeader(http.StatusNoContent)
-		return
+func (h UserHandler) DeleteUserByUsername(ctx context.Context, req *proto.GetUserByUsernameReq) (*proto.EmptyResponse, error) {
+	md, ok := metadata.FromIncomingContext(ctx)
+	if !ok {
+		return nil, status.Error(codes.Unauthenticated, "missing metadata")
 	}
-
-	err := h.service.DeleteUserByUsername(username)
+	authHeader := md.Get("authorization")
+	if len(authHeader) == 0 {
+		return nil, status.Error(codes.Unauthenticated, "missing authorization header")
+	}
+	tokenString := strings.TrimPrefix(authHeader[0], "Bearer ")
+	if tokenString == "" {
+		return nil, status.Error(codes.Unauthenticated, "invalid token format")
+	}
+	claims, err := parseJWT(tokenString)
 	if err != nil {
-		http.Error(w, `{"Bad request"}`, http.StatusBadRequest)
-		return
+		return nil, status.Error(codes.Unauthenticated, "invalid or expired token")
+	}
+	role, ok := claims["user_role"].(string)
+	if !ok || role == "" {
+		return nil, status.Error(codes.Unauthenticated, "role not found in token")
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
+	userOnProjectReq := &proto.UserOnProjectReq{
+		Id:   req.Username,
+		Role: role,
+	}
+	projServiceResponse, err := h.projectService.UserOnProject(ctx, userOnProjectReq)
+	if err != nil {
+		return nil, status.Error(codes.Internal, "Error checking project")
+	}
+	if projServiceResponse.OnProject {
+		return nil, status.Error(codes.Internal, "User is assigned to a project.")
+	}
+	err = h.service.DeleteUserById(req.Username)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, "Bad request.")
+	}
+	return nil, nil
 }
 
 func GenerateJWT(user *models.User) (string, error) {
@@ -248,38 +218,65 @@ func CheckPassword(hashedPassword, password string) bool {
 	return err == nil
 }
 
-func (h *UserHandler) ChangePassword(w http.ResponseWriter, r *http.Request) {
+func (h *UserHandler) ChangePassword(ctx context.Context, req *proto.ChangePasswordReq) (*proto.EmptyResponse, error) {
 
-	w.Header().Set("Access-Control-Allow-Origin", "http://localhost:4200")
-	w.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS , DELETE")
-	w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
-	w.Header().Set("Content-Type", "application/json")
-
-	if r.Method == http.MethodOptions {
-		w.WriteHeader(http.StatusNoContent)
-		return
-	}
-
-	body, err := ioutil.ReadAll(r.Body)
+	err := h.service.ChangePassword(req.ChangeUser.Username, req.ChangeUser.CurrentPassword, req.ChangeUser.NewPassword)
 	if err != nil {
-		http.Error(w, "Failed to read the request body", http.StatusBadRequest)
-		return
+		return nil, status.Error(codes.InvalidArgument, "bad request ...")
 	}
 
-	var request ChangePasswordRequest
-	if err := json.Unmarshal(body, &request); err != nil {
-		http.Error(w, "Invalid request body", http.StatusBadRequest)
-		return
-	}
+	return nil, nil
+}
 
-	err = h.service.ChangePassword(request.Username, request.CurrentPassword, request.NewPassword)
+func (h UserHandler) verifyCaptcha(captchaResponse string) (bool, error) {
+
+	secretKey := os.Getenv("CAPTCHA_SECRET_KEY_TEST")
+
+	verificationURL := "https://www.google.com/recaptcha/api/siteverify"
+
+	// Request body
+	data := fmt.Sprintf("secret=%s&response=%s", secretKey, captchaResponse)
+
+	// Salje post za verifikaciju
+	resp, err := http.Post(verificationURL, "application/x-www-form-urlencoded", bytes.NewBuffer([]byte(data)))
 	if err != nil {
-		http.Error(w, fmt.Sprintf("Error changing password: %s", err.Error()), http.StatusInternalServerError)
-		return
+		return false, fmt.Errorf("failed to verify CAPTCHA: %v", err)
+	}
+	defer resp.Body.Close()
+
+	// Cita response
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return false, fmt.Errorf("failed to read CAPTCHA verification response: %v", err)
 	}
 
-	// Respond with success
-	w.WriteHeader(http.StatusOK)
-	w.Header().Set("Content-Type", "application/json")
-	w.Write([]byte(`{"message": "Password updated successfully"}`))
+	// Parsira JSON
+	var response map[string]interface{}
+	if err := json.Unmarshal(body, &response); err != nil {
+		return false, fmt.Errorf("failed to parse CAPTCHA verification response: %v", err)
+	}
+
+	// Provjera uspjeha
+	if success, ok := response["success"].(bool); ok && success {
+		return true, nil
+	}
+	return false, nil
+}
+
+func parseJWT(tokenString string) (jwt.MapClaims, error) {
+	secret := []byte("matija_AFK") // Replace with your actual secret
+	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, errors.New("unexpected signing method")
+		}
+		return secret, nil
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
+		return claims, nil
+	}
+	return nil, errors.New("invalid token")
 }

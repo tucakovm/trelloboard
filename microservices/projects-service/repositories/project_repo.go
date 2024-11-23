@@ -2,12 +2,10 @@ package repositories
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"log"
 	"os"
 	"projects_module/domain"
-	proto "projects_module/proto/project"
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
@@ -76,7 +74,7 @@ func insertInitialProjects(client *mongo.Client) error {
 			MinMembers:     2,
 			MaxMembers:     5,
 			Members: []domain.User{
-				{Username: "bobsmith", Role: "User"},
+				{Id: "67386650a0d21b3a8f823720", Username: "bobsmith", Role: "User"},
 			},
 			Manager: domain.User{Id: "67386650a0d21b3a8f823722", Username: "alicej", Role: "Manager"},
 		},
@@ -87,7 +85,7 @@ func insertInitialProjects(client *mongo.Client) error {
 			MinMembers:     3,
 			MaxMembers:     6,
 			Members: []domain.User{
-				{Username: "bobsmith", Role: "User"},
+				{Id: "67386650a0d21b3a8f823720", Username: "bobsmith", Role: "User"},
 			},
 			Manager: domain.User{Id: "67386650a0d21b3a8f823722", Username: "alicej", Role: "Manager"},
 		},
@@ -145,35 +143,14 @@ func New(ctx context.Context, logger *log.Logger) (*ProjectRepo, error) {
 	}, nil
 }
 
-func (pr *ProjectRepo) Create(project *proto.Project) error {
+func (pr *ProjectRepo) Create(project *domain.Project) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-
-	// Provera CompletionDate pre poziva AsTime()
-	if project.CompletionDate == nil {
-		log.Println("CompletionDate is nil")
-		return errors.New("completionDate is required")
-	}
-
-	completionDate := project.CompletionDate.AsTime()
-
-	// Konvertuj proto.Project u domain.Project
-	prj := &domain.Project{
-		Name:           project.Name,
-		CompletionDate: completionDate.UTC(), // Osigurajte da je u UTC
-		MinMembers:     project.MinMembers,
-		MaxMembers:     project.MaxMembers,
-		Manager: domain.User{
-			Id:       project.Manager.Id,
-			Username: project.Manager.Username,
-			Role:     project.Manager.Role,
-		},
-	}
 
 	// Ubaci konvertovani domain.Project u MongoDB
 	projectsCollection := pr.getCollection()
 
-	result, err := projectsCollection.InsertOne(ctx, prj)
+	result, err := projectsCollection.InsertOne(ctx, project)
 	if err != nil {
 		log.Printf("Error inserting document: %v\n", err)
 		return err
@@ -206,6 +183,42 @@ func (pr *ProjectRepo) GetAllProjects(id string) (domain.Projects, error) {
 	}
 
 	return projects, nil
+}
+
+func (pr *ProjectRepo) DoesManagerExistOnProject(id string) (bool, error) {
+	// Initialize context (after 5 seconds timeout, abort operation)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	projectsCollection := pr.getCollection()
+
+	// Query to find a project where the manager's ID matches the provided id
+	filter := bson.M{"manager.username": id}
+	count, err := projectsCollection.CountDocuments(ctx, filter)
+	if err != nil {
+		log.Println("Error counting projects:", err)
+		return false, err
+	}
+
+	return count > 0, nil
+}
+
+func (pr *ProjectRepo) DoesUserExistOnProject(id string) (bool, error) {
+	// Initialize context (after 5 seconds timeout, abort operation)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	projectsCollection := pr.getCollection()
+	log.Println("Does user exist on project : " + id)
+	// Query to find a project where the manager's ID matches the provided id
+	filter := bson.M{"members.username": id}
+	count, err := projectsCollection.CountDocuments(ctx, filter)
+	if err != nil {
+		log.Println("Error counting projects:", err)
+		return false, err
+	}
+
+	return count > 0, nil
 }
 
 func (pr *ProjectRepo) Delete(id string) error {

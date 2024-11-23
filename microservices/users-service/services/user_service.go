@@ -64,7 +64,9 @@ func (s UserService) VerifyUser(username, code string) error {
 }
 
 func (s UserService) GetUserByUsername(username string) (*models.User, error) {
+	log.Println("usao u servis")
 	user, err := s.repo.GetUserByUsername(username)
+
 	if err != nil {
 		return nil, err
 	}
@@ -73,6 +75,14 @@ func (s UserService) GetUserByUsername(username string) (*models.User, error) {
 
 func (s UserService) DeleteUserByUsername(username string) error {
 	err := s.repo.Delete(username)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (s UserService) DeleteUserById(id string) error {
+	err := s.repo.DeleteById(id)
 	if err != nil {
 		return err
 	}

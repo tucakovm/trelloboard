@@ -4,7 +4,7 @@ import { AppRoutingModule } from './app-routing.module';
 import { AppComponent } from './app.component';
 import { ProjectCreateComponent } from './project/project-create/project-create.component';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
-import { HttpClientModule } from '@angular/common/http';
+import {HTTP_INTERCEPTORS, HttpClientModule} from '@angular/common/http';
 import { RegisterComponent } from './register/register.component';
 import { VerifyComponent } from './verify/verify.component';
 import { TasksComponent } from './tasks/tasks-create/tasks.component';
@@ -15,8 +15,8 @@ import { ProfileComponent } from './profile/profile.component';
 import { ProjectDetailsComponent } from './project/project-details/project-details.component';
 import { TasksAllComponent } from './tasks/tasks-all/tasks-all.component';
 import { AddMemberComponent } from './add-member/add-member.component';
-
-
+import { RecaptchaModule } from 'ng-recaptcha';
+import {AuthInterceptor} from "./auth.interceptor";
 
 @NgModule({
   declarations: [
@@ -38,8 +38,14 @@ import { AddMemberComponent } from './add-member/add-member.component';
     ReactiveFormsModule,
     HttpClientModule,
     FormsModule,
+    RecaptchaModule,
   ],
   providers: [
+    {
+      provide: HTTP_INTERCEPTORS,
+      useClass: AuthInterceptor,
+      multi: true // Ovim omogućavamo više interceptora
+    },
     { provide: JWT_OPTIONS, useValue: JWT_OPTIONS }, // This is necessary for JwtHelperService to work
     JwtHelperService, // Add JwtHelperService here
   ],

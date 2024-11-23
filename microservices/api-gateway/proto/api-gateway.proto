@@ -23,18 +23,25 @@ service ProjectService {
       delete: "/api/project/{id}"
     };
   }
-  rpc GetById(GetByIdReq) returns (GetByIdRes) {
+  rpc GetById(GetProjectByIdReq) returns (GetProjectByIdRes) {
     option (google.api.http) = {
       get: "/api/project/{id}"
     };
   }
+  rpc AddMember(AddMembersRequest) returns (EmptyResponse) {
+    option (google.api.http) = {
+      put: "/api/projects/{id}/members"
+      body: "user"
+    };
+  }
+}
+
+message AddMembersRequest{
+  string id = 1;  // Project ID (path parameter)
+  User user = 2;  // User details (body)
 }
 
 message EmptyResponse {}
-
-message GetAllProjectsReq {
-  string username = 1;
-}
 
 message Project {
   string id = 1;  // primitive.ObjectID is represented as a string
@@ -42,7 +49,8 @@ message Project {
   google.protobuf.Timestamp completionDate = 3;  // time.Time type in Go
   int32 minMembers = 4;
   int32 maxMembers = 5;
-  User manager = 6;  // Nested User message
+  User manager = 6;
+  repeated User members = 7; // Nested User message
 }
 
 message User {
@@ -54,19 +62,171 @@ message User {
 message GetAllProjectsRes {
   repeated Project projects = 1;
 }
-
+message GetAllProjectsReq {
+  string username = 1;
+}
 message CreateProjectReq {
   Project project = 1;
 }
-
 message DeleteProjectReq {
   string id = 1;
 }
-
-message GetByIdRes {
+message GetProjectByIdRes {
   Project project = 1;
 }
-
-message GetByIdReq {
+message GetProjectByIdReq {
   string id = 1;
 }
+
+
+service TaskService {
+  rpc GetAllByProjectId(GetAllTasksReq) returns (GetAllTasksRes) {
+    option (google.api.http) = {
+      get: "/api/tasks/{id}"
+    };
+  }
+  rpc Create(CreateTaskReq) returns (EmptyResponse) {
+    option (google.api.http) = {
+      post: "/api/task",
+      body: "task"
+    };
+  }
+  rpc Delete(DeleteTaskReq) returns (EmptyResponse) {
+    option (google.api.http) = {
+      delete: "/api/task/{id}"
+    };
+  }
+  rpc GetById(GetByIdTaskReq) returns (GetByIdTaskRes) {
+    option (google.api.http) = {
+      get: "/api/task/{id}"
+    };
+  }
+}
+
+message Task {
+  string id = 1;
+  string name = 2;
+  string description = 3;
+  string status = 4;
+  string project_id = 5;
+}
+
+message GetAllTasksRes {
+  repeated Task tasks = 1;
+}
+message GetAllTasksReq {
+  string id = 1;
+}
+message CreateTaskReq {
+  Task task = 1;
+}
+message DeleteTaskReq {
+  string id = 1;
+}
+message GetByIdTaskRes {
+  Task task = 1;
+}
+message GetByIdTaskReq {
+  string id = 1;
+}
+
+
+service UsersService {
+  rpc RegisterHandler(RegisterReq) returns (EmptyResponse) {
+    option (google.api.http) = {
+      post: "/api/users/register",
+      body: "user"
+    };
+  }
+  rpc VerifyHandler(VerifyReq) returns (EmptyResponse) {
+    option (google.api.http) = {
+      post: "/api/users/verify",
+      body: "verifyUser"
+    };
+  }
+  rpc LoginUserHandler(LoginReq) returns (LoginRes) {
+    option (google.api.http) = {
+      post: "/api/users/login",
+      body: "loginUser",
+
+    };
+  }
+  rpc GetUserByUsername(GetUserByUsernameReq) returns (GetUserByUsernameRes) {
+    option (google.api.http) = {
+      get: "/api/users/{username}"
+    };
+  }
+  rpc DeleteUserByUsername(GetUserByUsernameReq) returns (EmptyResponse) {
+    option (google.api.http) = {
+      delete: "/api/users/{username}"
+    };
+  }
+  rpc ChangePassword(ChangePasswordReq) returns (EmptyResponse) {
+    option (google.api.http) = {
+      put: "/api/users/change-password"
+      body: "changeUser"
+    };
+  }
+}
+
+message RegisterReq{
+  UserRegister user = 1;
+}
+message UserRegister{
+  string firstname = 1;
+  string lastname = 2;
+  string username = 3;
+  string email = 4;
+  string password = 5;
+  string role = 6;
+  string key = 7;
+}
+message VerifyReq{
+    UserVerifyReq verifyUser = 1;
+}
+message UserVerifyReq{
+  string username = 1;
+  string code = 2;
+}
+message LoginReq{
+  LoginUserR loginUser = 1;
+}
+message LoginUserR{
+  string username = 1;
+  string password = 2;
+  string key = 3;
+}
+message GetUserByUsernameReq{
+  string username = 1;
+}
+
+message GetUserByUsernameRes{
+  UserL user = 1;
+}
+message LoginRes {
+  string message = 1;
+  string token = 2;
+}
+
+
+message UserL {
+  string id = 1;  // Define User fields based on your Go struct
+  string firstname = 2;
+  string lastname = 3;
+  string username = 4;
+  string email = 5;
+  string password = 6;
+  bool isActive = 7;
+  string code = 8;
+  string role = 9;
+}
+message ChangePasswordReq{
+    ChangePasswordUser changeUser = 1;
+}
+message ChangePasswordUser{
+  string username = 1;
+  string currentPassword = 2;
+  string newPassword = 3;
+}
+
+

@@ -30,6 +30,7 @@ export class ProjectDetailsComponent implements OnInit{
       },
     ]
   }
+  maxLengthAchieved:boolean = false;
   constructor(private projectService:ProjectService,private route: ActivatedRoute,private tasksService:TaskService, private router:Router){}
 
   ngOnInit(): void {
@@ -46,7 +47,7 @@ export class ProjectDetailsComponent implements OnInit{
         (project: Project | null) => {
           if (project) {
             this.project = project;
-            console.log(this.project);
+            this.maxLengthAchieved = this.project.members.length >= this.project.maxMembers;
           } else {
             console.error('Project not found or an error occurred.');
           }

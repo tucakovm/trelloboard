@@ -2,61 +2,79 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"log"
-	"net/http"
-	h "tasks-service/handlers"
+	"net"
+	"os"
+	"os/signal"
+	"syscall"
+	tsk "tasks-service/proto/task"
 	"tasks-service/repository"
+	"tasks-service/service"
+	"time"
 
-	"github.com/gorilla/handlers"
-	"github.com/gorilla/mux"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/reflection"
+
+	"tasks-service/config"
+	h "tasks-service/handlers"
 )
 
 func main() {
-	// Set up context for MongoDB connection
-	ctx := context.Background()
+	cfg := config.GetConfig()
+	log.Println(cfg.Address)
 
-	// Initialize MongoDB repository
-	repo, err := repository.NewTaskRepo(ctx)
+	listener, err := net.Listen("tcp", cfg.Address)
 	if err != nil {
-		log.Fatalf("Failed to initialize task repository: %v", err)
+		log.Fatalln(err)
 	}
-	//defer repo.Cli.Disconnect(ctx) // Ensure the database connection is closed when done
+	defer func(listener net.Listener) {
+		err := listener.Close()
+		if err != nil {
+			log.Fatal(err)
+		}
+	}(listener)
 
-	// Initialize task service
-	//taskService := service.NewTaskService(repo)
+	// Initialize context
+	timeoutContext, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
 
-	// Initialize task handler
-	//taskRepo := &repository.TaskRepo{}
-	taskHandler := h.NewTaskHandler(repo)
+	//Initialize the logger we are going to use, with prefix and datetime for every log
+	logger := log.New(os.Stdout, "[task-api] ", log.LstdFlags)
+	storeLogger := log.New(os.Stdout, "[task-store] ", log.LstdFlags)
 
-	// Set up router
-	r := mux.NewRouter()
-	r.HandleFunc("/api/tasks", taskHandler.Create).Methods(http.MethodPost)
-	r.HandleFunc("/api/tasks", taskHandler.GetAll).Methods(http.MethodGet)
-	r.HandleFunc("/api/tasks", taskHandler.Delete).Methods(http.MethodDelete)
-	r.HandleFunc("/api/tasks/{project_id}", taskHandler.DeleteAllByProjectID).Methods(http.MethodDelete)
-	r.HandleFunc("/api/tasks/{project_id}", taskHandler.GetAllByProjectID).Methods(http.MethodGet)
-
-	// Set up CORS
-	corsHandler := handlers.CORS(
-		handlers.AllowedOrigins([]string{"http://localhost:4200"}), // Adjust as needed
-		handlers.AllowedMethods([]string{"GET", "POST", "DELETE", "OPTIONS"}),
-		handlers.AllowedHeaders([]string{"Content-Type", "Authorization"}),
-	)
-
-	// Start the server
-	srv := &http.Server{
-		Handler: corsHandler(r),
-		Addr:    ":8002", // Use the desired port
+	// NoSQL: Initialize Product Repository store
+	repoTask, err := repository.NewTaskRepo(timeoutContext, storeLogger)
+	if err != nil {
+		logger.Fatal(err)
 	}
+	defer repoTask.Disconnect(timeoutContext)
+	handleErr(err)
 
-	log.Println("Server is running on port 8002")
-	if err := srv.ListenAndServe(); err != nil {
-		log.Fatalf("Failed to start server: %v", err)
-	}
+	serviceProject := service.NewTaskService(*repoTask)
+	handleErr(err)
 
-	fmt.Println("Welcome to the Tasks Service!")
+	handlerProject := h.NewTaskHandler(serviceProject)
+	handleErr(err)
+
+	// Bootstrap gRPC server.
+	grpcServer := grpc.NewServer()
+	reflection.Register(grpcServer)
+
+	// Bootstrap gRPC service server and respond to request.
+	tsk.RegisterTaskServiceServer(grpcServer, handlerProject)
+
+	go func() {
+		if err := grpcServer.Serve(listener); err != nil {
+			log.Fatal("server error: ", err)
+		}
+	}()
+
+	stopCh := make(chan os.Signal, 1)
+	signal.Notify(stopCh, syscall.SIGTERM)
+
+	<-stopCh
+
+	grpcServer.Stop()
 }
 
 func handleErr(err error) {

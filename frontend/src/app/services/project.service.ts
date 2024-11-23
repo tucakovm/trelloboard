@@ -5,6 +5,7 @@ import { Project } from "../model/project";
 import { UserFP } from "../model/userForProject";
 import { catchError } from 'rxjs/operators';
 import { of } from 'rxjs';
+import {AuthService} from "./auth.service";
 
 
 @Injectable({
@@ -12,14 +13,14 @@ import { of } from 'rxjs';
   })
 export class ProjectService{
     private apiUrl = "http://localhost:8000/api"
-    constructor(private http:HttpClient){}
+    constructor(private http:HttpClient,private authService : AuthService) { }
 
     createProject(project: Project): Observable<Project> {
         return this.http.post<Project>(this.apiUrl+"/project", project, {
-          headers: new HttpHeaders({ 'Content-Type': 'application/json' })
+          headers: new HttpHeaders({ 'Content-Type': 'application/json' , 'Authorization': 'Bearer ' + this.authService.getToken() })
         });
       }
-  
+
       // Convert protobuf Timestamp to JavaScript Date
       timestampToDate(timestamp: any): Date {
         if (timestamp && timestamp.seconds) {
@@ -29,38 +30,40 @@ export class ProjectService{
         }
         return new Date(); // Default to current date if invalid timestamp
       }
-      
-      
 
 
-      getAllProjects(username: string): Observable<Project[]> {
-        return this.http.get<any>(`${this.apiUrl}/projects/${username}`).pipe(
-            map((response: any) => {
-                console.log('API Response:', response); // Proveri strukturu odgovora
-                return response.projects.map((item: ProjectItem) => new Project(
-                    item.id,
-                    item.name,
-                    this.timestampToDate(item.completionDate),
-                    item.minMembers,
-                    item.maxMembers,
-                    item.manager = {
-                        id: item.manager.id,
-                        username: item.manager.username,
-                        role: item.manager.role
-                    },
-                    item.members.map((member: any) => ({
-                      id: member.id,
-                      username: member.username,
-                      role: member.role
-                    }))
-                ));
-            }),
-            catchError((error) => {
-                console.error('Error fetching projects:', error);
-                return of([]); // Fallback na prazan niz
-            })
-        );
-    }
+
+
+  getAllProjects(username: string): Observable<Project[]> {
+    return this.http.get<any>(`${this.apiUrl}/projects/${username}`).pipe(
+      map((response: any) => {
+        console.log('API Response:', response); // Proveri strukturu odgovora
+        return response.projects.map((item: ProjectItem) => new Project(
+          item.id,
+          item.name,
+          this.timestampToDate(item.completionDate),
+          item.minMembers,
+          item.maxMembers,
+          item.manager = {
+            id: item.manager.id,
+            username: item.manager.username,
+            role: item.manager.role
+          },
+          (item.members && Array.isArray(item.members)) ?
+            item.members.map((member: any) => ({
+              id: member.id,
+              username: member.username,
+              role: member.role
+            })) : [] // Ako je null ili nije niz, vraća prazan niz
+        ));
+      }),
+      catchError((error) => {
+        console.error('Error fetching projects:', error);
+        return of([]); // Fallback na prazan niz
+      })
+    );
+  }
+
 
     deleteProjectById(id:string): Observable<void>{
       return this.http.delete<void>(`${this.apiUrl}/project/${id}`)
@@ -69,7 +72,7 @@ export class ProjectService{
     getById(id: string): Observable<Project | null> {
       return this.http.get<any>(`${this.apiUrl}/project/${id}`).pipe(
         map((response: any) => {
-          console.log('API Response:', response); 
+          console.log('API Response:', response);
           const item = response.project;
           return new Project(
             item.id,
@@ -82,11 +85,12 @@ export class ProjectService{
               username: item.manager.username,
               role: item.manager.role
             },
-            item.members.map((member: any) => ({
-              id: member.id,
-              username: member.username,
-              role: member.role
-            }))
+            (item.members && Array.isArray(item.members)) ?
+              item.members.map((member: any) => ({
+                id: member.id,
+                username: member.username,
+                role: member.role
+              })) : [] // Ako je null ili nije niz, vraća prazan niz
           );
         }),
         catchError((error) => {
@@ -99,9 +103,9 @@ export class ProjectService{
     createMember(id:string, member:UserFP){
       console.log("Pozvan createmember servis na frontu");
       console.log("id:" + id + " member: "+UserFP)
-      return this.http.post<any>(`${this.apiUrl}/projects/${id}/members`,member)
+      return this.http.put<any>(`${this.apiUrl}/projects/${id}/members`,member)
     }
-  }    
+  }
 
 interface User {
   id: string;
