@@ -67,8 +67,18 @@ func (h ProjectHandler) AddMember(ctx context.Context, req *proto.AddMembersRequ
 
 	err := h.service.AddMember(projectId, req.User)
 	if err != nil {
+		log.Printf("Error adding member on project: %v", err)
+		return nil, status.Error(codes.InvalidArgument, "Error adding member...")
+	}
+	return nil, nil
+}
+func (h ProjectHandler) RemoveMember(ctx context.Context, req *proto.AddMembersRequest) (*proto.EmptyResponse, error) {
+	log.Printf("Usao u handler od remove membera")
+	projectId := req.Id
+	err := h.service.RemoveMember(projectId, req.User)
+	if err != nil {
 		log.Printf("Error creating project: %v", err)
-		return nil, status.Error(codes.InvalidArgument, "bad request ...")
+		return nil, status.Error(codes.InvalidArgument, "Error removing member...")
 	}
 	return nil, nil
 }

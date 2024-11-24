@@ -296,3 +296,42 @@ func (pr *ProjectRepo) AddMember(projectId string, user domain.User) error {
 	log.Printf("User %s added to project %s", user.Username, projectId)
 	return nil
 }
+func (pr *ProjectRepo) RemoveMember(projectId string, user domain.User) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	projectsCollection := pr.getCollection()
+	log.Printf("Usao u repo od remove membera")
+
+	objID, err := primitive.ObjectIDFromHex(projectId)
+	if err != nil {
+		log.Println("Invalid project ID format:", err)
+		return err
+	}
+
+	userObjID, err := primitive.ObjectIDFromHex(user.Id)
+	if err != nil {
+		log.Println("Invalid user ID format:", err)
+		return err
+	}
+
+	// Kreiranje filtera i update operacije za uklanjanje korisnika prema ID-ju
+	filter := bson.M{"_id": objID}
+	update := bson.M{
+		"$pull": bson.M{"members": bson.M{"_id": userObjID}},
+	}
+
+	result, err := projectsCollection.UpdateOne(ctx, filter, update)
+	if err != nil {
+		log.Println("Error removing member from project:", err)
+		return err
+	}
+
+	if result.ModifiedCount == 0 {
+		log.Println("No project found with the given ID or user not in the members list")
+		return fmt.Errorf("no project found with the given ID or user not in the members list")
+	}
+
+	log.Printf("User %s removed from project %s", user.Username, projectId)
+	return nil
+}

@@ -141,3 +141,13 @@ func (s ProjectService) AddMember(projectId string, protoUser *proto.User) error
 	}
 	return s.repo.AddMember(projectId, *user)
 }
+
+func (s ProjectService) RemoveMember(projectId string, protoUser *proto.User) error {
+	user := &domain.User{
+		Id:       protoUser.Id,
+		Username: protoUser.Username,
+		Role:     protoUser.Role,
+	}
+	log.Printf("Usao u servis od remove membera")
+	return s.repo.RemoveMember(projectId, *user)
+}
