@@ -24,6 +24,7 @@ const (
 	ProjectService_Delete_FullMethodName         = "/ProjectService/Delete"
 	ProjectService_GetById_FullMethodName        = "/ProjectService/GetById"
 	ProjectService_AddMember_FullMethodName      = "/ProjectService/AddMember"
+	ProjectService_RemoveMember_FullMethodName   = "/ProjectService/RemoveMember"
 )
 
 // ProjectServiceClient is the client API for ProjectService service.
@@ -35,6 +36,7 @@ type ProjectServiceClient interface {
 	Delete(ctx context.Context, in *DeleteProjectReq, opts ...grpc.CallOption) (*EmptyResponse, error)
 	GetById(ctx context.Context, in *GetProjectByIdReq, opts ...grpc.CallOption) (*GetProjectByIdRes, error)
 	AddMember(ctx context.Context, in *AddMembersRequest, opts ...grpc.CallOption) (*EmptyResponse, error)
+	RemoveMember(ctx context.Context, in *RemoveMembersRequest, opts ...grpc.CallOption) (*EmptyResponse, error)
 }
 
 type projectServiceClient struct {
@@ -95,6 +97,16 @@ func (c *projectServiceClient) AddMember(ctx context.Context, in *AddMembersRequ
 	return out, nil
 }
 
+func (c *projectServiceClient) RemoveMember(ctx context.Context, in *RemoveMembersRequest, opts ...grpc.CallOption) (*EmptyResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(EmptyResponse)
+	err := c.cc.Invoke(ctx, ProjectService_RemoveMember_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // ProjectServiceServer is the server API for ProjectService service.
 // All implementations must embed UnimplementedProjectServiceServer
 // for forward compatibility.
@@ -104,6 +116,7 @@ type ProjectServiceServer interface {
 	Delete(context.Context, *DeleteProjectReq) (*EmptyResponse, error)
 	GetById(context.Context, *GetProjectByIdReq) (*GetProjectByIdRes, error)
 	AddMember(context.Context, *AddMembersRequest) (*EmptyResponse, error)
+	RemoveMember(context.Context, *RemoveMembersRequest) (*EmptyResponse, error)
 	mustEmbedUnimplementedProjectServiceServer()
 }
 
@@ -128,6 +141,9 @@ func (UnimplementedProjectServiceServer) GetById(context.Context, *GetProjectByI
 }
 func (UnimplementedProjectServiceServer) AddMember(context.Context, *AddMembersRequest) (*EmptyResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method AddMember not implemented")
+}
+func (UnimplementedProjectServiceServer) RemoveMember(context.Context, *RemoveMembersRequest) (*EmptyResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method RemoveMember not implemented")
 }
 func (UnimplementedProjectServiceServer) mustEmbedUnimplementedProjectServiceServer() {}
 func (UnimplementedProjectServiceServer) testEmbeddedByValue()                        {}
@@ -240,6 +256,24 @@ func _ProjectService_AddMember_Handler(srv interface{}, ctx context.Context, dec
 	return interceptor(ctx, in, info, handler)
 }
 
+func _ProjectService_RemoveMember_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RemoveMembersRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ProjectServiceServer).RemoveMember(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ProjectService_RemoveMember_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ProjectServiceServer).RemoveMember(ctx, req.(*RemoveMembersRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // ProjectService_ServiceDesc is the grpc.ServiceDesc for ProjectService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -266,6 +300,10 @@ var ProjectService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "AddMember",
 			Handler:    _ProjectService_AddMember_Handler,
+		},
+		{
+			MethodName: "RemoveMember",
+			Handler:    _ProjectService_RemoveMember_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

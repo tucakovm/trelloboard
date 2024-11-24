@@ -107,7 +107,7 @@ export class ProjectService{
     }
 
     removeMember(id:string, member:UserFP){
-      return this.http.put<any>(`${this.apiUrl}/projects/${id}/members/${member.id}`,member)
+      return this.http.delete<any>(`${this.apiUrl}/projects/${id}/members/${member.id}`)
     }
   }
 

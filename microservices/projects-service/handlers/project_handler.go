@@ -72,10 +72,10 @@ func (h ProjectHandler) AddMember(ctx context.Context, req *proto.AddMembersRequ
 	}
 	return nil, nil
 }
-func (h ProjectHandler) RemoveMember(ctx context.Context, req *proto.AddMembersRequest) (*proto.EmptyResponse, error) {
+func (h ProjectHandler) RemoveMember(ctx context.Context, req *proto.RemoveMembersRequest) (*proto.EmptyResponse, error) {
 	log.Printf("Usao u handler od remove membera")
-	projectId := req.Id
-	err := h.service.RemoveMember(projectId, req.User)
+	projectId := req.ProjectId
+	err := h.service.RemoveMember(projectId, req.UserId)
 	if err != nil {
 		log.Printf("Error creating project: %v", err)
 		return nil, status.Error(codes.InvalidArgument, "Error removing member...")

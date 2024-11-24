@@ -31,11 +31,11 @@ export class RemoveMemberComponent {
     if (this.removeMemberForm.valid) {
       this.userService.getUserByUsername(this.removeMemberForm.value.username).subscribe((resp) => {
         let user: UserFP = new UserFP(resp.user.id, resp.user.username, resp.user.role);
-        console.log(user);
         if(user && this.id){
           this.projectService.removeMember(this.id,user).subscribe({
             next:(resp) => {
               console.log("Successfully removed member!")
+              this.router.navigate(['/all-projects', this.id]);
             },
             error:(error) =>{
               console.error("Error removing member:",error);

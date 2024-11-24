@@ -38,7 +38,7 @@ type ProjectServiceClient interface {
 	GetById(ctx context.Context, in *GetByIdReq, opts ...grpc.CallOption) (*GetByIdRes, error)
 	AddMember(ctx context.Context, in *AddMembersRequest, opts ...grpc.CallOption) (*EmptyResponse, error)
 	UserOnProject(ctx context.Context, in *UserOnProjectReq, opts ...grpc.CallOption) (*UserOnProjectRes, error)
-	RemoveMember(ctx context.Context, in *AddMembersRequest, opts ...grpc.CallOption) (*EmptyResponse, error)
+	RemoveMember(ctx context.Context, in *RemoveMembersRequest, opts ...grpc.CallOption) (*EmptyResponse, error)
 }
 
 type projectServiceClient struct {
@@ -109,7 +109,7 @@ func (c *projectServiceClient) UserOnProject(ctx context.Context, in *UserOnProj
 	return out, nil
 }
 
-func (c *projectServiceClient) RemoveMember(ctx context.Context, in *AddMembersRequest, opts ...grpc.CallOption) (*EmptyResponse, error) {
+func (c *projectServiceClient) RemoveMember(ctx context.Context, in *RemoveMembersRequest, opts ...grpc.CallOption) (*EmptyResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(EmptyResponse)
 	err := c.cc.Invoke(ctx, ProjectService_RemoveMember_FullMethodName, in, out, cOpts...)
@@ -129,7 +129,7 @@ type ProjectServiceServer interface {
 	GetById(context.Context, *GetByIdReq) (*GetByIdRes, error)
 	AddMember(context.Context, *AddMembersRequest) (*EmptyResponse, error)
 	UserOnProject(context.Context, *UserOnProjectReq) (*UserOnProjectRes, error)
-	RemoveMember(context.Context, *AddMembersRequest) (*EmptyResponse, error)
+	RemoveMember(context.Context, *RemoveMembersRequest) (*EmptyResponse, error)
 	mustEmbedUnimplementedProjectServiceServer()
 }
 
@@ -158,7 +158,7 @@ func (UnimplementedProjectServiceServer) AddMember(context.Context, *AddMembersR
 func (UnimplementedProjectServiceServer) UserOnProject(context.Context, *UserOnProjectReq) (*UserOnProjectRes, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method UserOnProject not implemented")
 }
-func (UnimplementedProjectServiceServer) RemoveMember(context.Context, *AddMembersRequest) (*EmptyResponse, error) {
+func (UnimplementedProjectServiceServer) RemoveMember(context.Context, *RemoveMembersRequest) (*EmptyResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method RemoveMember not implemented")
 }
 func (UnimplementedProjectServiceServer) mustEmbedUnimplementedProjectServiceServer() {}
@@ -291,7 +291,7 @@ func _ProjectService_UserOnProject_Handler(srv interface{}, ctx context.Context,
 }
 
 func _ProjectService_RemoveMember_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(AddMembersRequest)
+	in := new(RemoveMembersRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -303,7 +303,7 @@ func _ProjectService_RemoveMember_Handler(srv interface{}, ctx context.Context, 
 		FullMethod: ProjectService_RemoveMember_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ProjectServiceServer).RemoveMember(ctx, req.(*AddMembersRequest))
+		return srv.(ProjectServiceServer).RemoveMember(ctx, req.(*RemoveMembersRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
