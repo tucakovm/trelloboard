@@ -183,6 +183,19 @@ service UsersService {
       body: "magicLink"
     };
   }
+  rpc RecoveryLink(RecoveryLinkReq) returns (EmptyResponse){
+    option (google.api.http) = {
+      post: "/api/users/recovery",
+      body: "recoveryLink"
+    };
+  }
+  rpc RecoverPassword(RecoveryPasswordRequest) returns (EmptyResponse) {
+    option (google.api.http) = {
+      post: "/api/users/recover-password",
+      body: "*"
+    };
+  }
+
 }
 
 message RegisterReq{
@@ -247,9 +260,20 @@ message ChangePasswordUser{
 message MagicLinkReq {
   MagicLinkRequest magicLink = 1;
 }
-
 message MagicLinkRequest {
   string email = 1;
+}
+message RecoveryLinkReq {
+  RecoveryLinkRequest recoveryLink = 1;
+}
+
+message RecoveryLinkRequest {
+  string email = 1;
+}
+
+message RecoveryPasswordRequest {
+  string newPassword = 1;
+  string username = 2;
 }
 
 

@@ -10,6 +10,8 @@ service UsersService {
   rpc DeleteUserByUsername(GetUserByUsernameReq) returns (EmptyResponse) {}
   rpc ChangePassword(ChangePasswordReq) returns (EmptyResponse) {}
   rpc MagicLink(MagicLinkReq) returns (EmptyResponse) {}
+  rpc RecoveryLink(RecoveryLinkReq) returns (EmptyResponse) {}
+  rpc RecoverPassword(RecoveryPasswordRequest) returns (EmptyResponse) {}
 }
 
 message EmptyResponse {}
@@ -92,4 +94,17 @@ message MagicLinkReq {
 
 message MagicLinkRequest {
   string email = 1;
+}
+
+message RecoveryLinkReq {
+  RecoveryLinkRequest recoveryLink = 1;
+}
+
+message RecoveryLinkRequest {
+  string email = 1;
+}
+
+message RecoveryPasswordRequest {
+  string newPassword = 1;
+  string username = 2;
 }

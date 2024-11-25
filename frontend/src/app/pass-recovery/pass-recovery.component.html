@@ -1,0 +1,61 @@
+<div class="container">
+  <div class="d-flex justify-content-center align-items-center vh-100">
+    <div class="card w-50">
+      <div class="card-body">
+        <h3>Change Password</h3>
+        <form [formGroup]="changePasswordForm" (ngSubmit)="onSubmit()">
+          <div class="mb-3">
+            <label for="newPassword" class="form-label">New Password:</label>
+            <input
+              id="newPassword"
+              type="password"
+              formControlName="newPassword"
+              placeholder="Enter new password"
+              class="form-control"
+            />
+            <div
+              *ngIf="newPassword?.invalid && newPassword?.touched"
+              class="invalid-feedback"
+            >
+              New Password must be at least 6 characters long.
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <label for="confirmNewPassword" class="form-label"
+              >Confirm New Password:</label
+            >
+            <input
+              id="confirmNewPassword"
+              type="password"
+              formControlName="confirmNewPassword"
+              placeholder="Confirm new password"
+              class="form-control"
+            />
+            <div
+              *ngIf="confirmNewPassword?.invalid && confirmNewPassword?.touched"
+              class="invalid-feedback"
+            >
+              Please confirm your password.
+            </div>
+          </div>
+
+          <div *ngIf="errorOccurred" class="alert alert-danger">
+            {{ errorMessage }}
+          </div>
+          <div *ngIf="successMessage" class="alert alert-success">
+            {{ successMessage }}
+          </div>
+
+          <button
+            type="submit"
+            [disabled]="changePasswordForm.invalid"
+            class="btn btn-primary w-100"
+          >
+            Change Password
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>

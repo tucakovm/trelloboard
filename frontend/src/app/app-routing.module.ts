@@ -12,6 +12,7 @@ import { TasksAllComponent } from './tasks/tasks-all/tasks-all.component';
 import { AddMemberComponent } from './members/add-member/add-member.component';
 import { RemoveMemberComponent } from './members/remove-member/remove-member.component';
 import { MagicLinkComponent } from './magic-link/magic-link.component';
+import { PassRecoveryComponent } from './pass-recovery/pass-recovery.component';
 
 const routes: Routes = [
   { path: 'register', component: RegisterComponent },
@@ -31,6 +32,7 @@ const routes: Routes = [
   },
   { path: 'tasks/:projectId', component: TasksAllComponent },
   { path: 'magic-login', component: MagicLinkComponent },
+  { path: 'change-password', component: PassRecoveryComponent },
 ];
 @NgModule({
   imports: [RouterModule.forRoot(routes)],

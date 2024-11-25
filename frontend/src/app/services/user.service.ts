@@ -32,9 +32,24 @@ export class UserService {
     return this.http.put(url, body);
   }
 
+  recoverPassword(username: string, newPassword: string): Observable<any> {
+    const url = `${this.baseUrl}/recover-password`;
+    const body = {
+      newPassword: newPassword,
+      username: username,
+    };
+    return this.http.post(url, body);
+  }
+
   requestMagicLink(email: string) {
     const apiUrl = `${this.baseUrl}/magic-link`;
     const headers = { 'Content-Type': 'application/json' };
     return this.http.post(apiUrl, { email }, { headers });
+  }
+
+  requestRecoveryLink(email: string) {
+    const apiUrl = `${this.baseUrl}/recovery`;
+    const headers = { 'Content-Type': 'application/json' };
+    return this.http.put(apiUrl, { email }, { headers });
   }
 }

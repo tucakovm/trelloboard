@@ -534,6 +534,8 @@ const (
 	UsersService_DeleteUserByUsername_FullMethodName = "/UsersService/DeleteUserByUsername"
 	UsersService_ChangePassword_FullMethodName       = "/UsersService/ChangePassword"
 	UsersService_MagicLink_FullMethodName            = "/UsersService/MagicLink"
+	UsersService_RecoveryLink_FullMethodName         = "/UsersService/RecoveryLink"
+	UsersService_RecoverPassword_FullMethodName      = "/UsersService/RecoverPassword"
 )
 
 // UsersServiceClient is the client API for UsersService service.
@@ -547,6 +549,8 @@ type UsersServiceClient interface {
 	DeleteUserByUsername(ctx context.Context, in *GetUserByUsernameReq, opts ...grpc.CallOption) (*EmptyResponse, error)
 	ChangePassword(ctx context.Context, in *ChangePasswordReq, opts ...grpc.CallOption) (*EmptyResponse, error)
 	MagicLink(ctx context.Context, in *MagicLinkReq, opts ...grpc.CallOption) (*EmptyResponse, error)
+	RecoveryLink(ctx context.Context, in *RecoveryLinkReq, opts ...grpc.CallOption) (*EmptyResponse, error)
+	RecoverPassword(ctx context.Context, in *RecoveryPasswordRequest, opts ...grpc.CallOption) (*EmptyResponse, error)
 }
 
 type usersServiceClient struct {
@@ -627,6 +631,26 @@ func (c *usersServiceClient) MagicLink(ctx context.Context, in *MagicLinkReq, op
 	return out, nil
 }
 
+func (c *usersServiceClient) RecoveryLink(ctx context.Context, in *RecoveryLinkReq, opts ...grpc.CallOption) (*EmptyResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(EmptyResponse)
+	err := c.cc.Invoke(ctx, UsersService_RecoveryLink_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *usersServiceClient) RecoverPassword(ctx context.Context, in *RecoveryPasswordRequest, opts ...grpc.CallOption) (*EmptyResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(EmptyResponse)
+	err := c.cc.Invoke(ctx, UsersService_RecoverPassword_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // UsersServiceServer is the server API for UsersService service.
 // All implementations must embed UnimplementedUsersServiceServer
 // for forward compatibility.
@@ -638,6 +662,8 @@ type UsersServiceServer interface {
 	DeleteUserByUsername(context.Context, *GetUserByUsernameReq) (*EmptyResponse, error)
 	ChangePassword(context.Context, *ChangePasswordReq) (*EmptyResponse, error)
 	MagicLink(context.Context, *MagicLinkReq) (*EmptyResponse, error)
+	RecoveryLink(context.Context, *RecoveryLinkReq) (*EmptyResponse, error)
+	RecoverPassword(context.Context, *RecoveryPasswordRequest) (*EmptyResponse, error)
 	mustEmbedUnimplementedUsersServiceServer()
 }
 
@@ -668,6 +694,12 @@ func (UnimplementedUsersServiceServer) ChangePassword(context.Context, *ChangePa
 }
 func (UnimplementedUsersServiceServer) MagicLink(context.Context, *MagicLinkReq) (*EmptyResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method MagicLink not implemented")
+}
+func (UnimplementedUsersServiceServer) RecoveryLink(context.Context, *RecoveryLinkReq) (*EmptyResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method RecoveryLink not implemented")
+}
+func (UnimplementedUsersServiceServer) RecoverPassword(context.Context, *RecoveryPasswordRequest) (*EmptyResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method RecoverPassword not implemented")
 }
 func (UnimplementedUsersServiceServer) mustEmbedUnimplementedUsersServiceServer() {}
 func (UnimplementedUsersServiceServer) testEmbeddedByValue()                      {}
@@ -816,6 +848,42 @@ func _UsersService_MagicLink_Handler(srv interface{}, ctx context.Context, dec f
 	return interceptor(ctx, in, info, handler)
 }
 
+func _UsersService_RecoveryLink_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RecoveryLinkReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UsersServiceServer).RecoveryLink(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: UsersService_RecoveryLink_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UsersServiceServer).RecoveryLink(ctx, req.(*RecoveryLinkReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _UsersService_RecoverPassword_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RecoveryPasswordRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UsersServiceServer).RecoverPassword(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: UsersService_RecoverPassword_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UsersServiceServer).RecoverPassword(ctx, req.(*RecoveryPasswordRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // UsersService_ServiceDesc is the grpc.ServiceDesc for UsersService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -850,6 +918,14 @@ var UsersService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "MagicLink",
 			Handler:    _UsersService_MagicLink_Handler,
+		},
+		{
+			MethodName: "RecoveryLink",
+			Handler:    _UsersService_RecoveryLink_Handler,
+		},
+		{
+			MethodName: "RecoverPassword",
+			Handler:    _UsersService_RecoverPassword_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

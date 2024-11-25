@@ -14,6 +14,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"net/url"
 	"os"
 	"strings"
 	"time"
@@ -299,6 +300,55 @@ func (h UserHandler) MagicLink(ctx context.Context, req *proto.MagicLinkReq) (*p
 	err = services.SendMagicLinkEmail(user.Email, magicLink)
 	if err != nil {
 		return nil, status.Error(codes.Internal, "Error sending email")
+	}
+
+	return &proto.EmptyResponse{}, nil
+}
+
+func (h UserHandler) RecoveryLink(ctx context.Context, req *proto.RecoveryLinkReq) (*proto.EmptyResponse, error) {
+
+	user, err := h.service.GetUserByEmail(req.RecoveryLink.Email)
+	if err != nil {
+		return nil, status.Error(codes.NotFound, "User not found")
+	}
+
+	baseFrontendURL := "localhost:4200"
+
+	recoveryURL := fmt.Sprintf("%s/change-password?username=%s&email=%s",
+		baseFrontendURL,
+		url.QueryEscape(user.Username),
+		url.QueryEscape(user.Email),
+	)
+
+	subject := "Password Recovery"
+	body := fmt.Sprintf("Hi %s,\n\nClick the link below to recover your password:\n%s\n\nIf you did not request this, please ignore this email.",
+		user.Username, recoveryURL)
+
+	err = services.SendEmail(user.Email, subject, body)
+	if err != nil {
+		return nil, status.Error(codes.Internal, "Failed to send recovery email")
+	}
+
+	return &proto.EmptyResponse{}, nil
+}
+
+func (h *UserHandler) RecoverPassword(ctx context.Context, req *proto.RecoveryPasswordRequest) (*proto.EmptyResponse, error) {
+	if req == nil {
+		log.Println("RecoverPassword field is nil in request")
+		return nil, errors.New("invalid request payload")
+	}
+
+	log.Printf("RecoverPassword request: username=%s, newPassword=%s", req.UserName, req.NewPassword)
+
+	log.Println("req.UserName")
+	log.Println(req.UserName)
+	log.Println("req.NewPassword")
+	log.Println(req.NewPassword)
+	log.Println(req)
+	err := h.service.RecoverPassword(req.UserName, req.NewPassword)
+	if err != nil {
+		log.Println("Error in service:", err)
+		return nil, err
 	}
 
 	return &proto.EmptyResponse{}, nil
