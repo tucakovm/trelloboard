@@ -27,6 +27,9 @@ services:
       - users_server
     ports:
       - "8000:8000"
+    volumes:
+      - ./microservices/api-gateway/cert:/api-gateway/cert
+    #dodao sam ovaj volumes
 
   projects_server:
     image: project-service
