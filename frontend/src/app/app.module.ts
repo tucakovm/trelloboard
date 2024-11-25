@@ -14,9 +14,10 @@ import { JwtHelperService, JWT_OPTIONS } from '@auth0/angular-jwt';
 import { ProfileComponent } from './profile/profile.component';
 import { ProjectDetailsComponent } from './project/project-details/project-details.component';
 import { TasksAllComponent } from './tasks/tasks-all/tasks-all.component';
-import { AddMemberComponent } from './add-member/add-member.component';
+import { AddMemberComponent } from './members/add-member/add-member.component';
 import { RecaptchaModule } from 'ng-recaptcha';
 import {AuthInterceptor} from "./auth.interceptor";
+import { RemoveMemberComponent } from './members/remove-member/remove-member.component';
 
 @NgModule({
   declarations: [
@@ -31,6 +32,7 @@ import {AuthInterceptor} from "./auth.interceptor";
     ProjectDetailsComponent,
     TasksAllComponent,
     AddMemberComponent,
+    RemoveMemberComponent,
   ],
   imports: [
     BrowserModule,

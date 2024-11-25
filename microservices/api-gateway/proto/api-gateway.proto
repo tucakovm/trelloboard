@@ -34,11 +34,21 @@ service ProjectService {
       body: "user"
     };
   }
+    rpc RemoveMember(RemoveMembersRequest) returns (EmptyResponse) {
+      option (google.api.http) = {
+        delete: "/api/projects/{projectId}/members/{userId}"
+      };
+    }
+}
+
+message RemoveMembersRequest {
+  string projectId = 1;
+  string userId = 2;
 }
 
 message AddMembersRequest{
-  string id = 1;  // Project ID (path parameter)
-  User user = 2;  // User details (body)
+  string id = 1;
+  User user = 2;
 }
 
 message EmptyResponse {}

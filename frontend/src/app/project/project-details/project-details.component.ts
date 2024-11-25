@@ -104,5 +104,10 @@ export class ProjectDetailsComponent implements OnInit{
       this.router.navigate(['/all-projects', this.id,"add-member" ]);
     }
   }
+  removeMember(){
+    if (this.id) {
+      this.router.navigate(['/all-projects', this.id,"remove-member" ]);
+    }
+  }
 
 }

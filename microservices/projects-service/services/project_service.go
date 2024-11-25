@@ -141,3 +141,7 @@ func (s ProjectService) AddMember(projectId string, protoUser *proto.User) error
 	}
 	return s.repo.AddMember(projectId, *user)
 }
+
+func (s ProjectService) RemoveMember(projectId string, userId string) error {
+	return s.repo.RemoveMember(projectId, userId)
+}

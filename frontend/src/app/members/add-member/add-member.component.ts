@@ -1,10 +1,10 @@
 import { Component , OnInit} from '@angular/core';
 import { FormGroup , FormBuilder, Validators} from '@angular/forms';
-import { UserService } from '../services/user.service';
-import { ProjectService } from '../services/project.service';
-import { UserFP } from '../model/userForProject';
-import { ActivatedRoute } from '@angular/router';
-import { Project } from '../model/project';
+import { UserService } from '../../services/user.service';
+import { ProjectService } from '../../services/project.service';
+import { UserFP } from '../../model/userForProject';
+import { ActivatedRoute, Router } from '@angular/router';
+import { Project } from '../../model/project';
 
 @Component({
   selector: 'app-add-member',
@@ -22,7 +22,8 @@ export class AddMemberComponent implements OnInit {
     private fb: FormBuilder,
     private userService: UserService,
     private projectService: ProjectService,
-    private route: ActivatedRoute
+    private route: ActivatedRoute,
+    private router:Router,
   ) {
     this.addMemberForm = this.fb.group({
       username: ['', [Validators.required, Validators.minLength(3)]]
@@ -60,6 +61,7 @@ export class AddMemberComponent implements OnInit {
                 this.projectService
                   .createMember(this.id, user)
                   .subscribe(() => console.log('Member successfully added'));
+                  this.router.navigate(['/all-projects', this.id]);
               }
             }
           });
