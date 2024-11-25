@@ -119,6 +119,7 @@ var publicRoutes = []string{
 	"/api/users/register",
 	"/api/users/login",
 	"/api/users/verify",
+	"/api/users/magic-link",
 }
 
 func matchesRoute(path string, template string) bool {

@@ -72,6 +72,15 @@ func (s UserService) GetUserByUsername(username string) (*models.User, error) {
 	}
 	return user, nil
 }
+func (s UserService) GetUserByEmail(email string) (*models.User, error) {
+	log.Println("usao u servis")
+	user, err := s.repo.GetUserByEmail(email)
+
+	if err != nil {
+		return nil, err
+	}
+	return user, nil
+}
 
 func (s UserService) DeleteUserByUsername(username string) error {
 	err := s.repo.Delete(username)

@@ -185,7 +185,7 @@ func (h UserHandler) DeleteUserByUsername(ctx context.Context, req *proto.GetUse
 }
 
 func GenerateJWT(user *models.User) (string, error) {
-	var secretKey = []byte("matija_AFK")
+	var secretKey = []byte(os.Getenv("JWT_SECRET_KEY"))
 	// Kreiraj claims (podatke koji se šalju u tokenu)
 	claims := jwt.MapClaims{
 		"user_role": user.Role,
@@ -230,7 +230,7 @@ func (h *UserHandler) ChangePassword(ctx context.Context, req *proto.ChangePassw
 
 func (h UserHandler) verifyCaptcha(captchaResponse string) (bool, error) {
 
-	secretKey := os.Getenv("CAPTCHA_SECRET_KEY_TEST")
+	secretKey := os.Getenv("CAPTCHA_SECRET_KEY")
 
 	verificationURL := "https://www.google.com/recaptcha/api/siteverify"
 
@@ -264,7 +264,7 @@ func (h UserHandler) verifyCaptcha(captchaResponse string) (bool, error) {
 }
 
 func parseJWT(tokenString string) (jwt.MapClaims, error) {
-	secret := []byte("matija_AFK") // Replace with your actual secret
+	secret := []byte(os.Getenv("JWR_SECRET_KEY"))
 	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, errors.New("unexpected signing method")
@@ -279,4 +279,27 @@ func parseJWT(tokenString string) (jwt.MapClaims, error) {
 		return claims, nil
 	}
 	return nil, errors.New("invalid token")
+}
+
+func (h UserHandler) MagicLink(ctx context.Context, req *proto.MagicLinkReq) (*proto.EmptyResponse, error) {
+
+	user, err := h.service.GetUserByEmail(req.MagicLink.Email)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, "User not found")
+	}
+
+	token, err := GenerateJWT(user)
+	if err != nil {
+		return nil, status.Error(codes.Internal, "Error generating token")
+	}
+
+	frontendURL := "localhost:4200"
+	magicLink := fmt.Sprintf("%s/magic-login?token=%s", frontendURL, token)
+
+	err = services.SendMagicLinkEmail(user.Email, magicLink)
+	if err != nil {
+		return nil, status.Error(codes.Internal, "Error sending email")
+	}
+
+	return &proto.EmptyResponse{}, nil
 }

@@ -64,7 +64,7 @@
               <div class="mb-3">
                 <re-captcha
                   (resolved)="onCaptchaResolved($event)"
-                  siteKey="6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI"
+                  siteKey="6LdtGYcqAAAAAEl9hJZgPtlpH9ccFsiDanr5lP52"
                 ></re-captcha>
               </div>
             </div>
@@ -77,6 +77,52 @@
               >
                 Submit
               </button>
+
+              <div class="d-grid mt-3">
+                <button
+                  type="button"
+                  class="btn btn-secondary"
+                  (click)="toggleMagicLinkInput()"
+                >
+                  Login via Magic Link
+                </button>
+              </div>
+
+              <div *ngIf="showMagicLinkInput" class="mt-3">
+                <label for="email" class="form-label">Email</label>
+                <input
+                  type="email"
+                  id="email"
+                  formControlName="email"
+                  class="form-control"
+                  [ngClass]="{
+                    'is-invalid':
+                      taskForm.get('email')?.invalid &&
+                      taskForm.get('email')?.touched
+                  }"
+                  (blur)="taskForm.get('email')?.markAsTouched()"
+                />
+                <div
+                  *ngIf="
+                    taskForm.get('email')?.invalid &&
+                    taskForm.get('email')?.touched
+                  "
+                  class="invalid-feedback"
+                >
+                  Please provide a valid email address.
+                </div>
+
+                <div class="d-grid mt-3">
+                  <button
+                    type="button"
+                    class="btn btn-secondary"
+                    [disabled]="taskForm.get('email')?.invalid"
+                    (click)="onMagicLinkRequest()"
+                  >
+                    Send Magic Link
+                  </button>
+                </div>
+              </div>
             </div>
           </form>
 

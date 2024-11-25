@@ -7,4 +7,4 @@ protoc \
   --go-grpc_opt=paths=source_relative \
   --grpc-gateway_out=./gateway \
   --grpc-gateway_opt=paths=source_relative \
-  ./api-gateway.proto
+  ./api-gateway.proto  || echo "Failed to generate code"
