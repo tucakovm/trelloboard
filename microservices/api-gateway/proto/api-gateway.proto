@@ -177,6 +177,12 @@ service UsersService {
       body: "changeUser"
     };
   }
+  rpc MagicLink(MagicLinkReq) returns (EmptyResponse) {
+    option (google.api.http) = {
+      post: "/api/users/magic-link",
+      body: "magicLink"
+    };
+  }
 }
 
 message RegisterReq{
@@ -237,6 +243,13 @@ message ChangePasswordUser{
   string username = 1;
   string currentPassword = 2;
   string newPassword = 3;
+}
+message MagicLinkReq {
+  MagicLinkRequest magicLink = 1;
+}
+
+message MagicLinkRequest {
+  string email = 1;
 }
 
 

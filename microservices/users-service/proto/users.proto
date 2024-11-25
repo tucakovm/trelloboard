@@ -9,6 +9,7 @@ service UsersService {
   rpc GetUserByUsername(GetUserByUsernameReq) returns (GetUserByUsernameRes) {}
   rpc DeleteUserByUsername(GetUserByUsernameReq) returns (EmptyResponse) {}
   rpc ChangePassword(ChangePasswordReq) returns (EmptyResponse) {}
+  rpc MagicLink(MagicLinkReq) returns (EmptyResponse) {}
 }
 
 message EmptyResponse {}
@@ -84,4 +85,11 @@ message UserOnProjectReq{
 
 message UserOnProjectRes{
   bool onProject = 1;
+}
+message MagicLinkReq {
+  MagicLinkRequest magicLink = 1;
+}
+
+message MagicLinkRequest {
+  string email = 1;
 }

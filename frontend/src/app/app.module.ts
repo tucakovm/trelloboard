@@ -18,6 +18,7 @@ import { AddMemberComponent } from './members/add-member/add-member.component';
 import { RecaptchaModule } from 'ng-recaptcha';
 import {AuthInterceptor} from "./auth.interceptor";
 import { RemoveMemberComponent } from './members/remove-member/remove-member.component';
+import { MagicLinkComponent } from './magic-link/magic-link.component';
 
 @NgModule({
   declarations: [
@@ -33,6 +34,7 @@ import { RemoveMemberComponent } from './members/remove-member/remove-member.com
     TasksAllComponent,
     AddMemberComponent,
     RemoveMemberComponent,
+    MagicLinkComponent,
   ],
   imports: [
     BrowserModule,
