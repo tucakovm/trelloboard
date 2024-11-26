@@ -161,3 +161,26 @@ func CheckPassword(hashedPassword, password string) bool {
 	err := bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(password))
 	return err == nil
 }
+
+func (s *UserService) RecoverPassword(userName, newPassword string) error {
+	log.Println(userName)
+	user, err := s.repo.GetUserByUsername(userName)
+	if err != nil {
+		log.Println("User not found")
+		return fmt.Errorf("user not found")
+	}
+
+	hashedPassword, err := HashPassword(newPassword)
+	if err != nil {
+		log.Println("Error hashing")
+		return fmt.Errorf("failed to hash the new password")
+	}
+
+	err = s.repo.UpdatePassword(user.Username, hashedPassword)
+	if err != nil {
+		log.Println("Error updating password")
+		return fmt.Errorf("failed to update the password")
+	}
+
+	return nil
+}

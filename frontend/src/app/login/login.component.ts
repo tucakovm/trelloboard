@@ -20,6 +20,7 @@ export class LoginComponent {
   captchaToken: string = '';
   captchaResponse: string = '';
   showMagicLinkInput: boolean = false;
+  showRecoveryInput: boolean = false;
 
   constructor(
     private loginService: LoginService,
@@ -36,11 +37,28 @@ export class LoginComponent {
   }
 
   toggleMagicLinkInput() {
-    this.showMagicLinkInput = true;
+    // Toggle the visibility of the Magic Link input
+    this.showMagicLinkInput = !this.showMagicLinkInput;
 
-    const emailControl = this.taskForm.get('email');
-    if (emailControl) {
-      emailControl.reset();
+    // Reset the email control only when showing the input
+    if (this.showMagicLinkInput) {
+      const emailControl = this.taskForm.get('email');
+      if (emailControl) {
+        emailControl.reset();
+      }
+    }
+  }
+
+  toggleRecoveryInput() {
+    // Toggle the visibility of the Recovery input
+    this.showRecoveryInput = !this.showRecoveryInput;
+
+    // Reset the email control only when showing the input
+    if (this.showRecoveryInput) {
+      const emailControl = this.taskForm.get('email');
+      if (emailControl) {
+        emailControl.reset();
+      }
     }
   }
 
@@ -102,6 +120,23 @@ export class LoginComponent {
         console.error('Error sending magic link:', err);
         this.errorOccurred = true;
         this.errorMessage = 'Error sending magic link. Please try again.';
+      },
+    });
+  }
+  onRecoveryRequest() {
+    const email = this.taskForm.get('email')?.value;
+
+    this.userService.requestRecoveryLink(email).subscribe({
+      next: (res) => {
+        console.log('Recovery sent successfully:', res);
+        this.errorOccurred = false;
+        this.errorMessage = '';
+        alert('Recovery link sent to your email. Please check your inbox!');
+      },
+      error: (err) => {
+        console.error('Error sending recovery link:', err);
+        this.errorOccurred = true;
+        this.errorMessage = 'Error sending recovery link. Please try again.';
       },
     });
   }

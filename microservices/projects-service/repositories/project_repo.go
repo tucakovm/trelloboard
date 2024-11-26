@@ -2,6 +2,7 @@ package repositories
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
 	"os"
@@ -219,6 +220,35 @@ func (pr *ProjectRepo) DoesUserExistOnProject(id string) (bool, error) {
 	}
 
 	return count > 0, nil
+}
+
+func (pr *ProjectRepo) DoesMemberExistOnProject(projectId string, userId string) (bool, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	projectsCollection := pr.getCollection()
+
+	objID, err := primitive.ObjectIDFromHex(projectId)
+	if err != nil {
+		log.Printf("Invalid project ID: %v\n", err)
+		return false, err
+	}
+
+	filter := bson.M{
+		"_id":              objID,
+		"members.username": userId,
+	}
+
+	var project bson.M
+	err = projectsCollection.FindOne(ctx, filter).Decode(&project)
+	if err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			return false, nil
+		}
+		log.Printf("Error querying project: %v\n", err)
+		return false, err
+	}
+
+	return true, nil
 }
 
 func (pr *ProjectRepo) Delete(id string) error {

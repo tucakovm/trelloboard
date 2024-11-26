@@ -9,9 +9,12 @@ import { LoginComponent } from './login/login.component';
 import { ProfileComponent } from './profile/profile.component';
 import { ProjectDetailsComponent } from './project/project-details/project-details.component';
 import { TasksAllComponent } from './tasks/tasks-all/tasks-all.component';
-import { AddMemberComponent } from './members/add-member/add-member.component';
 import { RemoveMemberComponent } from './members/remove-member/remove-member.component';
 import { MagicLinkComponent } from './magic-link/magic-link.component';
+import { PassRecoveryComponent } from './pass-recovery/pass-recovery.component';
+import { AddMemberComponent} from "./members/add-member/add-member.component";
+import {TasksDetailsComponent} from "./tasks/tasks-details/tasks-details.component";
+import {AddMemberTaskComponent} from "./tasks/add-member-task/add-member-task.component";
 
 const routes: Routes = [
   { path: 'register', component: RegisterComponent },
@@ -31,6 +34,10 @@ const routes: Routes = [
   },
   { path: 'tasks/:projectId', component: TasksAllComponent },
   { path: 'magic-login', component: MagicLinkComponent },
+  { path: 'change-password', component: PassRecoveryComponent },
+  { path: 'task-details/:id', component: TasksDetailsComponent },
+  { path: 'task-add-member/:taskId', component: AddMemberTaskComponent },
+
 ];
 @NgModule({
   imports: [RouterModule.forRoot(routes)],

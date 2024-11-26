@@ -14,6 +14,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"net/url"
 	"os"
 	"strings"
 	"time"
@@ -61,7 +62,7 @@ type ChangePasswordRequest struct {
 }
 
 func (h UserHandler) RegisterHandler(ctx context.Context, req *proto.RegisterReq) (*proto.EmptyResponse, error) {
-	captchaValid, err := h.verifyCaptcha(req.User.Key)
+	captchaValid, err := h.verifyCaptcha(req.User.CaptchaResponse)
 	if err != nil || !captchaValid {
 		return nil, status.Error(codes.InvalidArgument, "Invalid or failed CAPTCHA verification")
 	}
@@ -293,12 +294,64 @@ func (h UserHandler) MagicLink(ctx context.Context, req *proto.MagicLinkReq) (*p
 		return nil, status.Error(codes.Internal, "Error generating token")
 	}
 
-	frontendURL := "localhost:4200"
+	frontendURL := "http://localhost:4200"
 	magicLink := fmt.Sprintf("%s/magic-login?token=%s", frontendURL, token)
 
 	err = services.SendMagicLinkEmail(user.Email, magicLink)
 	if err != nil {
 		return nil, status.Error(codes.Internal, "Error sending email")
+	}
+
+	return &proto.EmptyResponse{}, nil
+}
+
+func (h UserHandler) RecoveryLink(ctx context.Context, req *proto.RecoveryLinkReq) (*proto.EmptyResponse, error) {
+
+	user, err := h.service.GetUserByEmail(req.RecoveryLink.Email)
+	if err != nil {
+		return nil, status.Error(codes.NotFound, "User not found")
+	}
+
+	baseFrontendURL := "http://localhost:4200"
+
+	// Generate the recovery URL
+	recoveryURL := fmt.Sprintf("%s/change-password?username=%s&email=%s",
+		baseFrontendURL,
+		url.QueryEscape(user.Username),
+		url.QueryEscape(user.Email),
+	)
+
+	// Prepare the subject and body for the email
+	subject := "Password Recovery"
+	body := fmt.Sprintf("Hi %s,\n\nClick the button below to recover your password:\n\n%s\n\nIf you did not request this, please ignore this email.",
+		user.Username, recoveryURL)
+
+	// Send the email
+	err = services.SendEmail(user.Email, subject, body)
+	if err != nil {
+		return nil, status.Error(codes.Internal, "Failed to send recovery email")
+	}
+
+	return &proto.EmptyResponse{}, nil
+}
+
+func (h *UserHandler) RecoverPassword(ctx context.Context, req *proto.RecoveryPasswordRequest) (*proto.EmptyResponse, error) {
+	if req == nil {
+		log.Println("RecoverPassword field is nil in request")
+		return nil, errors.New("invalid request payload")
+	}
+
+	log.Printf("RecoverPassword request: username=%s, newPassword=%s", req.Username, req.NewPassword)
+
+	log.Println("req.UserName")
+	log.Println(req.Username)
+	log.Println("req.NewPassword")
+	log.Println(req.NewPassword)
+	log.Println(req)
+	err := h.service.RecoverPassword(req.Username, req.NewPassword)
+	if err != nil {
+		log.Println("Error in service:", err)
+		return nil, err
 	}
 
 	return &proto.EmptyResponse{}, nil

@@ -111,6 +111,24 @@ service TaskService {
       get: "/api/task/{id}"
     };
   }
+  rpc AddMemberTask(AddMemberTaskReq) returns (EmptyResponse) {
+    option (google.api.http) = {
+      put: "/api/task/{taskId}/members"
+      body: "user"
+    };
+  }
+  rpc RemoveMemberTask(RemoveMemberTaskReq) returns (EmptyResponse) {
+    option (google.api.http) = {
+      delete: "/api/task/{taskId}/members/{userId}"
+    };
+  }
+  // Update a task
+  rpc UpdateTask(UpdateTaskReq) returns (EmptyResponse) {
+    option (google.api.http) = {
+      put: "/api/tasks/{id}",
+      body: "*"
+    };
+  }
 }
 
 message Task {
@@ -119,6 +137,7 @@ message Task {
   string description = 3;
   string status = 4;
   string project_id = 5;
+  repeated User members = 6;
 }
 
 message GetAllTasksRes {
@@ -139,6 +158,27 @@ message GetByIdTaskRes {
 message GetByIdTaskReq {
   string id = 1;
 }
+message AddMemberTaskReq{
+  string taskId = 1;
+  User user = 2;
+}
+message RemoveMemberTaskReq {
+  string taskId = 1;
+  string userId = 2;
+}
+message UpdateTaskReq {
+  string id = 1;
+  string name = 2;
+  string description = 3;
+  string status = 4;
+  repeated User members = 5;
+}
+
+
+
+
+
+
 
 
 service UsersService {
@@ -183,6 +223,19 @@ service UsersService {
       body: "magicLink"
     };
   }
+  rpc RecoveryLink(RecoveryLinkReq) returns (EmptyResponse){
+    option (google.api.http) = {
+      post: "/api/users/recovery",
+      body: "recoveryLink"
+    };
+  }
+  rpc RecoverPassword(RecoveryPasswordRequest) returns (EmptyResponse) {
+    option (google.api.http) = {
+      post: "/api/users/recover-password",
+      body: "*"
+    };
+  }
+
 }
 
 message RegisterReq{
@@ -196,6 +249,7 @@ message UserRegister{
   string password = 5;
   string role = 6;
   string key = 7;
+  string captchaResponse = 8;
 }
 message VerifyReq{
     UserVerifyReq verifyUser = 1;
@@ -226,7 +280,7 @@ message LoginRes {
 
 
 message UserL {
-  string id = 1;  // Define User fields based on your Go struct
+  string id = 1;
   string firstname = 2;
   string lastname = 3;
   string username = 4;
@@ -247,9 +301,20 @@ message ChangePasswordUser{
 message MagicLinkReq {
   MagicLinkRequest magicLink = 1;
 }
-
 message MagicLinkRequest {
   string email = 1;
+}
+message RecoveryLinkReq {
+  RecoveryLinkRequest recoveryLink = 1;
+}
+
+message RecoveryLinkRequest {
+  string email = 1;
+}
+
+message RecoveryPasswordRequest {
+  string newPassword = 1;
+  string username = 2;
 }
 
 

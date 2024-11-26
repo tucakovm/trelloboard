@@ -10,6 +10,7 @@ type Task struct {
 	Description string             `bson:"description" json:"description"`
 	Status      Status             `bson:"status" json:"status"`
 	ProjectID   string             `bson:"project_id" json:"project_id"`
+	Members     []User             `bson:"members" json:"members"`
 }
 
 type Tasks []*Task

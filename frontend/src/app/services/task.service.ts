@@ -1,7 +1,10 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders } from "@angular/common/http";
-import { Observable } from "rxjs";
+import {map, Observable, of} from "rxjs";
 import { Task } from "../model/task";
+import {Project} from "../model/project";
+import {catchError} from "rxjs/operators";
+import {UserFP} from "../model/userForProject";
 @Injectable({
   providedIn: 'root'
 })
@@ -28,5 +31,44 @@ export class TaskService {
       return this.http.get<any>(`${this.apiUrl}/tasks/${id}`)
     }
 
+  getById(id: string): Observable<Task | null> {
+    return this.http.get<any>(`${this.apiUrl}/task/${id}`).pipe(
+      map((response: any) => {
+        console.log('API Response:', response);
+        const item = response.task;
+        console.log('Mapped task members:', item.users);  // Proveri podatke
 
+        return new Task(
+          item.id,
+          item.name,
+          item.description,
+          item.status,
+          item.project_id,
+          item.members && Array.isArray(item.members)
+            ? item.members.map((user: any) => ({
+              id: user.id,
+              username: user.username,
+              role: user.role,
+            }))
+            : [] // Ako nema korisnika, vraća prazan niz
+        );
+      }),
+      catchError((error) => {
+        console.error('Error fetching task:', error);
+        return of(null);
+      })
+    );
+  }
+
+
+  AddMemberToTask(id:string, member:UserFP){
+    return this.http.put<any>(`${this.apiUrl}/task/${id}/members`,member)
+  }
+
+  removeMemberFromTask(taskId:string, userId:string):Observable<any>{
+    return this.http.delete<any>(`${this.apiUrl}/task/${taskId}/members/${userId}`)
+  }
+  updateTask(id: string, task: Task): Observable<Task> {
+    return this.http.put<Task>(`${this.apiUrl}/tasks/${id}`, task);
+  }
 }
