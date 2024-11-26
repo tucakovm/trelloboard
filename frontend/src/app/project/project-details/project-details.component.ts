@@ -3,6 +3,7 @@ import { Project } from '../../model/project';
 import { ProjectService } from '../../services/project.service';
 import { ActivatedRoute, Router } from '@angular/router';
 import { TaskService } from '../../services/task.service';
+import { AuthService } from '../../services/auth.service';
 
 @Component({
   selector: 'app-project-details',
@@ -31,7 +32,7 @@ export class ProjectDetailsComponent implements OnInit{
     ]
   }
   maxLengthAchieved:boolean = false;
-  constructor(private projectService:ProjectService,private route: ActivatedRoute,private tasksService:TaskService, private router:Router){}
+  constructor(private projectService:ProjectService,private route: ActivatedRoute,private tasksService:TaskService, private router:Router, private authService:AuthService){}
 
   ngOnInit(): void {
     this.getProject();
@@ -108,6 +109,10 @@ export class ProjectDetailsComponent implements OnInit{
     if (this.id) {
       this.router.navigate(['/all-projects', this.id,"remove-member" ]);
     }
+  }
+
+  isManager(){
+    return this.authService.isManager();
   }
 
 }

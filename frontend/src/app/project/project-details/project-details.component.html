@@ -65,27 +65,27 @@
 
       <div class="row mt-4">
         <div class="col-md-4">
-          <button class="btn btn-danger w-100 shadow-sm" (click)="deleteProject()">
+          <button *ngIf="isManager()" class="btn btn-danger w-100 shadow-sm" (click)="deleteProject()">
             Delete Project
           </button>
         </div>
         <div class="col-md-4">
-          <button class="btn btn-primary w-100 shadow-sm" (click)="addTask()">
+          <button *ngIf="isManager()" class="btn btn-primary w-100 shadow-sm" (click)="addTask()">
             Add Task
           </button>
         </div>
         <div class="col-md-4">
-          <button class="btn btn-success w-100 shadow-sm" (click)="allTasks()">
+          <button *ngIf="isManager()" class="btn btn-success w-100 shadow-sm" (click)="allTasks()">
             See All Tasks
           </button>
         </div>
         <div class="col-md-4">
-          <button *ngIf="!maxLengthAchieved" class="btn btn-success w-100 shadow-sm" (click)="addMember()">
+          <button *ngIf="!maxLengthAchieved && isManager()" class="btn btn-success w-100 shadow-sm" (click)="addMember()">
             Add members
           </button>
         </div>
         <div class="col-md-4">
-          <button  class="btn btn-danger w-100 shadow-sm" (click)="removeMember()">
+          <button  *ngIf="isManager()" class="btn btn-danger w-100 shadow-sm" (click)="removeMember()">
             Remove members
           </button>
         </div>

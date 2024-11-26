@@ -15,28 +15,31 @@ import { PassRecoveryComponent } from './pass-recovery/pass-recovery.component';
 import { AddMemberComponent} from "./members/add-member/add-member.component";
 import {TasksDetailsComponent} from "./tasks/tasks-details/tasks-details.component";
 import {AddMemberTaskComponent} from "./tasks/add-member-task/add-member-task.component";
+import { AuthGuard } from './auth.guard';
+import { UnauthorizedComponent } from './unauthorized/unauthorized.component';
 
 const routes: Routes = [
   { path: 'register', component: RegisterComponent },
   { path: 'login', component: LoginComponent },
-  { path: 'verify/:username', component: VerifyComponent },
-  { path: 'add-project', component: ProjectCreateComponent },
+  { path: 'verify/:username', component: VerifyComponent},  
+  { path: 'add-project', component: ProjectCreateComponent , canActivate: [AuthGuard], data: { roles: ['Manager'] },},
   { path: 'add-task', component: TasksComponent },
   { path: 'register', redirectTo: '/register', pathMatch: 'full' },
-  { path: 'all-projects', component: ProjectAllComponent },
-  { path: 'tasks/create/:projectId', component: TasksComponent },
-  { path: 'profile', component: ProfileComponent },
-  { path: 'all-projects/:id', component: ProjectDetailsComponent },
-  { path: 'all-projects/:projectId/add-member', component: AddMemberComponent },
+  { path: 'all-projects', component: ProjectAllComponent , canActivate: [AuthGuard], data: { roles: ['User', 'Manager'] },},
+  { path: 'tasks/create/:projectId', component: TasksComponent , canActivate: [AuthGuard], data: { roles: ['Manager'] },},
+  { path: 'profile', component: ProfileComponent , canActivate: [AuthGuard], data: { roles: ['User', 'Manager'] },},
+  { path: 'all-projects/:id', component: ProjectDetailsComponent , canActivate: [AuthGuard], data: { roles: ['User', 'Manager'] },},
+  { path: 'all-projects/:projectId/add-member', component: AddMemberComponent , canActivate: [AuthGuard], data: { roles: ['Manager'] },},
   {
     path: 'all-projects/:projectId/remove-member',
-    component: RemoveMemberComponent,
+    component: RemoveMemberComponent, canActivate: [AuthGuard], data: { roles: ['Manager'] },
   },
-  { path: 'tasks/:projectId', component: TasksAllComponent },
+  { path: 'tasks/:projectId', component: TasksAllComponent , canActivate: [AuthGuard], data: { roles: ['User', 'Manager'] },},
   { path: 'magic-login', component: MagicLinkComponent },
   { path: 'change-password', component: PassRecoveryComponent },
-  { path: 'task-details/:id', component: TasksDetailsComponent },
-  { path: 'task-add-member/:taskId', component: AddMemberTaskComponent },
+  { path: 'task-details/:id', component: TasksDetailsComponent , canActivate: [AuthGuard], data: { roles: ['User', 'Manager'] },},
+  { path: 'task-add-member/:taskId', component: AddMemberTaskComponent , canActivate: [AuthGuard], data: { roles: ['Manager'] },},
+  { path: 'unauthorized', component: UnauthorizedComponent },
 
 ];
 @NgModule({
