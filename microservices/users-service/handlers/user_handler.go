@@ -338,14 +338,14 @@ func (h *UserHandler) RecoverPassword(ctx context.Context, req *proto.RecoveryPa
 		return nil, errors.New("invalid request payload")
 	}
 
-	log.Printf("RecoverPassword request: username=%s, newPassword=%s", req.UserName, req.NewPassword)
+	log.Printf("RecoverPassword request: username=%s, newPassword=%s", req.Username, req.NewPassword)
 
 	log.Println("req.UserName")
-	log.Println(req.UserName)
+	log.Println(req.Username)
 	log.Println("req.NewPassword")
 	log.Println(req.NewPassword)
 	log.Println(req)
-	err := h.service.RecoverPassword(req.UserName, req.NewPassword)
+	err := h.service.RecoverPassword(req.Username, req.NewPassword)
 	if err != nil {
 		log.Println("Error in service:", err)
 		return nil, err

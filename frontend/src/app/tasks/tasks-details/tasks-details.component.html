@@ -7,68 +7,49 @@
       <div class="row mb-4">
         <div class="col-md-6">
           <label for="taskName" class="form-label">Task Name:</label>
-          <input
-            type="text"
-            id="taskName"
-            class="form-control border-0 input-readonly"
-            [(ngModel)]="task.name"
-            readonly
-          />
+          <div id="taskName" class="form-control border-0 bg-light">
+            {{ task.name }}
+          </div>
         </div>
         <div class="col-md-6">
           <label for="taskStatus" class="form-label">Task Status:</label>
-          <input
-            type="text"
-            id="taskStatus"
-            class="form-control border-0 input-readonly"
-            [(ngModel)]="task.status"
-            readonly
-          />
+          <div id="taskStatus" class="form-control border-0 bg-light">
+            {{ task.status }}
+          </div>
         </div>
       </div>
 
       <div class="row mb-4">
         <div class="col-md-12">
           <label for="taskDescription" class="form-label">Description:</label>
-          <textarea
+          <div
             id="taskDescription"
-            class="form-control border-0 input-readonly"
-            [(ngModel)]="task.description"
-            rows="3"
-            readonly
-          ></textarea>
+            class="form-control border-0 bg-light"
+            style="white-space: pre-wrap;"
+          >
+            {{ task.description }}
+          </div>
         </div>
       </div>
 
       <div class="row mb-4">
         <div class="col-md-6">
           <label for="taskId" class="form-label">Task ID:</label>
-          <input
-            type="text"
-            id="taskId"
-            class="form-control border-0 input-readonly"
-            [(ngModel)]="task.id"
-            readonly
-          />
+          <div id="taskId" class="form-control border-0 bg-light">
+            {{ task.id }}
+          </div>
         </div>
       </div>
 
       <ul class="list-group">
         <li *ngFor="let member of task.members" class="list-group-item d-flex justify-content-between align-items-center">
-    <span>
-      <strong>{{ member.username }}</strong> ({{ member.role }})
-    </span>
-          <button class="btn btn-danger btn-sm" (click)="deleteMember(member.id)">Delete</button>
+          <span>
+            <strong>{{ member.username }}</strong> ({{ member.role }})
+          </span>
         </li>
       </ul>
 
-
       <div class="row mt-4">
-        <div class="col-md-4">
-          <button class="btn btn-primary w-100 shadow-sm" (click)="addMember()">
-            Add member
-          </button>
-        </div>
         <div class="col-md-4">
           <button class="btn btn-success w-100 shadow-sm" (click)="goBackToTasks()">
             Back to All Tasks

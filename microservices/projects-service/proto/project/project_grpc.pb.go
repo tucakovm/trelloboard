@@ -19,23 +19,14 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-<<<<<<< HEAD
-	ProjectService_GetAllProjects_FullMethodName = "/ProjectService/GetAllProjects"
-	ProjectService_Create_FullMethodName         = "/ProjectService/Create"
-	ProjectService_Delete_FullMethodName         = "/ProjectService/Delete"
-	ProjectService_GetById_FullMethodName        = "/ProjectService/GetById"
-	ProjectService_AddMember_FullMethodName      = "/ProjectService/AddMember"
-	ProjectService_UserOnProject_FullMethodName  = "/ProjectService/UserOnProject"
-	ProjectService_RemoveMember_FullMethodName   = "/ProjectService/RemoveMember"
-=======
 	ProjectService_GetAllProjects_FullMethodName   = "/ProjectService/GetAllProjects"
 	ProjectService_Create_FullMethodName           = "/ProjectService/Create"
 	ProjectService_Delete_FullMethodName           = "/ProjectService/Delete"
 	ProjectService_GetById_FullMethodName          = "/ProjectService/GetById"
 	ProjectService_AddMember_FullMethodName        = "/ProjectService/AddMember"
 	ProjectService_UserOnProject_FullMethodName    = "/ProjectService/UserOnProject"
+	ProjectService_RemoveMember_FullMethodName     = "/ProjectService/RemoveMember"
 	ProjectService_UserOnOneProject_FullMethodName = "/ProjectService/UserOnOneProject"
->>>>>>> feature/add-member-task
 )
 
 // ProjectServiceClient is the client API for ProjectService service.
@@ -48,11 +39,8 @@ type ProjectServiceClient interface {
 	GetById(ctx context.Context, in *GetByIdReq, opts ...grpc.CallOption) (*GetByIdRes, error)
 	AddMember(ctx context.Context, in *AddMembersRequest, opts ...grpc.CallOption) (*EmptyResponse, error)
 	UserOnProject(ctx context.Context, in *UserOnProjectReq, opts ...grpc.CallOption) (*UserOnProjectRes, error)
-<<<<<<< HEAD
 	RemoveMember(ctx context.Context, in *RemoveMembersRequest, opts ...grpc.CallOption) (*EmptyResponse, error)
-=======
 	UserOnOneProject(ctx context.Context, in *UserOnOneProjectReq, opts ...grpc.CallOption) (*UserOnProjectRes, error)
->>>>>>> feature/add-member-task
 }
 
 type projectServiceClient struct {
@@ -123,17 +111,20 @@ func (c *projectServiceClient) UserOnProject(ctx context.Context, in *UserOnProj
 	return out, nil
 }
 
-<<<<<<< HEAD
 func (c *projectServiceClient) RemoveMember(ctx context.Context, in *RemoveMembersRequest, opts ...grpc.CallOption) (*EmptyResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(EmptyResponse)
 	err := c.cc.Invoke(ctx, ProjectService_RemoveMember_FullMethodName, in, out, cOpts...)
-=======
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *projectServiceClient) UserOnOneProject(ctx context.Context, in *UserOnOneProjectReq, opts ...grpc.CallOption) (*UserOnProjectRes, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(UserOnProjectRes)
 	err := c.cc.Invoke(ctx, ProjectService_UserOnOneProject_FullMethodName, in, out, cOpts...)
->>>>>>> feature/add-member-task
 	if err != nil {
 		return nil, err
 	}
@@ -150,11 +141,8 @@ type ProjectServiceServer interface {
 	GetById(context.Context, *GetByIdReq) (*GetByIdRes, error)
 	AddMember(context.Context, *AddMembersRequest) (*EmptyResponse, error)
 	UserOnProject(context.Context, *UserOnProjectReq) (*UserOnProjectRes, error)
-<<<<<<< HEAD
 	RemoveMember(context.Context, *RemoveMembersRequest) (*EmptyResponse, error)
-=======
 	UserOnOneProject(context.Context, *UserOnOneProjectReq) (*UserOnProjectRes, error)
->>>>>>> feature/add-member-task
 	mustEmbedUnimplementedProjectServiceServer()
 }
 
@@ -183,13 +171,11 @@ func (UnimplementedProjectServiceServer) AddMember(context.Context, *AddMembersR
 func (UnimplementedProjectServiceServer) UserOnProject(context.Context, *UserOnProjectReq) (*UserOnProjectRes, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method UserOnProject not implemented")
 }
-<<<<<<< HEAD
 func (UnimplementedProjectServiceServer) RemoveMember(context.Context, *RemoveMembersRequest) (*EmptyResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method RemoveMember not implemented")
-=======
+}
 func (UnimplementedProjectServiceServer) UserOnOneProject(context.Context, *UserOnOneProjectReq) (*UserOnProjectRes, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method UserOnOneProject not implemented")
->>>>>>> feature/add-member-task
 }
 func (UnimplementedProjectServiceServer) mustEmbedUnimplementedProjectServiceServer() {}
 func (UnimplementedProjectServiceServer) testEmbeddedByValue()                        {}
@@ -320,18 +306,12 @@ func _ProjectService_UserOnProject_Handler(srv interface{}, ctx context.Context,
 	return interceptor(ctx, in, info, handler)
 }
 
-<<<<<<< HEAD
 func _ProjectService_RemoveMember_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(RemoveMembersRequest)
-=======
-func _ProjectService_UserOnOneProject_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(UserOnOneProjectReq)
->>>>>>> feature/add-member-task
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-<<<<<<< HEAD
 		return srv.(ProjectServiceServer).RemoveMember(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
@@ -340,7 +320,16 @@ func _ProjectService_UserOnOneProject_Handler(srv interface{}, ctx context.Conte
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(ProjectServiceServer).RemoveMember(ctx, req.(*RemoveMembersRequest))
-=======
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ProjectService_UserOnOneProject_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UserOnOneProjectReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
 		return srv.(ProjectServiceServer).UserOnOneProject(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
@@ -349,7 +338,6 @@ func _ProjectService_UserOnOneProject_Handler(srv interface{}, ctx context.Conte
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(ProjectServiceServer).UserOnOneProject(ctx, req.(*UserOnOneProjectReq))
->>>>>>> feature/add-member-task
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -386,13 +374,12 @@ var ProjectService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _ProjectService_UserOnProject_Handler,
 		},
 		{
-<<<<<<< HEAD
 			MethodName: "RemoveMember",
 			Handler:    _ProjectService_RemoveMember_Handler,
-=======
+		},
+		{
 			MethodName: "UserOnOneProject",
 			Handler:    _ProjectService_UserOnOneProject_Handler,
->>>>>>> feature/add-member-task
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

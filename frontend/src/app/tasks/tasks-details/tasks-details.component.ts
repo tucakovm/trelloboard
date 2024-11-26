@@ -54,6 +54,11 @@ export class TasksDetailsComponent implements OnInit {
   deleteMember(memberId: string) {
     if (!this.id) return;
 
+    if (this.task.status === "Done") {
+      alert('Cannot remove member. The task is already marked as "Done".');
+      return;
+    }
+
     this.taskService.removeMemberFromTask(this.id, memberId).subscribe(
       () => {
         console.log('Member removed successfully.');
@@ -65,6 +70,7 @@ export class TasksDetailsComponent implements OnInit {
       }
     );
   }
+
 
   addMember() {
     if (this.id) {
