@@ -97,6 +97,17 @@ services:
     volumes:
       - mongo_store:/data/db
 
+  consul:
+    image: hashicorp/consul:latest
+    ports:
+
+     "8500:8500"
+     "8600:8600/tcp"
+     "8600:8600/udp"
+    command: "agent -server -ui -node=server-1 -bootstrap-expect=1 -client=0.0.0.0"
+    volumes:
+      - ./consul_store:/consul/data
+
   mongo-express:
     image: mongo-express
     restart: always
@@ -116,3 +127,4 @@ services:
 volumes:
   mongo_store:
   mongo_express_data:
+
