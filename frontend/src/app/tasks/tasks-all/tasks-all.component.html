@@ -4,6 +4,7 @@
     <div *ngFor="let task of tasks" class="col">
       <div class="card h-100 shadow-sm task-card">
         <div class="card-header bg-gradient-primary text-white text-center fw-bold">
+          Task {{ task.id }}
         </div>
         <div class="card-body">
           <h5 class="card-title">
@@ -36,6 +37,9 @@
               name="taskStatus-{{ task.id }}"
             />
           </p>
+        </div>
+        <div class="card-footer text-center">
+          <button class="btn btn-outline-primary me-2" (click)="viewDetails(task)">Details</button>
         </div>
       </div>
     </div>

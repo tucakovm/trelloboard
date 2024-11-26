@@ -20,7 +20,8 @@ import { AuthInterceptor } from './auth.interceptor';
 import { RemoveMemberComponent } from './members/remove-member/remove-member.component';
 import { MagicLinkComponent } from './magic-link/magic-link.component';
 import { PassRecoveryComponent } from './pass-recovery/pass-recovery.component';
-
+import { TasksDetailsComponent } from './tasks/tasks-details/tasks-details.component';
+import { AddMemberTaskComponent } from './tasks/add-member-task/add-member-task.component';
 @NgModule({
   declarations: [
     AppComponent,
@@ -37,6 +38,8 @@ import { PassRecoveryComponent } from './pass-recovery/pass-recovery.component';
     RemoveMemberComponent,
     MagicLinkComponent,
     PassRecoveryComponent,
+    TasksDetailsComponent,
+    AddMemberTaskComponent,
   ],
   imports: [
     BrowserModule,

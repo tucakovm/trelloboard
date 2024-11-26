@@ -109,9 +109,10 @@ var rolePermissions = map[string]map[string][]string{
 	"Manager": {
 		"GET": {"/api/projects/{username}", "/api/project/{id}", "/api/tasks/{id}", "/api/task/{id}",
 			"/api/users/{username}"},
-		"POST":   {"/api/project", "/api/task"},
-		"DELETE": {"/api/project/{id}", "/api/task/{id}", "/api/users/{username}", "/api/projects/{projectId}/members/{userId}"},
-		"PUT":    {"/api/users/change-password", "/api/projects/{projectId}/members"},
+		"POST": {"/api/project", "/api/task"},
+		"DELETE": {"/api/project/{id}", "/api/task/{id}", "/api/users/{username}", "/api/task/{projectId}/members/{userId}",
+			"/api/projects/{projectId}/members/{userId}"},
+		"PUT": {"/api/users/change-password", "/api/task/{id}/members", "/api/projects/{projectId}/members"},
 	},
 }
 
@@ -162,10 +163,8 @@ func authMiddleware(next http.Handler) http.Handler {
 
 		// Dodavanje roli u gRPC metapodatke
 		md := metadata.Pairs("user_role", role)
-		log.Println("Role u api gatewayu: " + role)
 		ctx := metadata.NewOutgoingContext(r.Context(), md)
 
-		// Prosleđivanje novog konteksta sa rolom
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }

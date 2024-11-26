@@ -2,6 +2,7 @@
   import { TaskService } from '../../services/task.service';
   import { ActivatedRoute } from '@angular/router';
   import { Task } from '../../model/task';
+  import {Router} from '@angular/router';
   import { Status } from '../../model/status';
 
   @Component({
@@ -11,7 +12,7 @@
   })
   export class TasksAllComponent implements OnInit{
     id: string | null = null;
-    constructor(private tasksService:TaskService,private route: ActivatedRoute){}
+    constructor(private tasksService:TaskService,private route: ActivatedRoute, private router: Router){}
     tasks?:Task[];
 
     ngOnInit(): void {
@@ -33,5 +34,9 @@
         );
       }
     }
-
+    viewDetails(task: any) {
+      console.log('Viewing details for:', task);
+      // Navigate to the task details page with the task ID
+      this.router.navigate(['/task-details', task.id]);
+    }
   }

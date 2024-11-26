@@ -4,6 +4,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"log"
+	"strings"
 	"tasks-service/domain"
 	proto "tasks-service/proto/task"
 	"tasks-service/repository"
@@ -23,13 +24,10 @@ func (s *TaskService) Create(taskReq *proto.Task) error {
 		Description: taskReq.Description,
 		Status:      0,
 		ProjectID:   taskReq.ProjectId,
+		Members:     make([]domain.User, 0),
 	}
 	log.Println(newTask)
 	return s.repo.Create(*newTask)
-}
-
-func (s *TaskService) GetAllTasks() ([]domain.Task, error) {
-	return s.repo.GetAll()
 }
 
 func (s *TaskService) DeleteTask(id string) error {
@@ -41,12 +39,21 @@ func (s *TaskService) GetById(id string) (*proto.Task, error) {
 	if err != nil {
 		return nil, status.Error(codes.Internal, "DB exception.")
 	}
+	var protoMembers []*proto.User
+	for _, member := range task.Members {
+		protoMembers = append(protoMembers, &proto.User{
+			Id:       member.Id,
+			Username: member.Username,
+			Role:     member.Role,
+		})
+	}
 	protoTask := &proto.Task{
 		Id:          task.Id.Hex(),
 		Name:        task.Name,
 		Description: task.Description,
 		Status:      task.Status.String(),
 		ProjectId:   task.ProjectID,
+		Members:     protoMembers,
 	}
 
 	return protoTask, nil
@@ -65,14 +72,47 @@ func (s *TaskService) GetTasksByProjectId(id string) ([]*proto.Task, error) {
 	log.Println(tasks)
 	var protoTasks []*proto.Task
 	for _, dp := range tasks {
+		var protoMembers []*proto.User
+		for _, member := range dp.Members {
+			protoMembers = append(protoMembers, &proto.User{
+				Id:       member.Id,
+				Username: member.Username,
+				Role:     member.Role,
+			})
+		}
 		protoTasks = append(protoTasks, &proto.Task{
 			Id:          dp.Id.Hex(),
 			Name:        dp.Name,
 			Description: dp.Description,
 			Status:      dp.Status.String(),
 			ProjectId:   dp.ProjectID,
+			Members:     protoMembers,
 		})
 	}
 	log.Println(protoTasks)
 	return protoTasks, err
+}
+
+func (t *TaskService) AddMember(projectId string, protoUser *proto.User) error {
+	task, err := t.repo.GetById(projectId)
+	if err != nil {
+		return status.Error(codes.NotFound, "Project not found")
+	}
+
+	user := &domain.User{
+		Id:       protoUser.Id,
+		Username: protoUser.Username,
+		Role:     protoUser.Role,
+	}
+	log.Println("TASK SERVICE gettask repo->: ", task)
+	for _, member := range task.Members {
+		if strings.EqualFold(strings.TrimSpace(member.Username), strings.TrimSpace(user.Username)) {
+			return status.Error(codes.AlreadyExists, "Member already part of the task")
+		}
+	}
+	return t.repo.AddMember(projectId, *user)
+}
+
+func (t *TaskService) RemoveMember(projectId string, userId string) error {
+	return t.repo.RemoveMember(projectId, userId)
 }
