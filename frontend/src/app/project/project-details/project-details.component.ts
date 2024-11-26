@@ -14,7 +14,7 @@ export class ProjectDetailsComponent implements OnInit{
   project:Project = {
     id: '',
     name: '',
-    completionDate: new Date(),  
+    completionDate: new Date(),
     minMembers: 0,
     maxMembers: 0,
     manager: {
@@ -41,7 +41,7 @@ export class ProjectDetailsComponent implements OnInit{
   getProject() {
     console.log("test1");
     this.id = this.route.snapshot.paramMap.get('id');
-    
+
     if (this.id) {
       this.projectService.getById(this.id).subscribe(
         (project: Project | null) => {
@@ -58,7 +58,7 @@ export class ProjectDetailsComponent implements OnInit{
       );
     }
   }
-  
+
 
   deleteAllTasksByProjectId(id:string){
     this.tasksService.deleteTasksByProjectId(id).subscribe({
@@ -97,7 +97,7 @@ export class ProjectDetailsComponent implements OnInit{
     if (this.id) {
       this.router.navigate(['/tasks', this.id]);
     }
-  }  
+  }
 
   addMember(){
     if (this.id) {

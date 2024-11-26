@@ -17,7 +17,8 @@ import { TasksAllComponent } from './tasks/tasks-all/tasks-all.component';
 import { AddMemberComponent } from './add-member/add-member.component';
 import { RecaptchaModule } from 'ng-recaptcha';
 import {AuthInterceptor} from "./auth.interceptor";
-
+import { TasksDetailsComponent } from './tasks/tasks-details/tasks-details.component';
+import { AddMemberTaskComponent } from './tasks/add-member-task/add-member-task.component';
 @NgModule({
   declarations: [
     AppComponent,
@@ -31,6 +32,8 @@ import {AuthInterceptor} from "./auth.interceptor";
     ProjectDetailsComponent,
     TasksAllComponent,
     AddMemberComponent,
+    TasksDetailsComponent,
+    AddMemberTaskComponent,
   ],
   imports: [
     BrowserModule,

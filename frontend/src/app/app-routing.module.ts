@@ -10,6 +10,8 @@ import { ProfileComponent } from './profile/profile.component';
 import { ProjectDetailsComponent } from './project/project-details/project-details.component';
 import { TasksAllComponent } from './tasks/tasks-all/tasks-all.component';
 import { AddMemberComponent } from './add-member/add-member.component';
+import {TasksDetailsComponent} from "./tasks/tasks-details/tasks-details.component";
+import {AddMemberTaskComponent} from "./tasks/add-member-task/add-member-task.component";
 
 const routes: Routes = [
   { path: 'register', component: RegisterComponent },
@@ -24,7 +26,9 @@ const routes: Routes = [
   { path: 'all-projects/:id', component: ProjectDetailsComponent },
   { path: 'all-projects/:projectId/add-member', component: AddMemberComponent },
   { path: 'tasks/:projectId', component: TasksAllComponent },
-  
+  { path: 'task-details/:id', component: TasksDetailsComponent },
+  { path: 'task-add-member/:taskId', component: AddMemberTaskComponent },
+
 ];
 @NgModule({
   imports: [RouterModule.forRoot(routes)],

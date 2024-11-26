@@ -101,6 +101,17 @@ service TaskService {
       get: "/api/task/{id}"
     };
   }
+  rpc AddMemberTask(AddMemberTaskReq) returns (EmptyResponse) {
+    option (google.api.http) = {
+      put: "/api/task/{taskId}/members"
+      body: "user"
+    };
+  }
+  rpc RemoveMemberTask(RemoveMemberTaskReq) returns (EmptyResponse) {
+    option (google.api.http) = {
+      delete: "/api/task/{taskId}/members/{userId}"
+    };
+  }
 }
 
 message Task {
@@ -109,6 +120,7 @@ message Task {
   string description = 3;
   string status = 4;
   string project_id = 5;
+  repeated User members = 6;
 }
 
 message GetAllTasksRes {
@@ -129,7 +141,14 @@ message GetByIdTaskRes {
 message GetByIdTaskReq {
   string id = 1;
 }
-
+message AddMemberTaskReq{
+  string taskId = 1;
+  User user = 2;
+}
+message RemoveMemberTaskReq {
+  string taskId = 1;
+  string userId = 2;
+}
 
 service UsersService {
   rpc RegisterHandler(RegisterReq) returns (EmptyResponse) {
@@ -210,7 +229,7 @@ message LoginRes {
 
 
 message UserL {
-  string id = 1;  // Define User fields based on your Go struct
+  string id = 1;
   string firstname = 2;
   string lastname = 3;
   string username = 4;

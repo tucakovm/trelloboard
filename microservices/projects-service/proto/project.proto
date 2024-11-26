@@ -11,6 +11,11 @@ service ProjectService {
   rpc GetById(GetByIdReq) returns (GetByIdRes) {}
   rpc AddMember(AddMembersRequest) returns (EmptyResponse) {}
   rpc UserOnProject(UserOnProjectReq) returns (UserOnProjectRes) {}
+  rpc UserOnOneProject(UserOnOneProjectReq) returns (UserOnProjectRes) {}
+}
+message UserOnOneProjectReq{
+  string projectId = 1;
+  string user_id = 2;
 }
 message UserOnProjectRes{
   bool onProject = 1;

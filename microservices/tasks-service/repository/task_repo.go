@@ -256,3 +256,64 @@ func (tr *TaskRepo) GetById(id string) (*domain.Task, error) {
 
 	return &t, nil
 }
+
+func (tr *TaskRepo) AddMember(taskId string, user domain.User) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	projectsCollection := tr.getCollection()
+
+	objID, err := primitive.ObjectIDFromHex(taskId)
+	if err != nil {
+		log.Println("Invalid project ID format:", err)
+		return err
+	}
+
+	filter := bson.M{"_id": objID}
+	update := bson.M{
+		"$push": bson.M{"members": user},
+	}
+
+	result, err := projectsCollection.UpdateOne(ctx, filter, update)
+	if err != nil {
+		log.Println("Error adding member to task:", err)
+		return err
+	}
+
+	if result.ModifiedCount == 0 {
+		log.Println("No task found with the given ID")
+		return fmt.Errorf("no task found with the given ID")
+	}
+
+	return nil
+}
+func (tr *TaskRepo) RemoveMember(projectId string, userId string) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	projectsCollection := tr.getCollection()
+
+	objID, err := primitive.ObjectIDFromHex(projectId)
+	if err != nil {
+		log.Println("Invalid project ID format:", err)
+		return err
+	}
+
+	filter := bson.M{"_id": objID}
+	update := bson.M{
+		"$pull": bson.M{"members": bson.M{"_id": userId}},
+	}
+
+	result, err := projectsCollection.UpdateOne(ctx, filter, update)
+	if err != nil {
+		log.Println("Error removing member from task:", err)
+		return err
+	}
+
+	if result.ModifiedCount == 0 {
+		log.Println("No task found with the given ID or user not in the members list")
+		return fmt.Errorf("no task found with the given ID or user not in the members list")
+	}
+
+	return nil
+}

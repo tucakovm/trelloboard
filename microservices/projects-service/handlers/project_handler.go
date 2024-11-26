@@ -89,3 +89,14 @@ func (h ProjectHandler) UserOnProject(ctx context.Context, req *proto.UserOnProj
 
 	return &proto.UserOnProjectRes{OnProject: res}, err
 }
+
+func (h ProjectHandler) UserOnOneProject(ctx context.Context, req *proto.UserOnOneProjectReq) (*proto.UserOnProjectRes, error) {
+
+	res, err := h.service.UserOnOneProject(req.ProjectId, req.UserId)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, "DB exception.")
+	}
+	log.Println("LOG BOOL :")
+	log.Println(res)
+	return &proto.UserOnProjectRes{OnProject: res}, err
+}

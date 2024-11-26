@@ -2,14 +2,13 @@ syntax = "proto3";
 
 option go_package = "proto/task";
 
-import "google/protobuf/timestamp.proto";
-import "google/api/annotations.proto";
-
 service TaskService {
   rpc Create(CreateTaskReq) returns (EmptyResponse) {}
   rpc GetAllByProjectId(GetAllTasksReq) returns (GetAllTasksRes) {}
   rpc Delete(DeleteTaskReq) returns (EmptyResponse) {}
   rpc GetById(GetByIdReq) returns (TaskResponse) {}
+  rpc AddMemberTask(AddMemberTaskReq) returns (EmptyResponse) {}
+  rpc RemoveMemberTask(RemoveMemberTaskReq) returns (EmptyResponse) {}
 }
 
 message EmptyResponse {}
@@ -32,6 +31,14 @@ message GetAllByProjectIDReq {
 message TaskResponse {
   Task task = 1;
 }
+message AddMemberTaskReq{
+  string taskId = 1;
+  User user = 2;
+}
+message RemoveMemberTaskReq {
+  string taskId = 1;
+  string userId = 2;
+}
 message GetAllTasksRes {
   repeated Task tasks = 1;
 }
@@ -41,4 +48,22 @@ message Task {
   string description = 3;
   string status = 4;
   string project_id = 5;
+  repeated User members = 6;
+}
+message User {
+  string id = 1;  // Define User fields based on your Go struct
+  string username = 2;
+  string role = 3;
+}
+
+service ProjectService {
+  rpc UserOnOneProject(UserOnOneProjectReq) returns (UserOnProjectRes) {}
+}
+
+message UserOnOneProjectReq {
+  string projectId = 1;
+  string userId = 2;
+}
+message UserOnProjectRes {
+  bool isOnProj = 1;
 }
