@@ -9,6 +9,7 @@ service TaskService {
   rpc GetById(GetByIdReq) returns (TaskResponse) {}
   rpc AddMemberTask(AddMemberTaskReq) returns (EmptyResponse) {}
   rpc RemoveMemberTask(RemoveMemberTaskReq) returns (EmptyResponse) {}
+  rpc UpdateTask(UpdateTaskReq) returns (EmptyResponse);
 }
 
 message EmptyResponse {}
@@ -67,3 +68,11 @@ message UserOnOneProjectReq {
 message UserOnProjectRes {
   bool isOnProj = 1;
 }
+message UpdateTaskReq {
+  string id = 1;              // Task ID
+  string name = 2;            // Updated name
+  string description = 3;     // Updated description
+  string status = 4;          // Updated status
+  repeated User members = 5;  // Updated members
+}
+

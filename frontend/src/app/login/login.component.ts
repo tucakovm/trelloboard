@@ -37,19 +37,28 @@ export class LoginComponent {
   }
 
   toggleMagicLinkInput() {
-    this.showMagicLinkInput = true;
+    // Toggle the visibility of the Magic Link input
+    this.showMagicLinkInput = !this.showMagicLinkInput;
 
-    const emailControl = this.taskForm.get('email');
-    if (emailControl) {
-      emailControl.reset();
+    // Reset the email control only when showing the input
+    if (this.showMagicLinkInput) {
+      const emailControl = this.taskForm.get('email');
+      if (emailControl) {
+        emailControl.reset();
+      }
     }
   }
-  toggleRecoveryInput() {
-    this.showMagicLinkInput = true;
 
-    const emailControl = this.taskForm.get('email');
-    if (emailControl) {
-      emailControl.reset();
+  toggleRecoveryInput() {
+    // Toggle the visibility of the Recovery input
+    this.showRecoveryInput = !this.showRecoveryInput;
+
+    // Reset the email control only when showing the input
+    if (this.showRecoveryInput) {
+      const emailControl = this.taskForm.get('email');
+      if (emailControl) {
+        emailControl.reset();
+      }
     }
   }
 

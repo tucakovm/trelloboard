@@ -62,7 +62,7 @@ type ChangePasswordRequest struct {
 }
 
 func (h UserHandler) RegisterHandler(ctx context.Context, req *proto.RegisterReq) (*proto.EmptyResponse, error) {
-	captchaValid, err := h.verifyCaptcha(req.User.Key)
+	captchaValid, err := h.verifyCaptcha(req.User.CaptchaResponse)
 	if err != nil || !captchaValid {
 		return nil, status.Error(codes.InvalidArgument, "Invalid or failed CAPTCHA verification")
 	}
@@ -294,7 +294,7 @@ func (h UserHandler) MagicLink(ctx context.Context, req *proto.MagicLinkReq) (*p
 		return nil, status.Error(codes.Internal, "Error generating token")
 	}
 
-	frontendURL := "localhost:4200"
+	frontendURL := "http://localhost:4200"
 	magicLink := fmt.Sprintf("%s/magic-login?token=%s", frontendURL, token)
 
 	err = services.SendMagicLinkEmail(user.Email, magicLink)
@@ -312,18 +312,21 @@ func (h UserHandler) RecoveryLink(ctx context.Context, req *proto.RecoveryLinkRe
 		return nil, status.Error(codes.NotFound, "User not found")
 	}
 
-	baseFrontendURL := "localhost:4200"
+	baseFrontendURL := "http://localhost:4200"
 
+	// Generate the recovery URL
 	recoveryURL := fmt.Sprintf("%s/change-password?username=%s&email=%s",
 		baseFrontendURL,
 		url.QueryEscape(user.Username),
 		url.QueryEscape(user.Email),
 	)
 
+	// Prepare the subject and body for the email
 	subject := "Password Recovery"
-	body := fmt.Sprintf("Hi %s,\n\nClick the link below to recover your password:\n%s\n\nIf you did not request this, please ignore this email.",
+	body := fmt.Sprintf("Hi %s,\n\nClick the button below to recover your password:\n\n%s\n\nIf you did not request this, please ignore this email.",
 		user.Username, recoveryURL)
 
+	// Send the email
 	err = services.SendEmail(user.Email, subject, body)
 	if err != nil {
 		return nil, status.Error(codes.Internal, "Failed to send recovery email")

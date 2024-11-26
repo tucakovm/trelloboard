@@ -93,3 +93,30 @@ func (h *TaskHandler) RemoveMemberTask(ctx context.Context, req *proto.RemoveMem
 	}
 	return nil, nil
 }
+func (h *TaskHandler) UpdateTask(ctx context.Context, req *proto.UpdateTaskReq) (*proto.EmptyResponse, error) {
+	log.Println("Received UpdateTask request for task ID:", req.Id)
+
+	// Validate the task exists
+	existingTask, err := h.service.GetById(req.Id)
+	if err != nil {
+		log.Printf("Error fetching task for update: %v", err)
+		return nil, status.Error(codes.NotFound, "Task not found")
+	}
+
+	// Update the fields of the task
+	updatedTask := existingTask
+	updatedTask.Name = req.Name
+	updatedTask.Description = req.Description
+	updatedTask.Status = req.Status
+	updatedTask.Members = req.Members
+
+	// Call the service layer to save changes
+	err = h.service.UpdateTask(updatedTask)
+	if err != nil {
+		log.Printf("Error updating task: %v", err)
+		return nil, status.Error(codes.Internal, "Failed to update task")
+	}
+
+	log.Println("Task updated successfully:", req.Id)
+	return &proto.EmptyResponse{}, nil
+}

@@ -26,6 +26,7 @@ message UserRegister{
   string password = 5;
   string role = 6;
   string key = 7;
+  string captchaResponse = 8;
 }
 message VerifyReq{
   UserVerifyReq verifyUser = 1;

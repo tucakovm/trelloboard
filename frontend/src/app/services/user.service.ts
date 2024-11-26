@@ -50,6 +50,6 @@ export class UserService {
   requestRecoveryLink(email: string) {
     const apiUrl = `${this.baseUrl}/recovery`;
     const headers = { 'Content-Type': 'application/json' };
-    return this.http.put(apiUrl, { email }, { headers });
+    return this.http.post(apiUrl, { email }, { headers });
   }
 }

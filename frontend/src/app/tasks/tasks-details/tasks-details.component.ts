@@ -81,4 +81,19 @@ export class TasksDetailsComponent implements OnInit {
   goBackToTasks() {
     this.location.back();
   }
+
+  updateTask(): void {
+    if (!this.task.id) return;
+
+    this.taskService.updateTask(this.task.id, this.task).subscribe(
+      (updatedTask: Task) => {
+        console.log('Task updated successfully:', updatedTask);
+        alert('Task updated successfully!');
+      },
+      (error) => {
+        console.error('Error updating task:', error);
+        alert('An error occurred while updating the task.');
+      }
+    );
+  }
 }

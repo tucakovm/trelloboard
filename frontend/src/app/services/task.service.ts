@@ -68,6 +68,7 @@ export class TaskService {
   removeMemberFromTask(taskId:string, userId:string):Observable<any>{
     return this.http.delete<any>(`${this.apiUrl}/task/${taskId}/members/${userId}`)
   }
-
-
+  updateTask(id: string, task: Task): Observable<Task> {
+    return this.http.put<Task>(`${this.apiUrl}/tasks/${id}`, task);
+  }
 }

@@ -116,3 +116,41 @@ func (t *TaskService) AddMember(projectId string, protoUser *proto.User) error {
 func (t *TaskService) RemoveMember(projectId string, userId string) error {
 	return t.repo.RemoveMember(projectId, userId)
 }
+func (s *TaskService) UpdateTask(taskReq *proto.Task) error {
+	// Fetch the existing task
+	existingTask, err := s.repo.GetById(taskReq.Id)
+	if err != nil {
+		return status.Error(codes.NotFound, "Task not found")
+	}
+
+	existingTask.Name = taskReq.Name
+	existingTask.Description = taskReq.Description
+
+	statusEnum, err := domain.ParseTaskStatus2(taskReq.Status)
+	if err != nil {
+		return status.Error(codes.InvalidArgument, "Invalid task status")
+	}
+
+	existingTask.Status = statusEnum
+
+	// Update members if provided
+	if len(taskReq.Members) > 0 {
+		var updatedMembers []domain.User
+		for _, member := range taskReq.Members {
+			updatedMembers = append(updatedMembers, domain.User{
+				Id:       member.Id,
+				Username: member.Username,
+				Role:     member.Role,
+			})
+		}
+		existingTask.Members = updatedMembers
+	}
+
+	// Call the repository to persist the changes
+	err = s.repo.Update(*existingTask)
+	if err != nil {
+		return status.Error(codes.Internal, "Failed to update task in the database")
+	}
+
+	return nil
+}

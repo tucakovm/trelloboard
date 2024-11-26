@@ -49,16 +49,20 @@ func SendMagicLinkEmail(email, magicLink string) error {
 	auth := smtp.PlainAuth("", cfg.SMTPUser, cfg.SMTPPassword, cfg.SMTPHost)
 
 	htmlMessage := fmt.Sprintf(`
-		<html>
-		<body style="font-family: Arial, sans-serif; line-height: 1.6;">
-			<h2 style="color: #333;">Magic Login Link</h2>
-			<p>Dear user,</p>
-			<p>Click the link below to log in:</p>
-			<p><a href="%s" style="color: #0056b3; text-decoration: none;">Login to Your Account</a></p>
-			<br>
-			<p style="font-size: 0.9em; color: #777;">If you did not request this, you can safely ignore this email.</p>
-		</body>
-		</html>`, magicLink)
+    <html>
+    <body style="font-family: Arial, sans-serif; line-height: 1.6;">
+        <h2 style="color: #333;">Magic Login Link</h2>
+        <p>Dear user,</p>
+        <p>Click the link below to log in:</p>
+        <p>
+            <a href="%s" style="color: #0056b3; text-decoration: none; word-wrap: break-word;" target="_blank">
+                Login to Your Account
+            </a>
+        </p>
+        <br>
+        <p style="font-size: 0.9em; color: #777;">If you did not request this, you can safely ignore this email.</p>
+    </body>
+    </html>`, magicLink)
 
 	plainTextMessage := fmt.Sprintf("Magic Login Link\n\nClick the link below to log in:\n\n%s", magicLink)
 
@@ -84,14 +88,22 @@ func SendEmail(to, subject, body string) error {
 	cfg, _ := config.LoadConfig()
 	auth := smtp.PlainAuth("", cfg.SMTPUser, cfg.SMTPPassword, cfg.SMTPHost)
 
-	// HTML message with inline styling
 	htmlMessage := fmt.Sprintf(`
 		<html>
-		<body style="font-family: Arial, sans-serif; line-height: 1.6;">
-			<h2 style="color: #333;">%s</h2>
-			<p>%s</p>
+		<body style="font-family: Arial, sans-serif; line-height: 1.6; margin: 0; padding: 0; background-color: #f4f4f4;">
+			<div style="max-width: 600px; margin: auto; background-color: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);">
+				<h2 style="color: #333;">%s</h2>
+				<p style="font-size: 16px; color: #555;">%s</p>
+				<!-- Button for the link -->
+				<p style="text-align: center;">
+					<a href="%s" style="background-color: #007bff; color: white; padding: 14px 20px; text-align: center; text-decoration: none; font-size: 16px; border-radius: 4px; display: inline-block;">
+						Recover Your Password
+					</a>
+				</p>
+				<p style="font-size: 0.9em; color: #777; text-align: center;">If you did not request this, you can safely ignore this email.</p>
+			</div>
 		</body>
-		</html>`, subject, body)
+		</html>`, subject, body, body)
 
 	plainTextMessage := body
 

@@ -1,61 +1,82 @@
-<div class="container mt-5">
-  <div class="card shadow-lg border-0">
-    <div class="card-header bg-primary text-white text-center py-3">
-      <h3>Task Details</h3>
-    </div>
-    <div class="card-body p-4">
-      <div class="row mb-4">
-        <div class="col-md-6">
-          <label for="taskName" class="form-label">Task Name:</label>
-          <div id="taskName" class="form-control border-0 bg-light">
-            {{ task.name }}
+<div class="container d-flex justify-content-center align-items-center" style="min-height: 100vh;">
+  <div class="card w-100" style="max-width: 800px;">
+    <div class="card-body">
+      <h3 class="text-center">Edit Task</h3>
+      <form (ngSubmit)="updateTask()" #taskForm="ngForm">
+        <div class="row mb-4">
+          <div class="col-md-6">
+            <label for="taskName" class="form-label">Task Name:</label>
+            <input
+              id="taskName"
+              type="text"
+              [(ngModel)]="task.name"
+              name="name"
+              class="form-control"
+              placeholder="Enter task name"
+              required
+            />
+          </div>
+          <div class="col-md-6">
+            <label for="taskStatus" class="form-label">Task Status:</label>
+            <select
+              id="taskStatus"
+              [(ngModel)]="task.status"
+              name="status"
+              class="form-control"
+              required
+            >
+              <option value="Pending">Pending</option>
+              <option value="Working">Working</option>
+              <option value="Done">Done</option>
+            </select>
           </div>
         </div>
-        <div class="col-md-6">
-          <label for="taskStatus" class="form-label">Task Status:</label>
-          <div id="taskStatus" class="form-control border-0 bg-light">
-            {{ task.status }}
+
+        <div class="row mb-4">
+          <div class="col-md-12">
+            <label for="taskDescription" class="form-label">Description:</label>
+            <textarea
+              id="taskDescription"
+              [(ngModel)]="task.description"
+              name="description"
+              class="form-control"
+              rows="4"
+              placeholder="Enter task description"
+              required
+            ></textarea>
           </div>
         </div>
-      </div>
 
-      <div class="row mb-4">
-        <div class="col-md-12">
-          <label for="taskDescription" class="form-label">Description:</label>
-          <div
-            id="taskDescription"
-            class="form-control border-0 bg-light"
-            style="white-space: pre-wrap;"
-          >
-            {{ task.description }}
+        <div class="row mb-4">
+          <div class="col-md-6">
+            <label for="taskId" class="form-label">Task ID:</label>
+            <div id="taskId" class="form-control border-0 bg-light">
+              {{ task.id }}
+            </div>
           </div>
         </div>
-      </div>
 
-      <div class="row mb-4">
-        <div class="col-md-6">
-          <label for="taskId" class="form-label">Task ID:</label>
-          <div id="taskId" class="form-control border-0 bg-light">
-            {{ task.id }}
+        <div class="row mt-4">
+          <div class="col-md-4">
+            <button
+              type="submit"
+              class="btn btn-primary w-100 shadow-sm"
+              [disabled]="!taskForm.form.valid"
+            >
+              Save Changes
+            </button>
+          </div>
+          <div class="col-md-4">
+            <button
+              type="button"
+              class="btn btn-success w-100 shadow-sm"
+              (click)="goBackToTasks()"
+            >
+              Back to All Tasks
+            </button>
           </div>
         </div>
-      </div>
-
-      <ul class="list-group">
-        <li *ngFor="let member of task.members" class="list-group-item d-flex justify-content-between align-items-center">
-          <span>
-            <strong>{{ member.username }}</strong> ({{ member.role }})
-          </span>
-        </li>
-      </ul>
-
-      <div class="row mt-4">
-        <div class="col-md-4">
-          <button class="btn btn-success w-100 shadow-sm" (click)="goBackToTasks()">
-            Back to All Tasks
-          </button>
-        </div>
-      </div>
+      </form>
     </div>
   </div>
 </div>

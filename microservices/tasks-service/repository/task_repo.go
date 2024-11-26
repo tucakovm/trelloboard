@@ -317,3 +317,37 @@ func (tr *TaskRepo) RemoveMember(projectId string, userId string) error {
 
 	return nil
 }
+func (tr *TaskRepo) Update(task domain.Task) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	collection := tr.getCollection()
+	if collection == nil {
+		return fmt.Errorf("failed to retrieve collection")
+	}
+
+	objID := task.Id
+
+	update := bson.M{
+		"$set": bson.M{
+			"name":        task.Name,
+			"description": task.Description,
+			"members":     task.Members,
+			"status":      task.Status,
+		},
+	}
+
+	filter := bson.M{"_id": objID}
+	result, err := collection.UpdateOne(ctx, filter, update)
+	if err != nil {
+		log.Println("Error updating task:", err)
+		return err
+	}
+
+	if result.MatchedCount == 0 {
+		return fmt.Errorf("no task found with the given ID")
+	}
+
+	log.Printf("Updated task with ID: %s", task.Id)
+	return nil
+}
