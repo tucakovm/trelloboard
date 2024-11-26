@@ -55,18 +55,30 @@ export class ProfileComponent implements OnInit {
     this.showChangePassword = !this.showChangePassword;
   }
 
+  validatePassword(password: string): boolean {
+    const passwordRegex =
+      /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+    return passwordRegex.test(password);
+  }
+
   changePassword() {
-    if (this.passwordForm.newPassword !== this.passwordForm.repeatNewPassword) {
+    const { currentPassword, newPassword, repeatNewPassword } =
+      this.passwordForm;
+
+    if (!this.validatePassword(newPassword)) {
+      alert(
+        'Password must include at least one uppercase letter, one lowercase letter, one number, one special character, and must be at least 8 characters long.'
+      );
+      return;
+    }
+
+    if (newPassword !== repeatNewPassword) {
       alert('New passwords do not match!');
       return;
     }
 
     this.userService
-      .changePassword(
-        this.user.username,
-        this.passwordForm.currentPassword,
-        this.passwordForm.newPassword
-      )
+      .changePassword(this.user.username, currentPassword, newPassword)
       .subscribe(
         (response) => {
           console.log('Password changed successfully', response);

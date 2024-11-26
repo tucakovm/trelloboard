@@ -8,7 +8,7 @@ import {
 } from '@angular/forms';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { passwordMatchValidator } from '../validators/password-match.validator';
-import { Router } from '@angular/router'; // Import Router for navigation
+import { Router } from '@angular/router';
 
 @Component({
   selector: 'app-register',
@@ -34,12 +34,29 @@ export class RegisterComponent {
         lastname: ['', [Validators.required, Validators.minLength(2)]],
         username: ['', [Validators.required, Validators.minLength(4)]],
         email: ['', [Validators.required, Validators.email]],
-        password: ['', [Validators.required, Validators.minLength(6)]],
-        repeatPassword: ['', [Validators.required, Validators.minLength(6)]],
+        password: [
+          '',
+          [
+            Validators.required,
+            Validators.minLength(8),
+            Validators.pattern(
+              /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/
+            ),
+          ],
+        ],
+        repeatPassword: ['', [Validators.required]],
         role: ['', [Validators.required]],
       },
       { validators: passwordMatchValidator }
     );
+  }
+
+  get password() {
+    return this.registerForm.get('password');
+  }
+
+  get repeatPassword() {
+    return this.registerForm.get('repeatPassword');
   }
 
   onCaptchaResolved(captchaResponse: string | null) {

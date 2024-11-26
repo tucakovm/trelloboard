@@ -59,7 +59,9 @@
       <div *ngIf="showChangePassword" class="mt-4">
         <h5>Change Password</h5>
         <div class="mb-3">
-          <label for="currentPassword" class="form-label">Current Password</label>
+          <label for="currentPassword" class="form-label"
+            >Current Password</label
+          >
           <input
             type="password"
             id="currentPassword"
@@ -75,9 +77,15 @@
             class="form-control"
             [(ngModel)]="passwordForm.newPassword"
           />
+          <small>
+            Password must include at least 8 characters, one uppercase letter,
+            one lowercase letter, one number, and one special character.
+          </small>
         </div>
         <div class="mb-3">
-          <label for="repeatNewPassword" class="form-label">Repeat New Password</label>
+          <label for="repeatNewPassword" class="form-label"
+            >Repeat New Password</label
+          >
           <input
             type="password"
             id="repeatNewPassword"
@@ -121,15 +129,10 @@
         <p>{{ errorMessage }}</p>
       </div>
       <div class="modal-footer">
-        <button
-          type="button"
-          class="btn btn-secondary"
-          data-bs-dismiss="modal"
-        >
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
           Close
         </button>
       </div>
     </div>
   </div>
 </div>
-
