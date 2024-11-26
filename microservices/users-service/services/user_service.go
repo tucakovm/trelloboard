@@ -72,6 +72,15 @@ func (s UserService) GetUserByUsername(username string) (*models.User, error) {
 	}
 	return user, nil
 }
+func (s UserService) GetUserByEmail(email string) (*models.User, error) {
+	log.Println("usao u servis")
+	user, err := s.repo.GetUserByEmail(email)
+
+	if err != nil {
+		return nil, err
+	}
+	return user, nil
+}
 
 func (s UserService) DeleteUserByUsername(username string) error {
 	err := s.repo.Delete(username)
@@ -151,4 +160,27 @@ func HashPassword(password string) (string, error) {
 func CheckPassword(hashedPassword, password string) bool {
 	err := bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(password))
 	return err == nil
+}
+
+func (s *UserService) RecoverPassword(userName, newPassword string) error {
+	log.Println(userName)
+	user, err := s.repo.GetUserByUsername(userName)
+	if err != nil {
+		log.Println("User not found")
+		return fmt.Errorf("user not found")
+	}
+
+	hashedPassword, err := HashPassword(newPassword)
+	if err != nil {
+		log.Println("Error hashing")
+		return fmt.Errorf("failed to hash the new password")
+	}
+
+	err = s.repo.UpdatePassword(user.Username, hashedPassword)
+	if err != nil {
+		log.Println("Error updating password")
+		return fmt.Errorf("failed to update the password")
+	}
+
+	return nil
 }

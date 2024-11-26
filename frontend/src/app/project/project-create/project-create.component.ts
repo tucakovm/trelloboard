@@ -14,7 +14,7 @@ import { Router } from '@angular/router';
 })
 export class ProjectCreateComponent{
   projectForm: FormGroup;
-
+ //Dodati validaciju da nema maxmember bude veci od minmembera
   constructor(private fb: FormBuilder, private projectService:ProjectService , private authService:AuthService, private router:Router) {
     this.projectForm = this.fb.group(
       {

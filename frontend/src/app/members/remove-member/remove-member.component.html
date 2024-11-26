@@ -1,0 +1,16 @@
+<div class="container remove-member-form my-5">
+  <h2 class="text-center">Remove Member</h2>
+  <form (ngSubmit)="onSubmit()" [formGroup]="removeMemberForm" class="form-container">
+    <div class="mb-3">
+      <label for="username" class="form-label">Username</label>
+      <input
+        type="text"
+        id="username"
+        class="form-control"
+        formControlName="username"
+        placeholder="Enter username to remove"
+      />
+    </div>
+    <button type="submit" class="btn btn-primary w-100">Submit</button>
+  </form>
+</div>

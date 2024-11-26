@@ -4,7 +4,7 @@ import { AppRoutingModule } from './app-routing.module';
 import { AppComponent } from './app.component';
 import { ProjectCreateComponent } from './project/project-create/project-create.component';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
-import {HTTP_INTERCEPTORS, HttpClientModule} from '@angular/common/http';
+import { HTTP_INTERCEPTORS, HttpClientModule } from '@angular/common/http';
 import { RegisterComponent } from './register/register.component';
 import { VerifyComponent } from './verify/verify.component';
 import { TasksComponent } from './tasks/tasks-create/tasks.component';
@@ -14,9 +14,12 @@ import { JwtHelperService, JWT_OPTIONS } from '@auth0/angular-jwt';
 import { ProfileComponent } from './profile/profile.component';
 import { ProjectDetailsComponent } from './project/project-details/project-details.component';
 import { TasksAllComponent } from './tasks/tasks-all/tasks-all.component';
-import { AddMemberComponent } from './add-member/add-member.component';
+import { AddMemberComponent } from './members/add-member/add-member.component';
 import { RecaptchaModule } from 'ng-recaptcha';
-import {AuthInterceptor} from "./auth.interceptor";
+import { AuthInterceptor } from './auth.interceptor';
+import { RemoveMemberComponent } from './members/remove-member/remove-member.component';
+import { MagicLinkComponent } from './magic-link/magic-link.component';
+import { PassRecoveryComponent } from './pass-recovery/pass-recovery.component';
 
 @NgModule({
   declarations: [
@@ -31,6 +34,9 @@ import {AuthInterceptor} from "./auth.interceptor";
     ProjectDetailsComponent,
     TasksAllComponent,
     AddMemberComponent,
+    RemoveMemberComponent,
+    MagicLinkComponent,
+    PassRecoveryComponent,
   ],
   imports: [
     BrowserModule,
@@ -44,7 +50,7 @@ import {AuthInterceptor} from "./auth.interceptor";
     {
       provide: HTTP_INTERCEPTORS,
       useClass: AuthInterceptor,
-      multi: true // Ovim omogućavamo više interceptora
+      multi: true, // Ovim omogućavamo više interceptora
     },
     { provide: JWT_OPTIONS, useValue: JWT_OPTIONS }, // This is necessary for JwtHelperService to work
     JwtHelperService, // Add JwtHelperService here

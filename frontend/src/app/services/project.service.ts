@@ -105,6 +105,10 @@ export class ProjectService{
       console.log("id:" + id + " member: "+UserFP)
       return this.http.put<any>(`${this.apiUrl}/projects/${id}/members`,member)
     }
+
+    removeMember(id:string, member:UserFP){
+      return this.http.delete<any>(`${this.apiUrl}/projects/${id}/members/${member.id}`)
+    }
   }
 
 interface User {

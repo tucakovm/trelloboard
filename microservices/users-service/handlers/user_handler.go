@@ -14,6 +14,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"net/url"
 	"os"
 	"strings"
 	"time"
@@ -185,7 +186,7 @@ func (h UserHandler) DeleteUserByUsername(ctx context.Context, req *proto.GetUse
 }
 
 func GenerateJWT(user *models.User) (string, error) {
-	var secretKey = []byte("matija_AFK")
+	var secretKey = []byte(os.Getenv("JWT_SECRET_KEY"))
 	// Kreiraj claims (podatke koji se šalju u tokenu)
 	claims := jwt.MapClaims{
 		"user_role": user.Role,
@@ -230,7 +231,7 @@ func (h *UserHandler) ChangePassword(ctx context.Context, req *proto.ChangePassw
 
 func (h UserHandler) verifyCaptcha(captchaResponse string) (bool, error) {
 
-	secretKey := os.Getenv("CAPTCHA_SECRET_KEY_TEST")
+	secretKey := os.Getenv("CAPTCHA_SECRET_KEY")
 
 	verificationURL := "https://www.google.com/recaptcha/api/siteverify"
 
@@ -264,7 +265,7 @@ func (h UserHandler) verifyCaptcha(captchaResponse string) (bool, error) {
 }
 
 func parseJWT(tokenString string) (jwt.MapClaims, error) {
-	secret := []byte("matija_AFK") // Replace with your actual secret
+	secret := []byte(os.Getenv("JWR_SECRET_KEY"))
 	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, errors.New("unexpected signing method")
@@ -279,4 +280,76 @@ func parseJWT(tokenString string) (jwt.MapClaims, error) {
 		return claims, nil
 	}
 	return nil, errors.New("invalid token")
+}
+
+func (h UserHandler) MagicLink(ctx context.Context, req *proto.MagicLinkReq) (*proto.EmptyResponse, error) {
+
+	user, err := h.service.GetUserByEmail(req.MagicLink.Email)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, "User not found")
+	}
+
+	token, err := GenerateJWT(user)
+	if err != nil {
+		return nil, status.Error(codes.Internal, "Error generating token")
+	}
+
+	frontendURL := "localhost:4200"
+	magicLink := fmt.Sprintf("%s/magic-login?token=%s", frontendURL, token)
+
+	err = services.SendMagicLinkEmail(user.Email, magicLink)
+	if err != nil {
+		return nil, status.Error(codes.Internal, "Error sending email")
+	}
+
+	return &proto.EmptyResponse{}, nil
+}
+
+func (h UserHandler) RecoveryLink(ctx context.Context, req *proto.RecoveryLinkReq) (*proto.EmptyResponse, error) {
+
+	user, err := h.service.GetUserByEmail(req.RecoveryLink.Email)
+	if err != nil {
+		return nil, status.Error(codes.NotFound, "User not found")
+	}
+
+	baseFrontendURL := "localhost:4200"
+
+	recoveryURL := fmt.Sprintf("%s/change-password?username=%s&email=%s",
+		baseFrontendURL,
+		url.QueryEscape(user.Username),
+		url.QueryEscape(user.Email),
+	)
+
+	subject := "Password Recovery"
+	body := fmt.Sprintf("Hi %s,\n\nClick the link below to recover your password:\n%s\n\nIf you did not request this, please ignore this email.",
+		user.Username, recoveryURL)
+
+	err = services.SendEmail(user.Email, subject, body)
+	if err != nil {
+		return nil, status.Error(codes.Internal, "Failed to send recovery email")
+	}
+
+	return &proto.EmptyResponse{}, nil
+}
+
+func (h *UserHandler) RecoverPassword(ctx context.Context, req *proto.RecoveryPasswordRequest) (*proto.EmptyResponse, error) {
+	if req == nil {
+		log.Println("RecoverPassword field is nil in request")
+		return nil, errors.New("invalid request payload")
+	}
+
+	log.Printf("RecoverPassword request: username=%s, newPassword=%s", req.UserName, req.NewPassword)
+
+	log.Println("req.UserName")
+	log.Println(req.UserName)
+	log.Println("req.NewPassword")
+	log.Println(req.NewPassword)
+	log.Println(req)
+	err := h.service.RecoverPassword(req.UserName, req.NewPassword)
+	if err != nil {
+		log.Println("Error in service:", err)
+		return nil, err
+	}
+
+	return &proto.EmptyResponse{}, nil
 }

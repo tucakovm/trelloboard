@@ -5,6 +5,7 @@ import { LoggedUser } from '../model/LoggedUser';
 import { Observer } from 'rxjs';
 import { Router } from '@angular/router';
 import { AuthService } from '../services/auth.service';
+import { UserService } from '../services/user.service';
 
 @Component({
   selector: 'app-login',
@@ -18,17 +19,38 @@ export class LoginComponent {
   captchaResolved: boolean = false;
   captchaToken: string = '';
   captchaResponse: string = '';
+  showMagicLinkInput: boolean = false;
+  showRecoveryInput: boolean = false;
 
   constructor(
     private loginService: LoginService,
     private fb: FormBuilder,
     private router: Router,
-    private authService: AuthService
+    private authService: AuthService,
+    private userService: UserService
   ) {
     this.taskForm = this.fb.group({
       username: ['', [Validators.required, Validators.minLength(4)]],
       password: ['', [Validators.required, Validators.minLength(4)]],
+      email: ['', [Validators.email]],
     });
+  }
+
+  toggleMagicLinkInput() {
+    this.showMagicLinkInput = true;
+
+    const emailControl = this.taskForm.get('email');
+    if (emailControl) {
+      emailControl.reset();
+    }
+  }
+  toggleRecoveryInput() {
+    this.showMagicLinkInput = true;
+
+    const emailControl = this.taskForm.get('email');
+    if (emailControl) {
+      emailControl.reset();
+    }
   }
 
   onCaptchaResolved(captchaResponse: string | null) {
@@ -73,5 +95,40 @@ export class LoginComponent {
         .login({ ...loggedUser, key: this.captchaToken })
         .subscribe(observer);
     }
+  }
+
+  onMagicLinkRequest() {
+    const email = this.taskForm.get('email')?.value;
+
+    this.userService.requestMagicLink(email).subscribe({
+      next: (res) => {
+        console.log('Magic link sent successfully:', res);
+        this.errorOccurred = false;
+        this.errorMessage = '';
+        alert('Magic link sent to your email. Please check your inbox!');
+      },
+      error: (err) => {
+        console.error('Error sending magic link:', err);
+        this.errorOccurred = true;
+        this.errorMessage = 'Error sending magic link. Please try again.';
+      },
+    });
+  }
+  onRecoveryRequest() {
+    const email = this.taskForm.get('email')?.value;
+
+    this.userService.requestRecoveryLink(email).subscribe({
+      next: (res) => {
+        console.log('Recovery sent successfully:', res);
+        this.errorOccurred = false;
+        this.errorMessage = '';
+        alert('Recovery link sent to your email. Please check your inbox!');
+      },
+      error: (err) => {
+        console.error('Error sending recovery link:', err);
+        this.errorOccurred = true;
+        this.errorMessage = 'Error sending recovery link. Please try again.';
+      },
+    });
   }
 }

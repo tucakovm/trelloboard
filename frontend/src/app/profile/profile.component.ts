@@ -3,14 +3,13 @@ import { User } from '../model/user';
 import { AuthService } from '../services/auth.service';
 import { UserService } from '../services/user.service';
 import { Modal } from 'bootstrap';
-import {Router} from "@angular/router";
+import { Router } from '@angular/router';
 
 @Component({
   selector: 'app-profile',
   templateUrl: './profile.component.html',
   styleUrls: ['./profile.component.css'],
 })
-
 export class ProfileComponent implements OnInit {
   user: User = {
     id: 0,
@@ -26,13 +25,13 @@ export class ProfileComponent implements OnInit {
   passwordForm = {
     currentPassword: '',
     newPassword: '',
-    repeatNewPassword: ''
+    repeatNewPassword: '',
   };
 
   constructor(
     private authService: AuthService,
     private userService: UserService,
-    private router: Router,
+    private router: Router
   ) {}
 
   ngOnInit(): void {
@@ -58,22 +57,32 @@ export class ProfileComponent implements OnInit {
 
   changePassword() {
     if (this.passwordForm.newPassword !== this.passwordForm.repeatNewPassword) {
-      alert("New passwords do not match!");
+      alert('New passwords do not match!');
       return;
     }
 
-    this.userService.changePassword(this.user.username, this.passwordForm.currentPassword, this.passwordForm.newPassword).subscribe(
-      (response) => {
-        console.log('Password changed successfully', response);
-        alert("Password changed successfully!");
-        this.showChangePassword = false;
-        this.passwordForm = { currentPassword: '', newPassword: '', repeatNewPassword: '' };
-      },
-      (error) => {
-        console.error('Error changing password', error);
-        alert("Failed to change password. Please try again.");
-      }
-    );
+    this.userService
+      .changePassword(
+        this.user.username,
+        this.passwordForm.currentPassword,
+        this.passwordForm.newPassword
+      )
+      .subscribe(
+        (response) => {
+          console.log('Password changed successfully', response);
+          alert('Password changed successfully!');
+          this.showChangePassword = false;
+          this.passwordForm = {
+            currentPassword: '',
+            newPassword: '',
+            repeatNewPassword: '',
+          };
+        },
+        (error) => {
+          console.error('Error changing password', error);
+          alert('Failed to change password. Please try again.');
+        }
+      );
   }
 
   deleteProfile() {
@@ -87,18 +96,18 @@ export class ProfileComponent implements OnInit {
         },
         (error) => {
           console.error('Error deleting profile', error);
-          if(this.authService.getUserRoles() == "Manager"){
-            this.errorMessage = 'You can\'t delete your account, you have projects that you are in charge of.';
-
-          }else {
-            this.errorMessage = 'You can\'t delete your account, you have unfinished work on some project.';
+          if (this.authService.getUserRoles() == 'Manager') {
+            this.errorMessage =
+              "You can't delete your account, you have projects that you are in charge of.";
+          } else {
+            this.errorMessage =
+              "You can't delete your account, you have unfinished work on some project.";
           }
           const modalElement = document.getElementById('errorModal');
           if (modalElement) {
             const modal = new Modal(modalElement);
             modal.show();
           }
-
         }
       );
     } else {
