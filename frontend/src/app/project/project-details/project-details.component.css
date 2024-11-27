@@ -1,52 +1,126 @@
+:root {
+  --primary-color: #4a90e2;
+  --secondary-color: #6c757d;
+  --success-color: #28a745;
+  --danger-color: #dc3545;
+  --background-color: #f8f9fa;
+  --card-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+}
+
+body {
+  background: var(--background-color);
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+}
+
 .container {
-    max-width: 750px;
-  }
-  
-  .card-header {
-    background: linear-gradient(90deg, #0062cc, #004085);
-    color: #ffffff;
-    font-weight: bold;
-  }
-  
-  .input-readonly {
-    background-color: #f8f9fa;
-    color: #495057;
-  }
-  
-  label.form-label {
-    font-weight: 500;
-    color: #495057;
-  }
-  
-  .btn {
-    border-radius: 0.375rem;
-  }
-  
-  .btn-danger {
-    background-color: #dc3545;
-    border-color: #dc3545;
-  }
-  
-  .btn-primary {
-    background-color: #007bff;
-    border-color: #007bff;
-  }
-  
-  .btn-success {
-    background-color: #28a745;
-    border-color: #28a745;
-  }
-  
+  margin-top: 3rem;
+}
+
+.card {
+  border-radius: 15px;
+  box-shadow: var(--card-shadow);
+  overflow: hidden;
+}
+
+.card-header {
+  background: var(--primary-color);
+  color: white;
+  text-align: center;
+  padding: 1rem;
+}
+
+.card-header h3 {
+  margin: 0;
+  font-size: 1.75rem;
+  font-weight: 600;
+}
+
+.card-body {
+  padding: 2rem;
+  background: white;
+}
+
+.form-label {
+  font-weight: 600;
+  color: var(--secondary-color);
+}
+
+.input-readonly {
+  background: #f1f3f5;
+  border-radius: 8px;
+  font-size: 1rem;
+  padding: 0.5rem;
+  color: #495057;
+  cursor: not-allowed;
+}
+
+.input-readonly[readonly] {
+  background: #e9ecef;
+}
+
+.btn {
+  border-radius: 200px;
+  padding: 0.75rem;
+  font-size: 1rem;
+  text-transform: uppercase;
+  transition: all 0.3s ease;
+}
+
+.btn-primary {
+  background: var(--primary-color);
+  border-color: var(--primary-color);
+  color: #495057;
+}
+
+.btn-primary:hover {
+  background: #357abd;
+  border-color: #357abd;
+}
+
+.btn-success {
+  background: var(--success-color);
+  border-color: var(--success-color);
+  color: #495057;
+}
+
+.btn-success:hover {
+  background: #218838;
+  border-color: #218838;
+}
+
+.btn-danger {
+  background: var(--danger-color);
+  border-color: var(--danger-color);
+  color: #495057;
+}
+
+.btn-danger:hover {
+  background: #c82333;
+  border-color: #bd2130;
+}
+
+.w-100 {
+  width: 100%;
+}
+
+.shadow-sm {
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+}
+
+.row {
+  margin-bottom: 1rem;
+}
+.row.mt-4 {
+  gap: 1rem;
+}
+
+@media (max-width: 768px) {
   .card-body {
-    background-color: #ffffff;
+    padding: 1.5rem;
   }
-  
-  .card {
-    border-radius: 0.75rem;
+
+  .btn {
+    padding: 0.5rem;
+    font-size: 0.9rem;
   }
-  
-  button:focus {
-    outline: none;
-    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
-  }
-  
+}

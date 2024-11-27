@@ -68,16 +68,8 @@
       </div>
 
       <div class="row mt-4">
-        <div class="col-md-4">
-          <button
-            *ngIf="isManager()"
-            class="btn btn-danger w-100 shadow-sm"
-            (click)="deleteProject()"
-          >
-            Delete Project
-          </button>
-        </div>
-        <div class="col-md-4">
+        <!-- Add Task and See All Tasks Buttons Next to Each Other -->
+        <div class="col-md-6">
           <button
             *ngIf="isManager()"
             class="btn btn-primary w-100 shadow-sm"
@@ -86,28 +78,44 @@
             Add Task
           </button>
         </div>
-        <div class="col-md-4">
+        <div class="col-md-6">
           <button class="btn btn-success w-100 shadow-sm" (click)="allTasks()">
-            <!--*ngIf="isManager()"  uklonjeno za sad kako bi mogo user da vidi taskove-->
             See All Tasks
           </button>
         </div>
-        <div class="col-md-4">
+      </div>
+
+      <div class="row mt-3">
+        <!-- Add Members and Remove Members Buttons -->
+        <div class="col-md-6">
           <button
             *ngIf="!maxLengthAchieved && isManager()"
             class="btn btn-success w-100 shadow-sm"
             (click)="addMember()"
           >
-            Add members
+            Add Members
           </button>
         </div>
-        <div class="col-md-4">
+        <div class="col-md-6">
           <button
             *ngIf="isManager()"
             class="btn btn-danger w-100 shadow-sm"
             (click)="removeMember()"
           >
-            Remove members
+            Remove Members
+          </button>
+        </div>
+      </div>
+
+      <!-- Delete Project Button at the Bottom -->
+      <div class="row mt-4">
+        <div class="col-md-12">
+          <button
+            *ngIf="isManager()"
+            class="btn btn-danger w-100 shadow-sm"
+            (click)="deleteProject()"
+          >
+            Delete Project
           </button>
         </div>
       </div>
