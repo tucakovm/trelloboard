@@ -10,13 +10,15 @@ import (
 )
 
 type ProjectHandler struct {
-	service services.ProjectService
+	service     services.ProjectService
+	taskService proto.TaskServiceClient
 	proto.UnimplementedProjectServiceServer
 }
 
-func NewConnectionHandler(service services.ProjectService) (ProjectHandler, error) {
+func NewConnectionHandler(service services.ProjectService, taskService proto.TaskServiceClient) (ProjectHandler, error) {
 	return ProjectHandler{
-		service: service,
+		service:     service,
+		taskService: taskService,
 	}, nil
 }
 
@@ -62,15 +64,20 @@ func (h ProjectHandler) GetById(ctx context.Context, req *proto.GetByIdReq) (*pr
 }
 
 func (h ProjectHandler) AddMember(ctx context.Context, req *proto.AddMembersRequest) (*proto.EmptyResponse, error) {
-	log.Printf("PROTOUSER HANDLER: %+v\n", req.User)
-	projectId := req.Id
-
-	err := h.service.AddMember(projectId, req.User)
-	if err != nil {
-		log.Printf("Error adding member on project: %v", err)
-		return nil, status.Error(codes.InvalidArgument, "Error adding member...")
+	projId := req.Id
+	reqForTaskClient := &proto.DoneTasksByProjectReq{
+		ProjId: projId,
 	}
-	return nil, nil
+	is, _ := h.taskService.DoneTasksByProject(ctx, reqForTaskClient)
+	if is.IsDone {
+		err := h.service.AddMember(projId, req.User)
+		if err != nil {
+			log.Printf("Error adding member on project: %v", err)
+			return nil, status.Error(codes.InvalidArgument, "Error adding member...")
+		}
+		return nil, nil
+	}
+	return nil, status.Error(codes.Aborted, "Project has done.")
 }
 func (h ProjectHandler) RemoveMember(ctx context.Context, req *proto.RemoveMembersRequest) (*proto.EmptyResponse, error) {
 	log.Printf("Usao u handler od remove membera")

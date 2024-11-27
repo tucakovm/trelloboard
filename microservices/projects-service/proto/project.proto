@@ -68,3 +68,14 @@ message AddMembersRequest{
   string id = 1;  // Project ID (path parameter)
   User user = 2;  // User details (body)
 }
+
+service TaskService {
+  rpc DoneTasksByProject(DoneTasksByProjectReq) returns (DoneTasksByProjectRes);
+}
+  message DoneTasksByProjectReq {
+    string proj_id = 1;
+  }
+  message DoneTasksByProjectRes {
+    bool isDone = 1;
+}
+

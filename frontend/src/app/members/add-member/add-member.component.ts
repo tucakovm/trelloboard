@@ -5,6 +5,7 @@ import { ProjectService } from '../../services/project.service';
 import { UserFP } from '../../model/userForProject';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Project } from '../../model/project';
+import {AuthService} from "../../services/auth.service";
 
 @Component({
   selector: 'app-add-member',
@@ -24,6 +25,7 @@ export class AddMemberComponent implements OnInit {
     private projectService: ProjectService,
     private route: ActivatedRoute,
     private router:Router,
+    private authService : AuthService,
   ) {
     this.addMemberForm = this.fb.group({
       username: ['', [Validators.required, Validators.minLength(3)]]
@@ -58,10 +60,15 @@ export class AddMemberComponent implements OnInit {
               if (exists) {
                 this.userAlreadyExists = true;
               } else if (!this.maximumNumber && this.id) {
-                this.projectService
-                  .createMember(this.id, user)
-                  .subscribe(() => console.log('Member successfully added'));
+                if(this.authService.getUserId() == this.project.manager.id){
+                  this.projectService
+                    .createMember(this.id, user)
+                    .subscribe(() => console.log('Member successfully added'));
                   this.router.navigate(['/all-projects', this.id]);
+                }
+                else{
+                  this.router.navigate(['/unauthorized', this.id]);
+                }
               }
             }
           });

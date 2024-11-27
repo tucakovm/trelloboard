@@ -22,6 +22,17 @@ func NewTaskHandler(service *service.TaskService, projectService proto.ProjectSe
 		projectService: projectService}
 }
 
+func (h *TaskHandler) DoneTasksByProject(ctx context.Context, req *proto.DoneTasksByProjectReq) (*proto.DoneTasksByProjectRes, error) {
+	is, err := h.service.DoneTasksByProject(req.ProjId)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, "bad request ...")
+	}
+	doneTasksByProjectReq := &proto.DoneTasksByProjectRes{
+		IsDone: is,
+	}
+	return doneTasksByProjectReq, nil
+}
+
 func (h *TaskHandler) Delete(ctx context.Context, req *proto.DeleteTaskReq) (*proto.EmptyResponse, error) {
 	err := h.service.DeleteTask(req.Id)
 	if err != nil {

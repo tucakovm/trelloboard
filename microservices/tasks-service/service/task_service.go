@@ -34,6 +34,10 @@ func (s *TaskService) DeleteTask(id string) error {
 	return s.repo.Delete(id)
 }
 
+func (s *TaskService) DoneTasksByProject(id string) (bool, error) {
+	return s.repo.HasIncompleteTasksByProject(id)
+}
+
 func (s *TaskService) GetById(id string) (*proto.Task, error) {
 	task, err := s.repo.GetById(id)
 	if err != nil {

@@ -257,6 +257,36 @@ func (tr *TaskRepo) GetById(id string) (*domain.Task, error) {
 	return &t, nil
 }
 
+func (tr *TaskRepo) HasIncompleteTasksByProject(id string) (bool, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	projectsCollection := tr.getCollection()
+
+	// Convert id string to ObjectID
+	objID, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		log.Println("Invalid ID format:", err)
+		return false, err
+	}
+
+	filter := bson.M{
+		"project_id": objID,
+		"status": bson.M{
+			"$ne": "Done",
+		},
+	}
+
+	// Check if there is at least one matching document
+	count, err := projectsCollection.CountDocuments(ctx, filter)
+	if err != nil {
+		log.Println("Error checking for incomplete tasks:", err)
+		return false, err
+	}
+
+	return count > 0, nil
+}
+
 func (tr *TaskRepo) AddMember(taskId string, user domain.User) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()

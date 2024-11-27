@@ -10,8 +10,14 @@ service TaskService {
   rpc AddMemberTask(AddMemberTaskReq) returns (EmptyResponse) {}
   rpc RemoveMemberTask(RemoveMemberTaskReq) returns (EmptyResponse) {}
   rpc UpdateTask(UpdateTaskReq) returns (EmptyResponse);
+  rpc DoneTasksByProject(DoneTasksByProjectReq) returns (DoneTasksByProjectRes);
 }
-
+message DoneTasksByProjectReq {
+  string proj_id = 1;
+}
+message DoneTasksByProjectRes {
+  bool isDone = 1;
+}
 message EmptyResponse {}
 
 message CreateTaskReq {

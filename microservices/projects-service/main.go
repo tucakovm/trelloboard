@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/reflection"
 	"log"
 	"net"
@@ -21,6 +22,9 @@ func main() {
 	cfg := config.GetConfig()
 	log.Println(cfg.Address)
 
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
 	listener, err := net.Listen("tcp", cfg.Address)
 	if err != nil {
 		log.Fatalln(err)
@@ -31,6 +35,16 @@ func main() {
 			log.Fatal(err)
 		}
 	}(listener)
+
+	// TaskService connection
+	taskConn, err := grpc.DialContext(
+		ctx,
+		cfg.FullTaskServiceAddress(),
+		grpc.WithBlock(),
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
+	)
+	taskClient := proj.NewTaskServiceClient(taskConn)
+	log.Println("TaskService Gateway registered successfully.")
 
 	// Initialize context
 	timeoutContext, cancel := context.WithTimeout(context.Background(), 30*time.Second)
@@ -51,7 +65,7 @@ func main() {
 	serviceProject, err := services.NewProjectService(*repoProject)
 	handleErr(err)
 
-	handlerProject, err := h.NewConnectionHandler(serviceProject)
+	handlerProject, err := h.NewConnectionHandler(serviceProject, taskClient)
 	handleErr(err)
 
 	// Bootstrap gRPC server.
