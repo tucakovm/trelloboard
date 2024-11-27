@@ -11,7 +11,7 @@ import { AuthService } from './auth.service';
   providedIn: 'root',
 })
 export class ProjectService {
-  private apiUrl = 'http://localhost:8000/api';
+  private apiUrl = 'https://localhost:8000/api';
   constructor(private http: HttpClient, private authService: AuthService) {}
 
   createProject(project: Project): Observable<Project> {

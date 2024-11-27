@@ -9,7 +9,7 @@ import { UserFP } from '../model/userForProject';
   providedIn: 'root',
 })
 export class TaskService {
-  private apiUrl = 'http://localhost:8000/api';
+  private apiUrl = 'https://localhost:8000/api';
   constructor(private http: HttpClient) {}
 
   createTask(task: Task): Observable<Task> {
