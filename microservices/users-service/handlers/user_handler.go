@@ -7,6 +7,8 @@ import (
 	"errors"
 	"fmt"
 	"github.com/golang-jwt/jwt/v4"
+	otelCodes "go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/otel/trace"
 	"golang.org/x/crypto/bcrypt"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
@@ -27,12 +29,14 @@ type UserHandler struct {
 	service        services.UserService
 	projectService proto.ProjectServiceClient
 	proto.UnimplementedUsersServiceServer
+	Tracer trace.Tracer
 }
 
-func NewUserHandler(service services.UserService, projectService proto.ProjectServiceClient) (UserHandler, error) {
+func NewUserHandler(service services.UserService, projectService proto.ProjectServiceClient, tracer trace.Tracer) (UserHandler, error) {
 	return UserHandler{
 		service:        service,
 		projectService: projectService,
+		Tracer:         tracer,
 	}, nil
 }
 
@@ -62,16 +66,22 @@ type ChangePasswordRequest struct {
 }
 
 func (h UserHandler) RegisterHandler(ctx context.Context, req *proto.RegisterReq) (*proto.EmptyResponse, error) {
+	ctx, span := h.Tracer.Start(ctx, "h.register")
+	defer span.End()
 	captchaValid, err := h.verifyCaptcha(req.User.CaptchaResponse)
 	if err != nil || !captchaValid {
+		err := errors.New("bad request ...")
+		span.SetStatus(otelCodes.Error, err.Error())
 		return nil, status.Error(codes.InvalidArgument, "Invalid or failed CAPTCHA verification")
 	}
 
 	user := req.User
 	password, _ := HashPassword(user.Password)
 
-	err = h.service.RegisterUser(user.Firstname, user.Lastname, user.Username, user.Email, password, user.Role)
+	err = h.service.RegisterUser(user.Firstname, user.Lastname, user.Username, user.Email, password, user.Role, ctx)
 	if err != nil {
+		err := errors.New("bad request ...")
+		span.SetStatus(otelCodes.Error, err.Error())
 		return nil, status.Error(codes.InvalidArgument, "bad request ...")
 	}
 
@@ -79,33 +89,45 @@ func (h UserHandler) RegisterHandler(ctx context.Context, req *proto.RegisterReq
 }
 
 func (h UserHandler) LoginUserHandler(ctx context.Context, req *proto.LoginReq) (*proto.LoginRes, error) {
+	ctx, span := h.Tracer.Start(ctx, "h.login")
+	defer span.End()
 	// Pokušaj dohvatanja korisnika
 
 	log.Println("Usao u handler login")
 
 	captchaValid, err := h.verifyCaptcha(req.LoginUser.Key)
 	if err != nil || !captchaValid {
+		err := errors.New("bad request ...")
+		span.SetStatus(otelCodes.Error, err.Error())
 		return nil, status.Error(codes.InvalidArgument, "Invalid or failed CAPTCHA verification")
 	}
 
-	user, err := h.service.GetUserByUsername(req.LoginUser.Username)
+	user, err := h.service.GetUserByUsername(req.LoginUser.Username, ctx)
 	if err != nil {
+		err := errors.New("bad request ...")
+		span.SetStatus(otelCodes.Error, err.Error())
 		return nil, status.Error(codes.InvalidArgument, "User not found ...")
 	}
 
 	// Provera lozinke
 	if !CheckPassword(user.Password, req.LoginUser.Password) {
+		err := errors.New("bad request ...")
+		span.SetStatus(otelCodes.Error, err.Error())
 		return nil, status.Error(codes.Unauthenticated, "Invalid username or password ...")
 	}
 
 	// Provera da li je korisnik aktivan
 	if !user.IsActive {
+		err := errors.New("bad request ...")
+		span.SetStatus(otelCodes.Error, err.Error())
 		return nil, status.Error(codes.PermissionDenied, "User is not active ...")
 	}
 
 	// Generisanje JWT tokena
 	token, err := GenerateJWT(user)
 	if err != nil {
+		err := errors.New("bad request ...")
+		span.SetStatus(otelCodes.Error, err.Error())
 		return nil, status.Error(codes.Internal, "Error generating token ...")
 	}
 
@@ -117,9 +139,13 @@ func (h UserHandler) LoginUserHandler(ctx context.Context, req *proto.LoginReq) 
 }
 
 func (h UserHandler) VerifyHandler(ctx context.Context, req *proto.VerifyReq) (*proto.EmptyResponse, error) {
+	ctx, span := h.Tracer.Start(ctx, "h.verify")
+	defer span.End()
 
-	err := h.service.VerifyAndActivateUser(req.VerifyUser.Username, req.VerifyUser.Code)
+	err := h.service.VerifyAndActivateUser(req.VerifyUser.Username, req.VerifyUser.Code, ctx)
 	if err != nil {
+		err := errors.New("bad request ...")
+		span.SetStatus(otelCodes.Error, err.Error())
 		return nil, status.Error(codes.InvalidArgument, "bad request ...")
 	}
 
@@ -128,7 +154,10 @@ func (h UserHandler) VerifyHandler(ctx context.Context, req *proto.VerifyReq) (*
 
 func (h UserHandler) GetUserByUsername(ctx context.Context, req *proto.GetUserByUsernameReq) (*proto.GetUserByUsernameRes, error) {
 
-	user, err := h.service.GetUserByUsername(req.Username)
+	ctx, span := h.Tracer.Start(ctx, "h.getUserByUsername")
+	defer span.End()
+
+	user, err := h.service.GetUserByUsername(req.Username, ctx)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, "bad request ...")
 	}
@@ -147,6 +176,8 @@ func (h UserHandler) GetUserByUsername(ctx context.Context, req *proto.GetUserBy
 }
 
 func (h UserHandler) DeleteUserByUsername(ctx context.Context, req *proto.GetUserByUsernameReq) (*proto.EmptyResponse, error) {
+	ctx, span := h.Tracer.Start(ctx, "h.DeleteUserByUsername")
+	defer span.End()
 	md, ok := metadata.FromIncomingContext(ctx)
 	if !ok {
 		return nil, status.Error(codes.Unauthenticated, "missing metadata")
@@ -174,13 +205,20 @@ func (h UserHandler) DeleteUserByUsername(ctx context.Context, req *proto.GetUse
 	}
 	projServiceResponse, err := h.projectService.UserOnProject(ctx, userOnProjectReq)
 	if err != nil {
+		err := errors.New("Error checking project")
+		span.SetStatus(otelCodes.Error, err.Error())
 		return nil, status.Error(codes.Internal, "Error checking project")
 	}
 	if projServiceResponse.OnProject {
+
+		err := errors.New("User is assigned to a project.")
+		span.SetStatus(otelCodes.Error, err.Error())
 		return nil, status.Error(codes.Internal, "User is assigned to a project.")
 	}
-	err = h.service.DeleteUserById(req.Username)
+	err = h.service.DeleteUserById(req.Username, ctx)
 	if err != nil {
+		err := errors.New("Bad request.")
+		span.SetStatus(otelCodes.Error, err.Error())
 		return nil, status.Error(codes.InvalidArgument, "Bad request.")
 	}
 	return nil, nil
@@ -221,9 +259,12 @@ func CheckPassword(hashedPassword, password string) bool {
 }
 
 func (h *UserHandler) ChangePassword(ctx context.Context, req *proto.ChangePasswordReq) (*proto.EmptyResponse, error) {
-
-	err := h.service.ChangePassword(req.ChangeUser.Username, req.ChangeUser.CurrentPassword, req.ChangeUser.NewPassword)
+	ctx, span := h.Tracer.Start(ctx, "h.changePassword")
+	defer span.End()
+	err := h.service.ChangePassword(req.ChangeUser.Username, req.ChangeUser.CurrentPassword, req.ChangeUser.NewPassword, ctx)
 	if err != nil {
+		err := errors.New("bad request")
+		span.SetStatus(otelCodes.Error, err.Error())
 		return nil, status.Error(codes.InvalidArgument, "bad request ...")
 	}
 
@@ -284,14 +325,19 @@ func parseJWT(tokenString string) (jwt.MapClaims, error) {
 }
 
 func (h UserHandler) MagicLink(ctx context.Context, req *proto.MagicLinkReq) (*proto.EmptyResponse, error) {
-
-	user, err := h.service.GetUserByEmail(req.MagicLink.Email)
+	ctx, span := h.Tracer.Start(ctx, "h.magicLink")
+	defer span.End()
+	user, err := h.service.GetUserByEmail(req.MagicLink.Email, ctx)
 	if err != nil {
+		err := errors.New("user not found")
+		span.SetStatus(otelCodes.Error, err.Error())
 		return nil, status.Error(codes.InvalidArgument, "User not found")
 	}
 
 	token, err := GenerateJWT(user)
 	if err != nil {
+		err := errors.New("err gen token")
+		span.SetStatus(otelCodes.Error, err.Error())
 		return nil, status.Error(codes.Internal, "Error generating token")
 	}
 
@@ -300,6 +346,8 @@ func (h UserHandler) MagicLink(ctx context.Context, req *proto.MagicLinkReq) (*p
 
 	err = services.SendMagicLinkEmail(user.Email, magicLink)
 	if err != nil {
+		err := errors.New("error sending email")
+		span.SetStatus(otelCodes.Error, err.Error())
 		return nil, status.Error(codes.Internal, "Error sending email")
 	}
 
@@ -307,9 +355,12 @@ func (h UserHandler) MagicLink(ctx context.Context, req *proto.MagicLinkReq) (*p
 }
 
 func (h UserHandler) RecoveryLink(ctx context.Context, req *proto.RecoveryLinkReq) (*proto.EmptyResponse, error) {
-
-	user, err := h.service.GetUserByEmail(req.RecoveryLink.Email)
+	ctx, span := h.Tracer.Start(ctx, "h.recoveryLink")
+	defer span.End()
+	user, err := h.service.GetUserByEmail(req.RecoveryLink.Email, ctx)
 	if err != nil {
+		err := errors.New("user not found")
+		span.SetStatus(otelCodes.Error, err.Error())
 		return nil, status.Error(codes.NotFound, "User not found")
 	}
 
@@ -330,6 +381,8 @@ func (h UserHandler) RecoveryLink(ctx context.Context, req *proto.RecoveryLinkRe
 	// Send the email
 	err = services.SendEmail(user.Email, subject, body)
 	if err != nil {
+		err := errors.New("failed to send recovery email")
+		span.SetStatus(otelCodes.Error, err.Error())
 		return nil, status.Error(codes.Internal, "Failed to send recovery email")
 	}
 
@@ -337,7 +390,11 @@ func (h UserHandler) RecoveryLink(ctx context.Context, req *proto.RecoveryLinkRe
 }
 
 func (h *UserHandler) RecoverPassword(ctx context.Context, req *proto.RecoveryPasswordRequest) (*proto.EmptyResponse, error) {
+	ctx, span := h.Tracer.Start(ctx, "h.recoverPass")
+	defer span.End()
 	if req == nil {
+		err := errors.New("invalid request payload")
+		span.SetStatus(otelCodes.Error, err.Error())
 		log.Println("RecoverPassword field is nil in request")
 		return nil, errors.New("invalid request payload")
 	}
@@ -349,8 +406,9 @@ func (h *UserHandler) RecoverPassword(ctx context.Context, req *proto.RecoveryPa
 	log.Println("req.NewPassword")
 	log.Println(req.NewPassword)
 	log.Println(req)
-	err := h.service.RecoverPassword(req.Username, req.NewPassword)
+	err := h.service.RecoverPassword(req.Username, req.NewPassword, ctx)
 	if err != nil {
+		span.SetStatus(otelCodes.Error, err.Error())
 		log.Println("Error in service:", err)
 		return nil, err
 	}

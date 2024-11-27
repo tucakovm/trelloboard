@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	otelCodes "go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/otel/trace"
 	"log"
 	"os"
 	"time"
@@ -18,10 +20,11 @@ import (
 var ErrUserNotFound = errors.New("user not found")
 
 type UserRepo struct {
-	Cli *mongo.Client
+	Cli    *mongo.Client
+	Tracer trace.Tracer
 }
 
-func NewUserRepo(ctx context.Context) (*UserRepo, error) {
+func NewUserRepo(ctx context.Context, tracer trace.Tracer) (*UserRepo, error) {
 	dburi := os.Getenv("MONGO_DB_URI")
 	if dburi == "" {
 		return nil, fmt.Errorf("MONGO_DB_URI is not set")
@@ -44,7 +47,8 @@ func NewUserRepo(ctx context.Context) (*UserRepo, error) {
 		log.Printf("Failed to insert initial tasks: %v", err)
 	}
 
-	return &UserRepo{Cli: client}, nil
+	return &UserRepo{Cli: client,
+		Tracer: tracer}, nil
 }
 
 func insertInitialUsers(client *mongo.Client) error {
@@ -102,13 +106,16 @@ func insertInitialUsers(client *mongo.Client) error {
 	return nil
 }
 
-func (tr *UserRepo) getCollection() *mongo.Collection {
+func (tr *UserRepo) getCollection(ctx context.Context) *mongo.Collection {
+	ctx, span := tr.Tracer.Start(ctx, "r.getCollection")
+	defer span.End()
 	if tr.Cli == nil {
 		log.Println("Mongo client is nil!")
 		return nil
 	}
 
 	if err := tr.Cli.Ping(context.Background(), nil); err != nil {
+		span.SetStatus(otelCodes.Error, err.Error())
 		log.Println("Error pinging MongoDB, connection lost:", err)
 		return nil
 	}
@@ -116,11 +123,13 @@ func (tr *UserRepo) getCollection() *mongo.Collection {
 	return tr.Cli.Database("mongoDemo").Collection("users")
 }
 
-func (tr *UserRepo) SaveUser(user models.User) error {
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+func (tr *UserRepo) SaveUser(user models.User, ctx context.Context) error {
+	ctx, span := tr.Tracer.Start(ctx, "r.saveUser")
+	defer span.End()
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
 
-	collection := tr.getCollection()
+	collection := tr.getCollection(ctx)
 	if collection == nil {
 		return errors.New("failed to retrieve collection")
 	}
@@ -130,6 +139,7 @@ func (tr *UserRepo) SaveUser(user models.User) error {
 
 	_, err := collection.InsertOne(ctx, user)
 	if err != nil {
+		span.SetStatus(otelCodes.Error, err.Error())
 		log.Println("Error saving user:", err)
 		return err
 	}
@@ -137,12 +147,14 @@ func (tr *UserRepo) SaveUser(user models.User) error {
 	log.Println("User saved successfully:", user)
 	return nil
 }
-func (tr *UserRepo) GetUserByUsername(username string) (*models.User, error) {
-	log.Println("usao u repo")
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+func (tr *UserRepo) GetUserByUsername(username string, ctx context.Context) (*models.User, error) {
+	ctx, span := tr.Tracer.Start(ctx, "r.getUserByUsername")
+	defer span.End()
+
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
 
-	collection := tr.getCollection()
+	collection := tr.getCollection(ctx)
 	if collection == nil {
 		return nil, errors.New("failed to retrieve collection")
 	}
@@ -150,17 +162,20 @@ func (tr *UserRepo) GetUserByUsername(username string) (*models.User, error) {
 	var user models.User
 	err := collection.FindOne(ctx, bson.M{"username": username}).Decode(&user)
 	if err != nil {
+		span.SetStatus(otelCodes.Error, err.Error())
 		log.Println("User not found with username:", username)
 		return nil, err
 	}
 
 	return &user, nil
 }
-func (tr *UserRepo) GetUserByEmail(email string) (*models.User, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+func (tr *UserRepo) GetUserByEmail(email string, ctx context.Context) (*models.User, error) {
+	ctx, span := tr.Tracer.Start(ctx, "r.getUserByEmail")
+	defer span.End()
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
 
-	collection := tr.getCollection()
+	collection := tr.getCollection(ctx)
 	if collection == nil {
 		return nil, errors.New("failed to retrieve collection")
 	}
@@ -168,6 +183,7 @@ func (tr *UserRepo) GetUserByEmail(email string) (*models.User, error) {
 	var user models.User
 	err := collection.FindOne(ctx, bson.M{"email": email}).Decode(&user)
 	if err != nil {
+		span.SetStatus(otelCodes.Error, err.Error())
 		log.Println("User not found with email:", email)
 		return nil, ErrUserNotFound
 	}
@@ -175,11 +191,14 @@ func (tr *UserRepo) GetUserByEmail(email string) (*models.User, error) {
 	return &user, nil
 }
 
-func (tr *UserRepo) ActivateUser(username string) error {
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+func (tr *UserRepo) ActivateUser(username string, ctx context.Context) error {
+	ctx, span := tr.Tracer.Start(ctx, "r.activateUser")
+	defer span.End()
+
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
 
-	collection := tr.getCollection()
+	collection := tr.getCollection(ctx)
 	if collection == nil {
 		return fmt.Errorf("failed to retrieve collection")
 	}
@@ -189,6 +208,7 @@ func (tr *UserRepo) ActivateUser(username string) error {
 
 	_, err := collection.UpdateOne(ctx, filter, update)
 	if err != nil {
+		span.SetStatus(otelCodes.Error, err.Error())
 		log.Println("Error activating user:", err)
 		return err
 	}
@@ -196,17 +216,20 @@ func (tr *UserRepo) ActivateUser(username string) error {
 	log.Printf("User with email %s activated successfully", username)
 	return nil
 }
-func (tr *UserRepo) GetAll() ([]models.User, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+func (tr *UserRepo) GetAll(ctx context.Context) ([]models.User, error) {
+	ctx, span := tr.Tracer.Start(ctx, "r.getAll")
+	defer span.End()
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
 
-	collection := tr.getCollection()
+	collection := tr.getCollection(ctx)
 	if collection == nil {
 		return nil, fmt.Errorf("failed to retrieve collection")
 	}
 
 	cursor, err := collection.Find(ctx, bson.M{})
 	if err != nil {
+		span.SetStatus(otelCodes.Error, err.Error())
 		log.Println("Error finding tasks:", err)
 		return nil, err
 	}
@@ -223,6 +246,7 @@ func (tr *UserRepo) GetAll() ([]models.User, error) {
 	}
 
 	if err := cursor.Err(); err != nil {
+		span.SetStatus(otelCodes.Error, err.Error())
 		log.Println("Error iterating over cursor:", err)
 		return nil, err
 	}
@@ -230,11 +254,13 @@ func (tr *UserRepo) GetAll() ([]models.User, error) {
 	return tasks, nil
 }
 
-func (tr *UserRepo) Delete(username string) error {
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+func (tr *UserRepo) Delete(username string, ctx context.Context) error {
+	ctx, span := tr.Tracer.Start(ctx, "r.delete")
+	defer span.End()
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
 
-	collection := tr.getCollection()
+	collection := tr.getCollection(ctx)
 	if collection == nil {
 		return fmt.Errorf("failed to retrieve collection")
 	}
@@ -242,6 +268,7 @@ func (tr *UserRepo) Delete(username string) error {
 	filter := bson.M{"username": username}
 	result, err := collection.DeleteOne(ctx, filter)
 	if err != nil {
+		span.SetStatus(otelCodes.Error, err.Error())
 		log.Println("Error deleting user:", err)
 		return err
 	}
@@ -255,11 +282,13 @@ func (tr *UserRepo) Delete(username string) error {
 	return nil
 }
 
-func (tr *UserRepo) DeleteById(id string) error {
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+func (tr *UserRepo) DeleteById(id string, ctx context.Context) error {
+	ctx, span := tr.Tracer.Start(ctx, "r.deleteById")
+	defer span.End()
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
 
-	collection := tr.getCollection()
+	collection := tr.getCollection(ctx)
 	if collection == nil {
 		return fmt.Errorf("failed to retrieve collection")
 	}
@@ -267,6 +296,7 @@ func (tr *UserRepo) DeleteById(id string) error {
 	filter := bson.M{"username": id}
 	result, err := collection.DeleteOne(ctx, filter)
 	if err != nil {
+		span.SetStatus(otelCodes.Error, err.Error())
 		log.Println("Error deleting user:", err)
 		return err
 	}
@@ -280,11 +310,13 @@ func (tr *UserRepo) DeleteById(id string) error {
 	return nil
 }
 
-func (tr *UserRepo) UpdatePassword(username, hashedPassword string) error {
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+func (tr *UserRepo) UpdatePassword(username, hashedPassword string, ctx context.Context) error {
+	ctx, span := tr.Tracer.Start(ctx, "r.updatePass")
+	defer span.End()
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
 
-	collection := tr.getCollection()
+	collection := tr.getCollection(ctx)
 	if collection == nil {
 		log.Println("Failed to retrieve collection")
 		return fmt.Errorf("failed to retrieve collection")
@@ -292,6 +324,7 @@ func (tr *UserRepo) UpdatePassword(username, hashedPassword string) error {
 
 	_, err := collection.UpdateOne(ctx, bson.M{"username": username}, bson.M{"$set": bson.M{"password": hashedPassword}})
 	if err != nil {
+		span.SetStatus(otelCodes.Error, err.Error())
 		log.Println("Failed to update password for user:", username)
 		return err
 	}
@@ -300,8 +333,11 @@ func (tr *UserRepo) UpdatePassword(username, hashedPassword string) error {
 }
 
 func (pr *UserRepo) Disconnect(ctx context.Context) error {
+	ctx, span := pr.Tracer.Start(ctx, "r.disconnect")
+	defer span.End()
 	err := pr.Cli.Disconnect(ctx)
 	if err != nil {
+		span.SetStatus(otelCodes.Error, err.Error())
 		return err
 	}
 	return nil

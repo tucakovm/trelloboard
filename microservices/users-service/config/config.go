@@ -14,6 +14,7 @@ type Config struct {
 	SMTPPassword          string
 	ProjectServicePort    string
 	ProjectServiceAddress string
+	JaegerEndpoint        string
 }
 
 func LoadConfig() (*Config, error) {
@@ -26,6 +27,7 @@ func LoadConfig() (*Config, error) {
 		SMTPPassword:          os.Getenv("SMTP_PASSWORD"),
 		ProjectServicePort:    fmt.Sprintf(":%s", os.Getenv("PROJECTS_SERVICE_PORT")),
 		ProjectServiceAddress: os.Getenv("PROJECTS_SERVICE_ADDRESS"),
+		JaegerEndpoint:        os.Getenv("JAEGER_ENDPOINT"),
 	}
 	return config, nil
 }
