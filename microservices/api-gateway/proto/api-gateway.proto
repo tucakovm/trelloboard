@@ -175,12 +175,6 @@ message UpdateTaskReq {
 }
 
 
-
-
-
-
-
-
 service UsersService {
   rpc RegisterHandler(RegisterReq) returns (EmptyResponse) {
     option (google.api.http) = {
@@ -317,4 +311,33 @@ message RecoveryPasswordRequest {
   string username = 2;
 }
 
+service NotificationService {
+  rpc GetAllNots(GetAllNotsReq) returns (GetAllNotsRes) {
+    option (google.api.http) = {
+      get: "/api/notifications/{userId}",
+    };
+  }
+  rpc CreateNot(CreateNotReq) returns (EmptyResponse) {
+    option (google.api.http) = {
+      post: "/api/notifications",
+      body: "not"
+    };
+  }
+}
+message GetAllNotsReq{
+  string userId = 1;
+}
+message GetAllNotsRes{
+  repeated Notification nots = 1;
+}
+message CreateNotReq{
+  Notification not = 1;
+}
+message Notification{
+  string userId = 1;
+  google.protobuf.Timestamp createdAt = 2;
+  string not_id = 3;
+  string message = 4;
+  string status = 5;
+}
 

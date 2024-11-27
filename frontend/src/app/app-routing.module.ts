@@ -17,29 +17,32 @@ import {TasksDetailsComponent} from "./tasks/tasks-details/tasks-details.compone
 import {AddMemberTaskComponent} from "./tasks/add-member-task/add-member-task.component";
 import { AuthGuard } from './auth.guard';
 import { UnauthorizedComponent } from './unauthorized/unauthorized.component';
+import {NotificationsComponent} from "./notifications/notifications.component";
 
 const routes: Routes = [
   { path: 'register', component: RegisterComponent },
   { path: 'login', component: LoginComponent },
-  { path: 'verify/:username', component: VerifyComponent},  
-  { path: 'add-project', component: ProjectCreateComponent , canActivate: [AuthGuard], data: { roles: ['Manager'] },},
+  { path: 'verify/:username', component: VerifyComponent },
+  { path: 'add-project', component: ProjectCreateComponent },
   { path: 'add-task', component: TasksComponent },
   { path: 'register', redirectTo: '/register', pathMatch: 'full' },
-  { path: 'all-projects', component: ProjectAllComponent , canActivate: [AuthGuard], data: { roles: ['User', 'Manager'] },},
-  { path: 'tasks/create/:projectId', component: TasksComponent , canActivate: [AuthGuard], data: { roles: ['Manager'] },},
-  { path: 'profile', component: ProfileComponent , canActivate: [AuthGuard], data: { roles: ['User', 'Manager'] },},
-  { path: 'all-projects/:id', component: ProjectDetailsComponent , canActivate: [AuthGuard], data: { roles: ['User', 'Manager'] },},
-  { path: 'all-projects/:projectId/add-member', component: AddMemberComponent , canActivate: [AuthGuard], data: { roles: ['Manager'] },},
+  { path: 'all-projects', component: ProjectAllComponent },
+  { path: 'tasks/create/:projectId', component: TasksComponent },
+  { path: 'profile', component: ProfileComponent },
+  { path: 'all-projects/:id', component: ProjectDetailsComponent },
+  { path: 'all-projects/:projectId/add-member', component: AddMemberComponent },
   {
     path: 'all-projects/:projectId/remove-member',
-    component: RemoveMemberComponent, canActivate: [AuthGuard], data: { roles: ['Manager'] },
+    component: RemoveMemberComponent,
   },
-  { path: 'tasks/:projectId', component: TasksAllComponent , canActivate: [AuthGuard], data: { roles: ['User', 'Manager'] },},
+  { path: 'tasks/:projectId', component: TasksAllComponent },
   { path: 'magic-login', component: MagicLinkComponent },
   { path: 'change-password', component: PassRecoveryComponent },
   { path: 'task-details/:id', component: TasksDetailsComponent , canActivate: [AuthGuard], data: { roles: ['User', 'Manager'] },},
   { path: 'task-add-member/:taskId', component: AddMemberTaskComponent , canActivate: [AuthGuard], data: { roles: ['Manager'] },},
   { path: 'unauthorized', component: UnauthorizedComponent },
+  { path: 'app-notifications', component: NotificationsComponent },
+
 
 ];
 @NgModule({

@@ -66,6 +66,7 @@ func (h UserHandler) RegisterHandler(ctx context.Context, req *proto.RegisterReq
 	if err != nil || !captchaValid {
 		return nil, status.Error(codes.InvalidArgument, "Invalid or failed CAPTCHA verification")
 	}
+
 	user := req.User
 	password, _ := HashPassword(user.Password)
 

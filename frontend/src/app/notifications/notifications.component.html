@@ -1,0 +1,36 @@
+  <!DOCTYPE html>
+  <html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Notifications</title>
+  </head>
+  <body>
+  <div class="container mt-5">
+    <h2>Notifications</h2>
+    <div class="list-group">
+      <!-- Loop through notifications -->
+      <div *ngFor="let notification of notifications" class="list-group-item list-group-item-action">
+        <div class="d-flex align-items-center">
+          <div class="me-2">
+            <i class="bi bi-bell-fill"></i>
+          </div>
+          <div>
+            <strong>{{ notification.message }}</strong>
+            <p class="mb-0 small text-muted">{{ notification.createdAt | date: 'short' }}</p>
+          </div>
+        </div>
+      </div>
+      <div *ngIf="notifications?.length === 0" class="list-group-item text-muted">
+        No notifications
+      </div>
+
+
+      <!-- If no notifications -->
+      <div *ngIf="notifications?.length === 0" class="list-group-item text-muted">
+        No notifications
+      </div>
+    </div>
+  </div>
+  </body>
+  </html>

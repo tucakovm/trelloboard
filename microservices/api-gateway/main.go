@@ -54,7 +54,7 @@ func main() {
 	if err := gateway.RegisterUsersServiceHandlerClient(ctx, gwmux, userClient); err != nil {
 		log.Fatalln("Failed to register ProjectService gateway:", err)
 	}
-	log.Println("ProjectService Gateway registered successfully.")
+	log.Println("UserService Gateway registered successfully.")
 
 	if err != nil {
 		log.Fatalln("Failed to dial ProjectService:", err)
@@ -72,6 +72,26 @@ func main() {
 		log.Fatalln("Failed to register TaskService gateway:", cfg.FullTaskServiceAddress(), err)
 	}
 	log.Println("TaskService Gateway registered successfully.")
+
+	// NotificationService connection
+	notConn, err := grpc.DialContext(
+		ctx,
+		cfg.FullNotServiceAddress(),
+		grpc.WithBlock(),
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
+	)
+	if err != nil {
+		log.Fatalf("Failed to dial NotificationService: %v", err)
+	}
+	notClient := gateway.NewNotificationServiceClient(notConn)
+	if err := gateway.RegisterNotificationServiceHandlerClient(ctx, gwmux, notClient); err != nil {
+		log.Fatalln("Failed to register NotService gateway:", err)
+	}
+	log.Println("NotService Gateway registered successfully.")
+	log.Println(cfg.FullNotServiceAddress())
+	if notClient == nil {
+		log.Fatal("Notification service client is nil")
+	}
 
 	// Start the HTTP server
 	gwServer := &http.Server{
@@ -103,14 +123,14 @@ func main() {
 var rolePermissions = map[string]map[string][]string{
 	"User": {
 		"GET": {"/api/projects/{username}", "/api/project/{id}", "/api/tasks/{id}", "/api/task/{id}",
-			"/api/users/{username}"},
+			"/api/users/{username}", "/api/notifications/{userId}"},
 		"POST":   {},
 		"DELETE": {"/api/users/{username}"},
 		"PUT":    {"/api/users/change-password"},
 	},
 	"Manager": {
 		"GET": {"/api/projects/{username}", "/api/project/{id}", "/api/tasks/{id}", "/api/task/{id}",
-			"/api/users/{username}"},
+			"/api/users/{username}", "/api/notifications/{userId}"},
 		"POST": {"/api/project", "/api/task"},
 		"DELETE": {"/api/project/{id}", "/api/task/{id}", "/api/users/{username}", "/api/task/{projectId}/members/{userId}",
 			"/api/projects/{projectId}/members/{userId}"},

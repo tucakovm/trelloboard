@@ -80,7 +80,7 @@ export class RegisterComponent {
       });
 
       this.http
-        .post('http://localhost:8000/api/users/register', requestBody, {
+        .post('https://localhost:8000/api/users/register', requestBody, {
           headers,
         })
         .subscribe(

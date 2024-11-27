@@ -43,7 +43,7 @@ export class VerifyComponent implements OnInit {
       };
 
       this.http
-        .post('http://localhost:8000/api/users/verify', requestData, { headers })
+        .post('https://localhost:8000/api/users/verify', requestData, { headers })
         .subscribe(
           (response) => {
             console.log('Verification successful', response);

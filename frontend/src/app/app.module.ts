@@ -23,6 +23,7 @@ import { PassRecoveryComponent } from './pass-recovery/pass-recovery.component';
 import { TasksDetailsComponent } from './tasks/tasks-details/tasks-details.component';
 import { AddMemberTaskComponent } from './tasks/add-member-task/add-member-task.component';
 import { UnauthorizedComponent } from './unauthorized/unauthorized.component';
+import { NotificationsComponent } from './notifications/notifications.component';
 @NgModule({
   declarations: [
     AppComponent,
@@ -42,6 +43,7 @@ import { UnauthorizedComponent } from './unauthorized/unauthorized.component';
     TasksDetailsComponent,
     AddMemberTaskComponent,
     UnauthorizedComponent,
+    NotificationsComponent,
   ],
   imports: [
     BrowserModule,

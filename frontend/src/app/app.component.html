@@ -74,15 +74,16 @@
     </style>
   </head>
   <body>
-    <nav class="nav-container">
-      <a *ngIf="!isLoggedIn()" routerLink="register" class="nav-item">Register</a>
-      <a *ngIf="!isLoggedIn()" routerLink="login" class="nav-item">Login</a>
-      <a *ngIf="isLoggedIn() && isManager()" routerLink="/add-project" class="nav-item">Add Project</a>
-      <a *ngIf="isLoggedIn()" routerLink="/all-projects" class="nav-item">All Projects</a>
-      <a *ngIf="isLoggedIn()"routerLink="/profile" class="nav-item">My profile</a>
-      <button *ngIf="isLoggedIn()" (click)="logOut()" class="nav-item">Log out</button>
-    </nav>
-    <router-outlet></router-outlet>
+      <nav class="nav-container">
+        <a *ngIf="!isLoggedIn()" routerLink="register" class="nav-item">Register</a>
+        <a *ngIf="!isLoggedIn()" routerLink="login" class="nav-item">Login</a>
+        <a *ngIf="isLoggedIn() && isManager()" routerLink="/add-project" class="nav-item">Add Project</a>
+        <a *ngIf="isLoggedIn()" routerLink="/all-projects" class="nav-item">All Projects</a>
+        <a *ngIf="isLoggedIn()"routerLink="/profile" class="nav-item">My profile</a>
+        <a *ngIf="isLoggedIn()"routerLink="/app-notifications" class="nav-item">My Notifications</a>
+        <button *ngIf="isLoggedIn()" (click)="logOut()" class="nav-item">Log out</button>
+      </nav>
+      <router-outlet></router-outlet>
 
     <div class="content"></div>
 
