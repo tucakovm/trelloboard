@@ -16,7 +16,9 @@
           />
         </div>
         <div class="col-md-6">
-          <label for="completionDate" class="form-label">Completion Date:</label>
+          <label for="completionDate" class="form-label"
+            >Completion Date:</label
+          >
           <input
             type="text"
             id="completionDate"
@@ -52,7 +54,9 @@
 
       <div class="row mb-4">
         <div class="col-md-6">
-          <label for="managerUsername" class="form-label">Manager Username:</label>
+          <label for="managerUsername" class="form-label"
+            >Manager Username:</label
+          >
           <input
             type="text"
             id="managerUsername"
@@ -65,27 +69,44 @@
 
       <div class="row mt-4">
         <div class="col-md-4">
-          <button *ngIf="isManager()" class="btn btn-danger w-100 shadow-sm" (click)="deleteProject()">
+          <button
+            *ngIf="isManager()"
+            class="btn btn-danger w-100 shadow-sm"
+            (click)="deleteProject()"
+          >
             Delete Project
           </button>
         </div>
         <div class="col-md-4">
-          <button *ngIf="isManager()" class="btn btn-primary w-100 shadow-sm" (click)="addTask()">
+          <button
+            *ngIf="isManager()"
+            class="btn btn-primary w-100 shadow-sm"
+            (click)="addTask()"
+          >
             Add Task
           </button>
         </div>
         <div class="col-md-4">
-          <button *ngIf="isManager()" class="btn btn-success w-100 shadow-sm" (click)="allTasks()">
+          <button class="btn btn-success w-100 shadow-sm" (click)="allTasks()">
+            <!--*ngIf="isManager()"  uklonjeno za sad kako bi mogo user da vidi taskove-->
             See All Tasks
           </button>
         </div>
         <div class="col-md-4">
-          <button *ngIf="!maxLengthAchieved && isManager()" class="btn btn-success w-100 shadow-sm" (click)="addMember()">
+          <button
+            *ngIf="!maxLengthAchieved && isManager()"
+            class="btn btn-success w-100 shadow-sm"
+            (click)="addMember()"
+          >
             Add members
           </button>
         </div>
         <div class="col-md-4">
-          <button  *ngIf="isManager()" class="btn btn-danger w-100 shadow-sm" (click)="removeMember()">
+          <button
+            *ngIf="isManager()"
+            class="btn btn-danger w-100 shadow-sm"
+            (click)="removeMember()"
+          >
             Remove members
           </button>
         </div>
