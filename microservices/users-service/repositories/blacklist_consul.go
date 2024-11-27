@@ -110,6 +110,29 @@ func checkBlacklist(client *api.Client, password string) error {
 	return nil
 }
 
+func (bc *BlacklistConsul) CheckPassword(password string) error {
+	kv := bc.Client.KV()
+
+	// Fetch all blacklist keys and values
+	pairs, _, err := kv.List("blacklist/", nil)
+	if err != nil {
+		log.Printf("Error retrieving blacklist keys: %v", err)
+		return fmt.Errorf("unable to check blacklist: %w", err)
+	}
+
+	// Iterate over the keys to find a match
+	for _, pair := range pairs {
+		if string(pair.Value) == password {
+			log.Printf("Password '%s' is blacklisted!", password)
+			return fmt.Errorf("password '%s' is blacklisted", password)
+		}
+	}
+
+	// No match found
+	log.Printf("Password '%s' is not blacklisted", password)
+	return nil
+}
+
 func (bc *BlacklistConsul) GetAllKeys() (map[string]string, error) {
 	pairs, _, err := bc.Client.KV().List("blacklist/", nil)
 	if err != nil {
