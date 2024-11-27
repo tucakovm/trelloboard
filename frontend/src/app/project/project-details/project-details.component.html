@@ -16,7 +16,9 @@
           />
         </div>
         <div class="col-md-6">
-          <label for="completionDate" class="form-label">Completion Date:</label>
+          <label for="completionDate" class="form-label"
+            >Completion Date:</label
+          >
           <input
             type="text"
             id="completionDate"
@@ -52,7 +54,9 @@
 
       <div class="row mb-4">
         <div class="col-md-6">
-          <label for="managerUsername" class="form-label">Manager Username:</label>
+          <label for="managerUsername" class="form-label"
+            >Manager Username:</label
+          >
           <input
             type="text"
             id="managerUsername"
@@ -64,29 +68,54 @@
       </div>
 
       <div class="row mt-4">
-        <div class="col-md-4">
-          <button *ngIf="isManager()" class="btn btn-danger w-100 shadow-sm" (click)="deleteProject()">
-            Delete Project
-          </button>
-        </div>
-        <div class="col-md-4">
-          <button *ngIf="isManager()" class="btn btn-primary w-100 shadow-sm" (click)="addTask()">
+        <!-- Add Task and See All Tasks Buttons Next to Each Other -->
+        <div class="col-md-6">
+          <button
+            *ngIf="isManager()"
+            class="btn btn-primary w-100 shadow-sm"
+            (click)="addTask()"
+          >
             Add Task
           </button>
         </div>
-        <div class="col-md-4">
-          <button *ngIf="isManager()" class="btn btn-success w-100 shadow-sm" (click)="allTasks()">
+        <div class="col-md-6">
+          <button class="btn btn-success w-100 shadow-sm" (click)="allTasks()">
             See All Tasks
           </button>
         </div>
-        <div class="col-md-4">
-          <button *ngIf="!maxLengthAchieved && isManager()" class="btn btn-success w-100 shadow-sm" (click)="addMember()">
-            Add members
+      </div>
+
+      <div class="row mt-3">
+        <!-- Add Members and Remove Members Buttons -->
+        <div class="col-md-6">
+          <button
+            *ngIf="!maxLengthAchieved && isManager()"
+            class="btn btn-success w-100 shadow-sm"
+            (click)="addMember()"
+          >
+            Add Members
           </button>
         </div>
-        <div class="col-md-4">
-          <button  *ngIf="isManager()" class="btn btn-danger w-100 shadow-sm" (click)="removeMember()">
-            Remove members
+        <div class="col-md-6">
+          <button
+            *ngIf="isManager()"
+            class="btn btn-danger w-100 shadow-sm"
+            (click)="removeMember()"
+          >
+            Remove Members
+          </button>
+        </div>
+      </div>
+
+      <!-- Delete Project Button at the Bottom -->
+      <div class="row mt-4">
+        <div class="col-md-12">
+          <button
+            *ngIf="isManager()"
+            class="btn btn-danger w-100 shadow-sm"
+            (click)="deleteProject()"
+          >
+            Delete Project
           </button>
         </div>
       </div>
