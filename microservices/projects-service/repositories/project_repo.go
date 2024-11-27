@@ -162,24 +162,25 @@ func (pr *ProjectRepo) Create(project *domain.Project) error {
 }
 
 func (pr *ProjectRepo) GetAllProjects(id string) (domain.Projects, error) {
-	// Initialize context (after 5 seconds timeout, abort operation)
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
 	projectsCollection := pr.getCollection()
 	var projects domain.Projects
 
-	// Query only projects where the manager's ID matches the provided id
-	filter := bson.M{"manager.username": id}
+	filter := bson.M{
+		"$or": []bson.M{
+			{"manager.username": id},
+			{"members.username": id},
+		},
+	}
+
 	cursor, err := projectsCollection.Find(ctx, filter)
 	if err != nil {
-		log.Println("Error finding projects:", err)
 		return nil, err
 	}
 
-	// Decode the results into the projects slice
 	if err = cursor.All(ctx, &projects); err != nil {
-		log.Println("Error decoding projects:", err)
 		return nil, err
 	}
 
