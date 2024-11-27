@@ -1,0 +1,6 @@
+.dropdown-item {
+  cursor: pointer;
+}
+.dropdown-item:hover {
+  background-color: #f8f9fa;
+}

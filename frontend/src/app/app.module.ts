@@ -22,6 +22,7 @@ import { MagicLinkComponent } from './magic-link/magic-link.component';
 import { PassRecoveryComponent } from './pass-recovery/pass-recovery.component';
 import { TasksDetailsComponent } from './tasks/tasks-details/tasks-details.component';
 import { AddMemberTaskComponent } from './tasks/add-member-task/add-member-task.component';
+import { NotificationsComponent } from './notifications/notifications.component';
 @NgModule({
   declarations: [
     AppComponent,
@@ -40,6 +41,7 @@ import { AddMemberTaskComponent } from './tasks/add-member-task/add-member-task.
     PassRecoveryComponent,
     TasksDetailsComponent,
     AddMemberTaskComponent,
+    NotificationsComponent,
   ],
   imports: [
     BrowserModule,

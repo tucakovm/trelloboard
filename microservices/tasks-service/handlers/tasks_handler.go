@@ -59,18 +59,18 @@ func (h *TaskHandler) GetAllByProjectId(ctx context.Context, req *proto.GetAllTa
 }
 
 func (h *TaskHandler) AddMemberTask(ctx context.Context, req *proto.AddMemberTaskReq) (*proto.EmptyResponse, error) {
-	prjId, _ := h.service.GetById(req.TaskId)
+	task, _ := h.service.GetById(req.TaskId)
 	userOnProjectReq := &proto.UserOnOneProjectReq{
 		UserId:    req.User.Username,
-		ProjectId: prjId.ProjectId,
+		ProjectId: task.ProjectId,
 	}
+
 	projServiceResponse, err := h.projectService.UserOnOneProject(ctx, userOnProjectReq)
 	if err != nil {
 		return nil, status.Error(codes.Internal, "Error checking project")
 	}
 	if projServiceResponse.IsOnProj {
 		taskId := req.TaskId
-		log.Println("task id TASK HANDLER" + taskId)
 		err = h.service.AddMember(taskId, req.User)
 		if err != nil {
 			log.Printf("Error adding member on project: %v", err)

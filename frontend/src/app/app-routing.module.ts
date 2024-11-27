@@ -15,6 +15,7 @@ import { PassRecoveryComponent } from './pass-recovery/pass-recovery.component';
 import { AddMemberComponent} from "./members/add-member/add-member.component";
 import {TasksDetailsComponent} from "./tasks/tasks-details/tasks-details.component";
 import {AddMemberTaskComponent} from "./tasks/add-member-task/add-member-task.component";
+import {NotificationsComponent} from "./notifications/notifications.component";
 
 const routes: Routes = [
   { path: 'register', component: RegisterComponent },
@@ -37,6 +38,7 @@ const routes: Routes = [
   { path: 'change-password', component: PassRecoveryComponent },
   { path: 'task-details/:id', component: TasksDetailsComponent },
   { path: 'task-add-member/:taskId', component: AddMemberTaskComponent },
+  {path:'app-notifications' , component: NotificationsComponent },
 
 ];
 @NgModule({

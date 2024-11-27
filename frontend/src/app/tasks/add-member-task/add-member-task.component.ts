@@ -57,6 +57,7 @@ export class AddMemberTaskComponent implements OnInit {
                 this.taskService
                   .AddMemberToTask(this.id, user)
                   .subscribe(() => console.log('Member successfully added'));
+                this.router.navigate([`/task-details/${this.id}`]);
               }
             }
           });

@@ -1,0 +1,28 @@
+syntax = "proto3";
+
+option go_package = "proto/project";
+
+import "google/protobuf/timestamp.proto";
+
+service NotificationService {
+  rpc GetAllNots(GetAllNotsReq) returns (GetAllNotsRes) {}
+  rpc CreateNot(CreateNotReq) returns (EmptyResponse){}
+}
+message GetAllNotsReq{
+  string userId = 1;
+}
+message GetAllNotsRes{
+  repeated Notification nots = 1;
+}
+message CreateNotReq{
+  Notification not = 1;
+}
+message EmptyResponse{}
+
+message Notification{
+  string userId = 1;
+  google.protobuf.Timestamp createdAt = 2;
+  string not_id = 3;
+  string message = 4;
+  string status = 5;
+}

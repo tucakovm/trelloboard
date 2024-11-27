@@ -60,9 +60,15 @@ func insertInitialUsers(client *mongo.Client) error {
 		return nil
 	}
 
+	id, err := primitive.ObjectIDFromHex("67386650a0d21b3a8f823722")
+	if err != nil {
+		fmt.Println("Error converting to ObjectID:", err)
+		return nil
+	}
+
 	users := []interface{}{
 		models.User{
-			Id:        primitive.NewObjectID(),
+			Id:        id,
 			FirstName: "Alice",
 			LastName:  "Johnson",
 			Username:  "alicej",

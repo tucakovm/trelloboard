@@ -25,6 +25,9 @@ services:
       - projects_server
       - tasks_server
       - users_server
+      - notifications_server
+      - cassandra
+      - mongo
     ports:
       - "8000:8000"
     volumes:
@@ -46,6 +49,8 @@ services:
     depends_on:
       mongo:
         condition: service_healthy
+      cassandra:
+        condition: service_healthy
 
   tasks_server:
     image: tasks-service
@@ -61,6 +66,8 @@ services:
       microservices/.env
     depends_on:
       mongo:
+        condition: service_healthy
+      cassandra:
         condition: service_healthy
 
   users_server:
@@ -78,6 +85,26 @@ services:
       microservices/.env
     depends_on:
       mongo:
+        condition: service_healthy
+      cassandra:
+        condition: service_healthy
+
+  notifications_server:
+    image: notifications_server
+    build:
+      context: microservices/notifications-service
+      dockerfile: Dockerfile
+    restart: always
+    container_name: "notifications-server"
+    hostname: "notifications-server"
+    ports:
+      - "8004:8004"
+    env_file:
+      microservices/.env
+    depends_on:
+      mongo:
+        condition: service_healthy
+      cassandra:
         condition: service_healthy
 
   mongo:
@@ -113,6 +140,21 @@ services:
     volumes:
       - mongo_express_data:/data/db
 
+  cassandra:
+    image: cassandra
+    restart: always
+    ports:
+      - "9042:9042"
+    # Docker healtcheck - checks if database is "alive"
+    healthcheck:
+      test: ["CMD-SHELL", "cqlsh -e 'describe cluster'"]
+      interval: 15s
+      timeout: 5s
+      retries: 15
+    volumes:
+      - cass_store:/var/lib/cassandra/data
+
 volumes:
   mongo_store:
   mongo_express_data:
+  cass_store:
