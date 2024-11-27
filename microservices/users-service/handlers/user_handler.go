@@ -68,6 +68,7 @@ func (h UserHandler) RegisterHandler(ctx context.Context, req *proto.RegisterReq
 	}
 
 	user := req.User
+	log.Println("korisnik", user)
 	password, _ := HashPassword(user.Password)
 
 	err = h.service.RegisterUser(user.Firstname, user.Lastname, user.Username, user.Email, password, user.Role)

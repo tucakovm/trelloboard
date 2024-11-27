@@ -81,13 +81,23 @@ services:
     ports:
       - "8003:8003"
       - "587:587"
+      - "6379:6379"
     env_file:
-      microservices/.env
+      - microservices/.env
     depends_on:
       mongo:
         condition: service_healthy
       cassandra:
         condition: service_healthy
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+
 
   notifications_server:
     image: notifications_server
@@ -158,3 +168,4 @@ volumes:
   mongo_store:
   mongo_express_data:
   cass_store:
+  redis-data:

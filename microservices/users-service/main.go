@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"github.com/redis/go-redis/v9"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/reflection"
@@ -35,6 +36,27 @@ func main() {
 			log.Fatal("Error closing listener: ", err)
 		}
 	}(listener)
+
+	// Set up Redis
+	log.Println("Initializing Redis client...")
+	redisClient := redis.NewClient(&redis.Options{
+		Addr:     os.Getenv("REDIS_ADDRESS"),
+		Password: os.Getenv("REDIS_PASSWORD"),
+		DB:       0,
+	})
+	defer func() {
+		log.Println("Closing Redis client...")
+		if err := redisClient.Close(); err != nil {
+			log.Fatalf("Failed to close Redis client: %v", err)
+		}
+	}()
+	log.Println("Redis client initialized successfully.")
+
+	// Test Redis connection
+	if _, err := redisClient.Ping(ctx).Result(); err != nil {
+		log.Fatalf("Failed to connect to Redis: %v", err)
+	}
+	log.Println("Connected to Redis successfully.")
 
 	// ProjectService connection
 	projectConn, err := grpc.DialContext(
