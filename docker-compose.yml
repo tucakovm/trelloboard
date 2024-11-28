@@ -111,6 +111,8 @@ services:
       - "8004:8004"
     env_file:
       microservices/.env
+    environment:
+      - CONSUL_ADDRESS=consul:8500 # Ensure Consul is reachable
     depends_on:
       mongo:
         condition: service_healthy
@@ -133,6 +135,16 @@ services:
       retries: 10
     volumes:
       - mongo_store:/data/db
+
+  consul:
+    image: hashicorp/consul:latest
+    ports:
+      - "8500:8500"
+      - "8600:8600/tcp"
+      - "8600:8600/udp"
+    command: "agent -server -ui -node=server-1 -bootstrap-expect=1 -client=0.0.0.0"
+    volumes:
+      - ./consul_store:/consul/data
 
   mongo-express:
     image: mongo-express
