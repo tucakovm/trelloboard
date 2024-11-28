@@ -49,6 +49,11 @@ func main() {
 	timeoutContext, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
+	consulAddress := os.Getenv("CONSUL_ADDRESS")
+	if consulAddress == "" {
+		consulAddress = "localhost:8500" // Default to localhost for fallback
+	}
+
 	log.Println("Initializing User Repository...")
 	repoUser, err := repositories.NewUserRepo(timeoutContext)
 	if err != nil {
@@ -57,7 +62,14 @@ func main() {
 	defer repoUser.Disconnect(timeoutContext)
 	log.Println("User Repository initialized successfully.")
 
-	serviceUser, err := services.NewUserService(*repoUser)
+	log.Println("Initializing Blacklist Service...")
+	blacklistRepo, err := repositories.NewBlacklistConsul(consulAddress)
+	if err != nil {
+		log.Fatal("Failed to initialize Blacklist Repository: ", err)
+	}
+	log.Println("Blacklist Service initialized successfully.")
+
+	serviceUser, err := services.NewUserService(*repoUser, blacklistRepo)
 	if err != nil {
 		log.Fatal("Failed to initialize User Service: ", err)
 	}

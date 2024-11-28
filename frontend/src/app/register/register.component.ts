@@ -63,7 +63,7 @@ export class RegisterComponent {
       });
 
       this.http
-        .post('http://localhost:8000/api/users/register', requestBody, {
+        .post('https://localhost:8000/api/users/register', requestBody, {
           headers,
         })
         .subscribe(
@@ -77,7 +77,11 @@ export class RegisterComponent {
             this.router.navigate(['/verify', formData.username]);
           },
           (error) => {
+            if (error.error && error.error.message && error.error.message.includes('Password is not allowed')) {
+            this.errorMessage = 'This is a commonly used password, please choose another one.';
+          } else {
             this.errorMessage = 'Registration failed. Please try again.';
+          }
             this.successMessage = null;
             console.error('Registration failed', error);
           }

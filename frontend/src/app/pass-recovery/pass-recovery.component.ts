@@ -57,6 +57,7 @@ export class PassRecoveryComponent {
       return;
     }
 
+
     this.userService.recoverPassword(username, newPassword).subscribe({
       next: (res) => {
         this.successMessage = 'Password changed successfully!';
@@ -64,7 +65,7 @@ export class PassRecoveryComponent {
       },
       error: (err) => {
         this.errorOccurred = true;
-        this.errorMessage = 'Error while changing the password.';
+        this.errorMessage = err.error?.message ||  'Error while changing the password.';
         console.error(err);
       },
     });

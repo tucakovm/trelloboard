@@ -10,25 +10,44 @@ type BlacklistConsul struct {
 	Client *api.Client
 }
 
-func NewBlacklistConsul() (*BlacklistConsul, error) {
-	// Configure and connect to the Consul agent
-	config := api.DefaultConfig()
-	config.Address = "http://localhost:8500" // Replace with your Consul server address if different
+/*
+	func NewBlacklistConsul() (*BlacklistConsul, error) {
+		// Configure and connect to the Consul agent
+		config := api.DefaultConfig()
+		config.Address = "http://localhost:8500" // Replace with your Consul server address if different
 
-	client, err := api.NewClient(config)
+		client, err := api.NewClient(config)
+		if err != nil {
+			log.Printf("Failed to connect to Consul: %v", err)
+			return nil, err
+		}
+
+		log.Println("Connected to Consul successfully")
+
+		// Initialize the blacklist with 15 random entries
+		if err := initializeBlacklist(client); err != nil {
+			log.Printf("Failed to initialize blacklist: %v", err)
+			return nil, err
+		}
+
+		return &BlacklistConsul{Client: client}, nil
+	}
+*/
+func NewBlacklistConsul(address string) (*BlacklistConsul, error) {
+	client, err := api.NewClient(&api.Config{
+		Address: address,
+	})
 	if err != nil {
-		log.Printf("Failed to connect to Consul: %v", err)
+		log.Println("Error creating Consul client:", err)
 		return nil, err
 	}
 
-	log.Println("Connected to Consul successfully")
-
-	// Initialize the blacklist with 15 random entries
 	if err := initializeBlacklist(client); err != nil {
 		log.Printf("Failed to initialize blacklist: %v", err)
 		return nil, err
 	}
 
+	// Perform checks or setup as needed
 	return &BlacklistConsul{Client: client}, nil
 }
 

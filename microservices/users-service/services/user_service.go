@@ -22,6 +22,10 @@ func NewUserService(repo repositories.UserRepo, blacklistConsul *repositories.Bl
 	}, nil
 }
 
+func (s UserService) CheckPasswordBlacklist(password string) error {
+	return s.blacklistConsul.CheckPassword(password)
+}
+
 func (s UserService) RegisterUser(firstName, lastName, username, email, password, role string) error {
 	existingUser, _ := s.repo.GetUserByUsername(username)
 	//log.Println("username:", username)
