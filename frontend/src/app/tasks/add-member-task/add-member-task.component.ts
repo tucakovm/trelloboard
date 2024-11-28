@@ -55,9 +55,11 @@ export class AddMemberTaskComponent implements OnInit {
                 return;
               } else if (this.id) {
                 this.taskService
-                  .AddMemberToTask(this.id, user)
+                  .AddMemberToTask(this.id, user, 5000)
                   .subscribe(() => console.log('Member successfully added'));
+
                 this.router.navigate([`/task-details/${this.id}`]);
+                this.taskService.getById(this.id)
               }
             }
           });

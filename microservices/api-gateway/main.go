@@ -15,12 +15,15 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strconv"
 	"strings"
 	"syscall"
 	"time"
 )
 
 func main() {
+	setupDefaultHTTPClient()
+
 	cfg := config.GetConfig()
 
 	// Create a gRPC Gateway multiplexer
@@ -164,6 +167,19 @@ func authMiddleware(next http.Handler) http.Handler {
 			return
 		}
 
+		// Dodavanje timeout-a iz headera u context
+		timeoutHeader := r.Header.Get("Timeout")
+		log.Println("Timeout apigateway : " + timeoutHeader)
+		if timeoutHeader != "" {
+			timeoutMs, err := strconv.Atoi(timeoutHeader)
+			if err == nil && timeoutMs > 0 {
+				ctx, cancel := context.WithTimeout(r.Context(), time.Duration(timeoutMs)*time.Millisecond)
+				defer cancel()
+				r = r.WithContext(ctx) // Ažuriraj zahtev sa timeout kontekstom
+			}
+		}
+
+		// Provera Authorization header-a
 		authHeader := r.Header.Get("Authorization")
 		if authHeader == "" {
 			http.Error(w, "Missing Authorization header", http.StatusUnauthorized)
@@ -187,6 +203,7 @@ func authMiddleware(next http.Handler) http.Handler {
 		md := metadata.Pairs("user_role", role)
 		ctx := metadata.NewOutgoingContext(r.Context(), md)
 
+		// Prosleđivanje sa ažuriranim kontekstom
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }
@@ -245,16 +262,27 @@ func enableCORS(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Access-Control-Allow-Origin", "*")
 		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
-		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization, Timeout")
 		if r.Method == http.MethodOptions {
 			w.WriteHeader(http.StatusOK)
 			return
 		}
-		authMiddleware(h).ServeHTTP(w, r) // Wrap with auth middleware
+		// Prolazak kroz authMiddleware sa timeout kontekstom
+		authMiddleware(h).ServeHTTP(w, r)
 	})
 }
 
 func forwardClaimsToServices(ctx context.Context) context.Context {
 	claims := ctx.Value("claims").(jwt.MapClaims)
 	return context.WithValue(ctx, "role", claims["role"])
+}
+
+func setupDefaultHTTPClient() {
+	transport := &http.Transport{
+		MaxIdleConns:        10,
+		MaxIdleConnsPerHost: 10,
+		MaxConnsPerHost:     10,
+	}
+	http.DefaultClient.Transport = transport
+	http.DefaultClient.Timeout = 30 * time.Second
 }
