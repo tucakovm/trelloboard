@@ -41,7 +41,7 @@ func main() {
 	otel.SetTracerProvider(tp)
 	otel.SetTextMapPropagator(propagation.TraceContext{})
 
-	tracer := tp.Tracer("config-service")
+	tracer := tp.Tracer("user-service")
 
 	listener, err := net.Listen("tcp", cfg.UserPort)
 	if err != nil {
@@ -143,7 +143,7 @@ func newExporter(address string) (sdktrace.SpanExporter, error) {
 func newTraceProvider(exp sdktrace.SpanExporter) *sdktrace.TracerProvider {
 	r := resource.NewWithAttributes(
 		semconv.SchemaURL,
-		semconv.ServiceNameKey.String("config-service"),
+		semconv.ServiceNameKey.String("user-service"),
 	)
 
 	return sdktrace.NewTracerProvider(

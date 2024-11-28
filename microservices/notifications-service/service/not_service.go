@@ -1,6 +1,9 @@
 package service
 
 import (
+	"context"
+	otelCodes "go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/otel/trace"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -11,14 +14,20 @@ import (
 )
 
 type NotService struct {
-	repo repositories.NotRepo
+	repo   repositories.NotRepo
+	Tracer trace.Tracer
 }
 
-func NewNotService(repo repositories.NotRepo) *NotService {
-	return &NotService{repo: repo}
+func NewNotService(repo repositories.NotRepo, tracer trace.Tracer) *NotService {
+	return &NotService{
+		repo:   repo,
+		Tracer: tracer,
+	}
 }
 
-func (s *NotService) Create(req *proto.Notification) error {
+func (s *NotService) Create(ctx context.Context, req *proto.Notification) error {
+	ctx, span := s.Tracer.Start(ctx, "s.createNot")
+	defer span.End()
 	newNot := &domain.Notification{
 		UserId:    req.UserId,
 		CreatedAt: req.CreatedAt.AsTime(),
@@ -26,12 +35,15 @@ func (s *NotService) Create(req *proto.Notification) error {
 		Status:    req.Status,
 	}
 	log.Println(newNot)
-	return s.repo.InsertNotByUser(newNot)
+	return s.repo.InsertNotByUser(ctx, newNot)
 }
 
-func (s *NotService) GetAllNotUser(id string) ([]*proto.Notification, error) {
-	nots, err := s.repo.GetNotsByUser(id)
+func (s *NotService) GetAllNotUser(ctx context.Context, id string) ([]*proto.Notification, error) {
+	ctx, span := s.Tracer.Start(ctx, "s.getAllNotsUser")
+	defer span.End()
+	nots, err := s.repo.GetNotsByUser(ctx, id)
 	if err != nil {
+		span.SetStatus(otelCodes.Error, err.Error())
 		return nil, status.Error(codes.Internal, "s:DB exception.")
 	}
 	var protoNots []*proto.Notification

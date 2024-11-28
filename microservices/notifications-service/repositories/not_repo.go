@@ -1,8 +1,10 @@
 package repositories
 
 import (
+	"context"
 	"fmt"
 	"github.com/gocql/gocql"
+	"go.opentelemetry.io/otel/trace"
 	"log"
 	"not_module/domain"
 	"os"
@@ -12,11 +14,11 @@ import (
 type NotRepo struct {
 	session *gocql.Session
 	logger  *log.Logger
+	Tracer  trace.Tracer
 }
 
-func New(logger *log.Logger) (*NotRepo, error) {
+func New(logger *log.Logger, tracer trace.Tracer) (*NotRepo, error) {
 	db := os.Getenv("CASS_DB")
-
 	// Connect to default keyspace
 	cluster := gocql.NewCluster(db)
 	cluster.Keyspace = "system"
@@ -49,6 +51,7 @@ func New(logger *log.Logger) (*NotRepo, error) {
 	repo := &NotRepo{
 		session: session,
 		logger:  logger,
+		Tracer:  tracer,
 	}
 
 	return repo, nil
@@ -59,7 +62,10 @@ func (nr *NotRepo) CloseSession() {
 	nr.session.Close()
 }
 
-func (nr *NotRepo) InitDB() {
+func (nr *NotRepo) InitDB(ctx context.Context) {
+
+	ctx, span := nr.Tracer.Start(ctx, "r.initNotDB")
+	defer span.End()
 
 	notifs := []*domain.Notification{
 		{
@@ -83,12 +89,14 @@ func (nr *NotRepo) InitDB() {
 	}
 
 	for _, not := range notifs {
-		nr.InsertNotByUser(not)
+		nr.InsertNotByUser(ctx, not)
 		log.Println("Inserted nots :")
 		log.Println(not)
 	}
 }
-func (nr *NotRepo) CreateTables() {
+func (nr *NotRepo) CreateTables(ctx context.Context) {
+	ctx, span := nr.Tracer.Start(ctx, "r.createTables")
+	defer span.End()
 	err := nr.session.Query(
 		fmt.Sprintf(`CREATE TABLE IF NOT EXISTS %s 
         (user_id TEXT, 
@@ -103,10 +111,12 @@ func (nr *NotRepo) CreateTables() {
 	if err != nil {
 		nr.logger.Println(err)
 	}
-	nr.InitDB()
+	nr.InitDB(ctx)
 }
 
-func (nr *NotRepo) GetNotsByUser(id string) (domain.Notifications, error) {
+func (nr *NotRepo) GetNotsByUser(ctx context.Context, id string) (domain.Notifications, error) {
+	ctx, span := nr.Tracer.Start(ctx, "r.getAllNotsUser")
+	defer span.End()
 	scanner := nr.session.Query(`SELECT user_id, created_at, not_id, message, status FROM not_by_user WHERE user_id = ?`,
 		id).Iter().Scanner()
 
@@ -130,7 +140,9 @@ func (nr *NotRepo) GetNotsByUser(id string) (domain.Notifications, error) {
 	return nots, nil
 }
 
-func (nr *NotRepo) InsertNotByUser(not *domain.Notification) error {
+func (nr *NotRepo) InsertNotByUser(ctx context.Context, not *domain.Notification) error {
+	ctx, span := nr.Tracer.Start(ctx, "r.insertNotByUser")
+	defer span.End()
 	notId, _ := gocql.RandomUUID()
 	err := nr.session.Query(
 		`INSERT INTO not_by_user (user_id, created_at , not_id, message, status) 
