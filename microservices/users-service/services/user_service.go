@@ -5,31 +5,46 @@ import (
 	"fmt"
 	"golang.org/x/crypto/bcrypt"
 	"log"
+	"time"
 	"users_module/models"
 	"users_module/repositories"
 	"users_module/utils"
 )
 
 type UserService struct {
-	repo repositories.UserRepo
+	repo      repositories.UserRepo
+	redisRepo repositories.RedisRepo
+	blacklistConsul *repositories.BlacklistConsul
 }
 
-func NewUserService(repo repositories.UserRepo) (UserService, error) {
+func NewUserService(repo repositories.UserRepo, blacklistConsul *repositories.BlacklistConsul) (UserService, error) {
 	return UserService{
-		repo: repo,
+		repo:            repo,
+		blacklistConsul: blacklistConsul,
 	}, nil
+}
+
+func (s UserService) CheckPasswordBlacklist(password string) error {
+	return s.blacklistConsul.CheckPassword(password)
 }
 
 func (s UserService) RegisterUser(firstName, lastName, username, email, password, role string) error {
 	existingUser, _ := s.repo.GetUserByUsername(username)
-	//log.Println("username:", username)
-	//log.Println("existingUser:", existingUser)
-	//log.Println("firstName:", firstName)
-	//log.Println("lastName:", lastName)
-	//log.Println("email:", email)
-	log.Println("role:", role)
 	if existingUser != nil {
 		return errors.New("username already taken")
+	}
+	log.Println(firstName, lastName, username, email, password, role)
+
+	// Validate inputs
+	if !utils.IsValidEmail(email) {
+		return errors.New("invalid email format")
+	}
+	log.Println("email is valid")
+
+	// Generate a verification code
+	if err := s.blacklistConsul.CheckPassword(password); err != nil {
+		log.Printf("Password rejected due to blacklist: %v", err)
+		return fmt.Errorf("password is not allowed: %w", err)
 	}
 
 	code := utils.GenerateCode()
@@ -43,22 +58,37 @@ func (s UserService) RegisterUser(firstName, lastName, username, email, password
 		Code:      code,
 		Role:      role,
 	}
+	redisRepo := repositories.NewRedisRepo()
 
-	err := s.repo.SaveUser(user)
+	err := redisRepo.SaveUnverifiedUser(user, 24*time.Hour)
 	if err != nil {
-		return err
+		log.Printf("Failed to save unverified user in Redis: %v", err)
+		return errors.New("internal error while saving user data")
 	}
 
-	return SendVerificationEmail(email, code)
+	err = SendVerificationEmail(email, code)
+	if err != nil {
+		log.Printf("Failed to send verification email: %v", err)
+		return errors.New("failed to send verification email")
+	}
+
+	log.Printf("User %s registered successfully. Verification email sent.", username)
+	return nil
 }
 
 func (s UserService) VerifyUser(username, code string) error {
-	user, err := s.repo.GetUserByUsername(username)
+	redisRepo := repositories.NewRedisRepo()
+	user, err := redisRepo.GetUnverifiedUser(username)
 	if err != nil {
 		return err
 	}
 	if user.Code != code && code != "123456" {
 		return errors.New("invalid verification code")
+	}
+	err = s.repo.SaveUser(*user)
+	if err != nil {
+		log.Println("Failed to save user in Mongo, Verify User")
+		return err
 	}
 	return s.repo.ActivateUser(username)
 }
@@ -99,17 +129,19 @@ func (s UserService) DeleteUserById(id string) error {
 }
 
 func (s UserService) VerifyAndActivateUser(username, code string) error {
+	log.Println("User service")
 	if err := s.VerifyUser(username, code); err != nil {
 		return errors.New("verification failed")
 	}
+	log.Println("")
 
 	user, err := s.repo.GetUserByUsername(username)
 	if err != nil && !errors.Is(err, repositories.ErrUserNotFound) {
+		log.Println("GetUserByUsername")
 		return err
 	}
 
 	if user == nil {
-		// User not found, create new
 		user = &models.User{
 			Username: username,
 			IsActive: true,
@@ -131,6 +163,10 @@ func (s *UserService) ChangePassword(username, currentPassword, newPassword stri
 		log.Println("current password not correct")
 		log.Println(currentPassword, user.Password)
 		return fmt.Errorf("current password is incorrect")
+	}
+
+	if err := s.blacklistConsul.CheckPassword(newPassword); err != nil {
+		return fmt.Errorf("new password is not allowed because its commonly used: %w", err)
 	}
 
 	// Hash the new password
@@ -168,6 +204,10 @@ func (s *UserService) RecoverPassword(userName, newPassword string) error {
 	if err != nil {
 		log.Println("User not found")
 		return fmt.Errorf("user not found")
+	}
+
+	if err := s.blacklistConsul.CheckPassword(newPassword); err != nil {
+		return fmt.Errorf("new password is not allowed: %w", err)
 	}
 
 	hashedPassword, err := HashPassword(newPassword)

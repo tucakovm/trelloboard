@@ -4,6 +4,7 @@ import { ActivatedRoute, Router } from "@angular/router";
 import { TaskService } from "../../services/task.service";
 import { Task } from "../../model/task";
 import { Location } from '@angular/common';
+import { AuthService} from "../../services/auth.service";
 
 @Component({
   selector: 'app-tasks-details',
@@ -26,7 +27,8 @@ export class TasksDetailsComponent implements OnInit {
     private taskService: TaskService,
     private activatedRoute: ActivatedRoute,
     private router: Router,
-    private location: Location
+    private location: Location,
+    private authService: AuthService,
   ) {}
 
   ngOnInit(): void {
@@ -95,5 +97,8 @@ export class TasksDetailsComponent implements OnInit {
         alert('An error occurred while updating the task.');
       }
     );
+  }
+  isManager(): boolean{
+    return this.authService.isManager()
   }
 }

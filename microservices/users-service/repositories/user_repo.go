@@ -186,7 +186,7 @@ func (tr *UserRepo) ActivateUser(username string) error {
 
 	filter := bson.M{"username": username}
 	update := bson.M{"$set": bson.M{"is_active": true}}
-
+	log.Println("active user inside user_repo")
 	_, err := collection.UpdateOne(ctx, filter, update)
 	if err != nil {
 		log.Println("Error activating user:", err)
@@ -196,6 +196,7 @@ func (tr *UserRepo) ActivateUser(username string) error {
 	log.Printf("User with email %s activated successfully", username)
 	return nil
 }
+
 func (tr *UserRepo) GetAll() ([]models.User, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()

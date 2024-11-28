@@ -19,6 +19,9 @@
     <div *ngIf="maximumNumber" class="alert alert-warning">
       Maximum number of members reached.
     </div>
+    <div *ngIf="cannotAddmemberToProject" class="alert alert-warning">
+      Cannot add member to the project because its completed.
+    </div>
     <button type="submit" class="btn btn-primary w-100">Submit</button>
   </form>
 </div>

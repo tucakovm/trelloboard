@@ -21,21 +21,23 @@ export class ProjectCreateComponent{
         name: ['', [Validators.required, Validators.minLength(3)]],
         completionDate: [null, [Validators.required, this.futureDateValidator]],
         minMembers: [0, [Validators.required, Validators.min(1)]],
-        maxMembers: [0, [Validators.required, Validators.min(1)]]
+        maxMembers: [0, [Validators.required, Validators.min(1)]],
       },
-      { validators: this.maxGreaterThanMinValidator } // Dodajemo validator na formu
+      { validators: this.maxGreaterThanMinValidator }
     );
+
   }
 
   // Prilagođena validacija
   maxGreaterThanMinValidator(control: AbstractControl): { [key: string]: boolean } | null {
-    const minMembers = control.get('MinMembers')?.value;
-    const maxMembers = control.get('MaxMembers')?.value;
+    const minMembers = control.get('minMembers')?.value;
+    const maxMembers = control.get('maxMembers')?.value;
+    console.log('Validator values:', { minMembers, maxMembers });
 
-    if (minMembers !== null && maxMembers !== null && maxMembers <= minMembers) {
-      return { maxLessThanOrEqualMin: true }; // Greška ako maxMembers nije veći od minMembers
+    if (!isNaN(minMembers) && !isNaN(maxMembers) && maxMembers <= minMembers) {
+      return { maxLessThanOrEqualMin: true }; // Error if maxMembers <= minMembers
     }
-    return null; // Bez greške
+    return null;
   }
 
     // Validator to check if CompletionDate is in the future

@@ -66,8 +66,11 @@ func (h UserHandler) RegisterHandler(ctx context.Context, req *proto.RegisterReq
 	if err != nil || !captchaValid {
 		return nil, status.Error(codes.InvalidArgument, "Invalid or failed CAPTCHA verification")
 	}
-
 	user := req.User
+	log.Println("korisnik", user)
+	if err := h.service.CheckPasswordBlacklist(user.Password); err != nil {
+		return nil, status.Error(codes.InvalidArgument, fmt.Sprintf("Password is not allowed: %v", err))
+	}
 	password, _ := HashPassword(user.Password)
 
 	err = h.service.RegisterUser(user.Firstname, user.Lastname, user.Username, user.Email, password, user.Role)
@@ -222,6 +225,10 @@ func CheckPassword(hashedPassword, password string) bool {
 
 func (h *UserHandler) ChangePassword(ctx context.Context, req *proto.ChangePasswordReq) (*proto.EmptyResponse, error) {
 
+	if err := h.service.CheckPasswordBlacklist(req.ChangeUser.NewPassword); err != nil {
+		return nil, status.Error(codes.InvalidArgument, fmt.Sprintf("New password is not allowed: %v", err))
+	}
+
 	err := h.service.ChangePassword(req.ChangeUser.Username, req.ChangeUser.CurrentPassword, req.ChangeUser.NewPassword)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, "bad request ...")
@@ -342,6 +349,9 @@ func (h *UserHandler) RecoverPassword(ctx context.Context, req *proto.RecoveryPa
 		return nil, errors.New("invalid request payload")
 	}
 
+	if err := h.service.CheckPasswordBlacklist(req.NewPassword); err != nil {
+		return nil, status.Error(codes.InvalidArgument, fmt.Sprintf("New password is not allowed: %v", err))
+	}
 	log.Printf("RecoverPassword request: username=%s, newPassword=%s", req.Username, req.NewPassword)
 
 	log.Println("req.UserName")

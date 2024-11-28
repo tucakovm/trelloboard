@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"github.com/redis/go-redis/v9"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/reflection"
@@ -36,6 +37,27 @@ func main() {
 		}
 	}(listener)
 
+	// Set up Redis
+	log.Println("Initializing Redis client...")
+	redisClient := redis.NewClient(&redis.Options{
+		Addr:     os.Getenv("REDIS_ADDRESS"),
+		Password: os.Getenv("REDIS_PASSWORD"),
+		DB:       0,
+	})
+	defer func() {
+		log.Println("Closing Redis client...")
+		if err := redisClient.Close(); err != nil {
+			log.Fatalf("Failed to close Redis client: %v", err)
+		}
+	}()
+	log.Println("Redis client initialized successfully.")
+
+	// Test Redis connection
+	if _, err := redisClient.Ping(ctx).Result(); err != nil {
+		log.Fatalf("Failed to connect to Redis: %v", err)
+	}
+	log.Println("Connected to Redis successfully.")
+
 	// ProjectService connection
 	projectConn, err := grpc.DialContext(
 		ctx,
@@ -49,6 +71,11 @@ func main() {
 	timeoutContext, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
+	consulAddress := os.Getenv("CONSUL_ADDRESS")
+	if consulAddress == "" {
+		consulAddress = "localhost:8500" // Default to localhost for fallback
+	}
+
 	log.Println("Initializing User Repository...")
 	repoUser, err := repositories.NewUserRepo(timeoutContext)
 	if err != nil {
@@ -57,7 +84,14 @@ func main() {
 	defer repoUser.Disconnect(timeoutContext)
 	log.Println("User Repository initialized successfully.")
 
-	serviceUser, err := services.NewUserService(*repoUser)
+	log.Println("Initializing Blacklist Service...")
+	blacklistRepo, err := repositories.NewBlacklistConsul(consulAddress)
+	if err != nil {
+		log.Fatal("Failed to initialize Blacklist Repository: ", err)
+	}
+	log.Println("Blacklist Service initialized successfully.")
+
+	serviceUser, err := services.NewUserService(*repoUser, blacklistRepo)
 	if err != nil {
 		log.Fatal("Failed to initialize User Service: ", err)
 	}

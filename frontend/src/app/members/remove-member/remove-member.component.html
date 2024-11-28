@@ -11,6 +11,9 @@
         placeholder="Enter username to remove"
       />
     </div>
+    <div *ngIf="cannotRemoveMemberFromProject" class="alert alert-warning">
+      Cannot remove member from the project because he is working on a task.
+    </div>
     <button type="submit" class="btn btn-primary w-100">Submit</button>
   </form>
 </div>
