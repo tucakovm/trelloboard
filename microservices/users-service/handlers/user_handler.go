@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/golang-jwt/jwt/v4"
+	"github.com/redis/go-redis/v9"
 	"golang.org/x/crypto/bcrypt"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
@@ -20,7 +21,9 @@ import (
 	"time"
 	"users_module/models"
 	proto "users_module/proto/users"
+	"users_module/repositories"
 	"users_module/services"
+	"users_module/utils"
 )
 
 type UserHandler struct {
@@ -314,13 +317,14 @@ func (h UserHandler) RecoveryLink(ctx context.Context, req *proto.RecoveryLinkRe
 		return nil, status.Error(codes.NotFound, "User not found")
 	}
 
-	baseFrontendURL := "http://localhost:4200"
+	baseFrontendURL := "https://localhost:4200"
+	code := utils.GenerateCode()
 
 	// Generate the recovery URL
-	recoveryURL := fmt.Sprintf("%s/change-password?username=%s&email=%s",
+	recoveryURL := fmt.Sprintf("%s/change-password?username=%s   Your recovery code:   %s",
 		baseFrontendURL,
 		url.QueryEscape(user.Username),
-		url.QueryEscape(user.Email),
+		url.QueryEscape(code),
 	)
 
 	// Prepare the subject and body for the email
@@ -333,28 +337,47 @@ func (h UserHandler) RecoveryLink(ctx context.Context, req *proto.RecoveryLinkRe
 	if err != nil {
 		return nil, status.Error(codes.Internal, "Failed to send recovery email")
 	}
+	redisRepo := repositories.NewRedisRepo()
+	redisRepo.SaveRecoveryCode(user.Username, code, 15*time.Hour)
 
 	return &proto.EmptyResponse{}, nil
 }
 
 func (h *UserHandler) RecoverPassword(ctx context.Context, req *proto.RecoveryPasswordRequest) (*proto.EmptyResponse, error) {
 	if req == nil {
-		log.Println("RecoverPassword field is nil in request")
+		log.Println("RecoverPassword request is nil")
 		return nil, errors.New("invalid request payload")
 	}
 
-	log.Printf("RecoverPassword request: username=%s, newPassword=%s", req.Username, req.NewPassword)
+	redisRepo := repositories.NewRedisRepo()
 
-	log.Println("req.UserName")
-	log.Println(req.Username)
-	log.Println("req.NewPassword")
-	log.Println(req.NewPassword)
-	log.Println(req)
-	err := h.service.RecoverPassword(req.Username, req.NewPassword)
+	log.Printf("RecoverPassword request: username=%s, newPassword=%s, code=%s", req.Username, req.NewPassword, req.Code)
+
+	// Get the recovery code from Redis
+	storedCode, err := redisRepo.GetRecoveryCode(req.Username)
 	if err != nil {
-		log.Println("Error in service:", err)
-		return nil, err
+		if err == redis.Nil {
+			log.Println("Recovery code not found for user:", req.Username)
+			return nil, status.Error(codes.NotFound, "Recovery code not found")
+		}
+		log.Println("Error fetching recovery code from Redis:", err)
+		return nil, status.Error(codes.Internal, "Failed to fetch recovery code")
 	}
 
+	// Compare the codes
+	if storedCode != req.Code {
+		log.Printf("Invalid recovery code: provided=%s, expected=%s", req.Code, storedCode)
+		return nil, status.Error(codes.Unauthenticated, "Invalid recovery code")
+	}
+
+	// Call the recover password service
+	err = h.service.RecoverPassword(req.Username, req.NewPassword)
+	if err != nil {
+		log.Println("Error in RecoverPassword service:", err)
+		return nil, status.Error(codes.Internal, "Failed to recover password")
+	}
+
+	log.Println("Password recovered successfully for user:", req.Username)
+	redisRepo.DeleteRecoveryCode(req.Username)
 	return &proto.EmptyResponse{}, nil
 }

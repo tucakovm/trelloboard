@@ -32,11 +32,12 @@ export class UserService {
     return this.http.put(url, body);
   }
 
-  recoverPassword(username: string, newPassword: string): Observable<any> {
+  recoverPassword(username: string, newPassword: string, code: string): Observable<any> {
     const url = `${this.baseUrl}/recover-password`;
     const body = {
-      newPassword: newPassword,
+      code: code,
       username: username,
+      newPassword: newPassword,
     };
     return this.http.post(url, body);
   }
