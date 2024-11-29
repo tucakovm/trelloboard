@@ -56,9 +56,14 @@ export class TaskService {
     );
   }
 
-  AddMemberToTask(id: string, member: UserFP) {
-    return this.http.put<any>(`${this.apiUrl}/task/${id}/members`, member);
+  AddMemberToTask(id: string, member: UserFP, timeout: number) {
+    const headers = new HttpHeaders({
+      'Timeout': timeout.toString() // Dodavanje timeout-a u header
+    });
+
+    return this.http.put<any>(`${this.apiUrl}/task/${id}/members`, member, { headers });
   }
+
 
   removeMemberFromTask(taskId: string, userId: string): Observable<any> {
     return this.http.delete<any>(

@@ -14,16 +14,21 @@ import (
 type UserService struct {
 	repo      repositories.UserRepo
 	redisRepo repositories.RedisRepo
+	blacklistConsul *repositories.BlacklistConsul
 }
 
-func NewUserService(repo repositories.UserRepo) (UserService, error) {
+func NewUserService(repo repositories.UserRepo, blacklistConsul *repositories.BlacklistConsul) (UserService, error) {
 	return UserService{
-		repo: repo,
+		repo:            repo,
+		blacklistConsul: blacklistConsul,
 	}, nil
 }
 
+func (s UserService) CheckPasswordBlacklist(password string) error {
+	return s.blacklistConsul.CheckPassword(password)
+}
+
 func (s UserService) RegisterUser(firstName, lastName, username, email, password, role string) error {
-	// Check if the username is already taken
 	existingUser, _ := s.repo.GetUserByUsername(username)
 	if existingUser != nil {
 		return errors.New("username already taken")
@@ -37,9 +42,12 @@ func (s UserService) RegisterUser(firstName, lastName, username, email, password
 	log.Println("email is valid")
 
 	// Generate a verification code
-	code := utils.GenerateCode()
+	if err := s.blacklistConsul.CheckPassword(password); err != nil {
+		log.Printf("Password rejected due to blacklist: %v", err)
+		return fmt.Errorf("password is not allowed: %w", err)
+	}
 
-	// Create user object
+	code := utils.GenerateCode()
 	user := models.User{
 		FirstName: firstName,
 		LastName:  lastName,
@@ -157,6 +165,10 @@ func (s *UserService) ChangePassword(username, currentPassword, newPassword stri
 		return fmt.Errorf("current password is incorrect")
 	}
 
+	if err := s.blacklistConsul.CheckPassword(newPassword); err != nil {
+		return fmt.Errorf("new password is not allowed because its commonly used: %w", err)
+	}
+
 	// Hash the new password
 	hashedPassword, err := HashPassword(newPassword)
 	if err != nil {
@@ -192,6 +204,10 @@ func (s *UserService) RecoverPassword(userName, newPassword string) error {
 	if err != nil {
 		log.Println("User not found")
 		return fmt.Errorf("user not found")
+	}
+
+	if err := s.blacklistConsul.CheckPassword(newPassword); err != nil {
+		return fmt.Errorf("new password is not allowed: %w", err)
 	}
 
 	hashedPassword, err := HashPassword(newPassword)

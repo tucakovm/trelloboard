@@ -2,12 +2,11 @@ package handlers
 
 import (
 	"context"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	"log"
 	proto "tasks-service/proto/task"
 	"tasks-service/service"
-
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 	//"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -70,29 +69,55 @@ func (h *TaskHandler) GetAllByProjectId(ctx context.Context, req *proto.GetAllTa
 }
 
 func (h *TaskHandler) AddMemberTask(ctx context.Context, req *proto.AddMemberTaskReq) (*proto.EmptyResponse, error) {
+	// Provera da li je kontekst istekao pre bilo čega
+	select {
+	case <-ctx.Done():
+		log.Printf("Handler detected context cancellation or timeout: %v", ctx.Err())
+		return nil, status.Error(codes.DeadlineExceeded, "Request timed out or was canceled")
+	default:
+	}
 	task, _ := h.service.GetById(req.TaskId)
 	userOnProjectReq := &proto.UserOnOneProjectReq{
 		UserId:    req.User.Username,
 		ProjectId: task.ProjectId,
 	}
 
+	// Provera timeout-a pre pozivanja udaljenog servisa
+	select {
+	case <-ctx.Done():
+		log.Printf("Context timeout before calling project service: %v", ctx.Err())
+		return nil, status.Error(codes.DeadlineExceeded, "Request timed out or was canceled")
+	default:
+
+	}
+	//time.Sleep(5 * time.Second) // test : Request timeout
 	projServiceResponse, err := h.projectService.UserOnOneProject(ctx, userOnProjectReq)
 	if err != nil {
+		log.Printf("Error checking project: %v", err)
 		return nil, status.Error(codes.Internal, "Error checking project")
 	}
+
 	if projServiceResponse.IsOnProj {
 		taskId := req.TaskId
+
+		// Provera timeout-a pre dodavanja člana
+		select {
+		case <-ctx.Done():
+			log.Printf("Context timeout before adding member: %v", ctx.Err())
+			return nil, status.Error(codes.DeadlineExceeded, "Request timed out or was canceled")
+		default:
+			// Nastavlja sa dodavanjem člana
+		}
+
 		err = h.service.AddMember(taskId, req.User)
 		if err != nil {
-			log.Printf("Error adding member on project: %v", err)
+			log.Printf("Error adding member to project: %v", err)
 			return nil, status.Error(codes.InvalidArgument, "Error adding member...")
 		}
 		return nil, nil
-
 	} else {
 		return nil, status.Error(codes.Internal, "User is not assigned to a project.")
 	}
-
 }
 
 func (h *TaskHandler) RemoveMemberTask(ctx context.Context, req *proto.RemoveMemberTaskReq) (*proto.EmptyResponse, error) {

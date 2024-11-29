@@ -71,17 +71,22 @@ export class PassRecoveryComponent {
       return;
     }
 
+<<<<<<< HEAD
     console.log(code)
 
 
     this.userService.recoverPassword(username, newPassword, code).subscribe({
+=======
+
+    this.userService.recoverPassword(username, newPassword).subscribe({
+>>>>>>> c4b5a3c39341525041d46da04f5e479b7ee7b10a
       next: (res) => {
         this.successMessage = 'Password changed successfully!';
         this.router.navigate(['/login']);
       },
       error: (err) => {
         this.errorOccurred = true;
-        this.errorMessage = 'Error while changing the password.';
+        this.errorMessage = err.error?.message ||  'Error while changing the password.';
         console.error(err);
       },
     });

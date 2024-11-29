@@ -91,8 +91,14 @@ export class ProfileComponent implements OnInit {
           };
         },
         (error) => {
-          console.error('Error changing password', error);
+          //Ovo ne radi sad, treba pogledati
+          if (error.error?.message?.includes('new password is not allowed because it\'s commonly used')) {
+          alert('This password is commonly used. Please choose a different one.');
+        } else {
           alert('Failed to change password. Please try again.');
+        }
+          console.error('Error changing password', error);
+
         }
       );
   }
