@@ -4,6 +4,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"go.opentelemetry.io/otel/trace"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	"log"
 	"os"
 	"projects_module/domain"
@@ -17,7 +20,8 @@ import (
 )
 
 type ProjectRepo struct {
-	cli *mongo.Client
+	cli    *mongo.Client
+	Tracer trace.Tracer
 }
 
 func (pr *ProjectRepo) Disconnect(ctx context.Context) error {
@@ -53,6 +57,7 @@ func (pr *ProjectRepo) getCollection() *mongo.Collection {
 }
 
 func insertInitialProjects(client *mongo.Client) error {
+
 	collection := client.Database("mongoDemo").Collection("projects")
 	count, err := collection.CountDocuments(context.Background(), bson.M{})
 	if err != nil {
@@ -121,7 +126,8 @@ func insertInitialProjects(client *mongo.Client) error {
 	return nil
 }
 
-func New(ctx context.Context, logger *log.Logger) (*ProjectRepo, error) {
+func New(ctx context.Context, logger *log.Logger, tracer trace.Tracer) (*ProjectRepo, error) {
+
 	dburi := os.Getenv("MONGO_DB_URI")
 
 	client, err := mongo.Connect(ctx, options.Client().ApplyURI(dburi))
@@ -140,11 +146,15 @@ func New(ctx context.Context, logger *log.Logger) (*ProjectRepo, error) {
 	}
 
 	return &ProjectRepo{
-		cli: client,
+		cli:    client,
+		Tracer: tracer,
 	}, nil
 }
 
-func (pr *ProjectRepo) Create(project *domain.Project) error {
+func (pr *ProjectRepo) Create(project *domain.Project, ctx context.Context) error {
+	ctx, span := pr.Tracer.Start(ctx, "r.createProject")
+	defer span.End()
+
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
@@ -161,7 +171,14 @@ func (pr *ProjectRepo) Create(project *domain.Project) error {
 	return nil
 }
 
-func (pr *ProjectRepo) GetAllProjects(id string) (domain.Projects, error) {
+func (pr *ProjectRepo) GetAllProjects(id string, ctx context.Context) (domain.Projects, error) {
+	if pr.Tracer == nil {
+		log.Println("Service is nil")
+		return nil, status.Error(codes.Internal, "service is not initialized")
+	}
+
+	ctx, span := pr.Tracer.Start(ctx, "r.getUserByEmail")
+	defer span.End()
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
@@ -187,8 +204,11 @@ func (pr *ProjectRepo) GetAllProjects(id string) (domain.Projects, error) {
 	return projects, nil
 }
 
-func (pr *ProjectRepo) DoesManagerExistOnProject(id string) (bool, error) {
+func (pr *ProjectRepo) DoesManagerExistOnProject(id string, ctx context.Context) (bool, error) {
 	// Initialize context (after 5 seconds timeout, abort operation)
+
+	ctx, span := pr.Tracer.Start(ctx, "r.doesManagerExistOnProject")
+	defer span.End()
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
@@ -205,8 +225,12 @@ func (pr *ProjectRepo) DoesManagerExistOnProject(id string) (bool, error) {
 	return count > 0, nil
 }
 
-func (pr *ProjectRepo) DoesUserExistOnProject(id string) (bool, error) {
+func (pr *ProjectRepo) DoesUserExistOnProject(id string, ctx context.Context) (bool, error) {
 	// Initialize context (after 5 seconds timeout, abort operation)
+
+	ctx, span := pr.Tracer.Start(ctx, "r.DoesUserExistOnProject")
+	defer span.End()
+
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
@@ -223,9 +247,14 @@ func (pr *ProjectRepo) DoesUserExistOnProject(id string) (bool, error) {
 	return count > 0, nil
 }
 
-func (pr *ProjectRepo) DoesMemberExistOnProject(projectId string, userId string) (bool, error) {
+func (pr *ProjectRepo) DoesMemberExistOnProject(projectId string, userId string, ctx context.Context) (bool, error) {
+
+	ctx, span := pr.Tracer.Start(ctx, "r.doesMemberExistOnProject")
+	defer span.End()
+
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
+
 	projectsCollection := pr.getCollection()
 
 	objID, err := primitive.ObjectIDFromHex(projectId)
@@ -252,9 +281,14 @@ func (pr *ProjectRepo) DoesMemberExistOnProject(projectId string, userId string)
 	return true, nil
 }
 
-func (pr *ProjectRepo) Delete(id string) error {
+func (pr *ProjectRepo) Delete(id string, ctx context.Context) error {
+
+	ctx, span := pr.Tracer.Start(ctx, "r.deleteProject")
+	defer span.End()
+
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
+
 	projectsCollection := pr.getCollection()
 
 	objID, _ := primitive.ObjectIDFromHex(id)
@@ -268,7 +302,10 @@ func (pr *ProjectRepo) Delete(id string) error {
 	return nil
 }
 
-func (pr *ProjectRepo) GetById(id string) (*domain.Project, error) {
+func (pr *ProjectRepo) GetById(id string, ctx context.Context) (*domain.Project, error) {
+	ctx, span := pr.Tracer.Start(ctx, "r.getProjectById")
+	defer span.End()
+
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
@@ -294,7 +331,10 @@ func (pr *ProjectRepo) GetById(id string) (*domain.Project, error) {
 }
 
 // AddMember adds a user to the project's member list
-func (pr *ProjectRepo) AddMember(projectId string, user domain.User) error {
+func (pr *ProjectRepo) AddMember(projectId string, user domain.User, ctx context.Context) error {
+	ctx, span := pr.Tracer.Start(ctx, "r.addMemberToProject")
+	defer span.End()
+
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
@@ -327,7 +367,11 @@ func (pr *ProjectRepo) AddMember(projectId string, user domain.User) error {
 	log.Printf("User %s added to project %s", user.Username, projectId)
 	return nil
 }
-func (pr *ProjectRepo) RemoveMember(projectId string, userId string) error {
+func (pr *ProjectRepo) RemoveMember(projectId string, userId string, ctx context.Context) error {
+
+	ctx, span := pr.Tracer.Start(ctx, "r.removeMemberFromProject")
+	defer span.End()
+
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 

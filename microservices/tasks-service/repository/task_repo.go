@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.opentelemetry.io/otel/trace"
 	"log"
 	"os"
 	"tasks-service/domain"
@@ -15,10 +16,11 @@ import (
 )
 
 type TaskRepo struct {
-	Cli *mongo.Client
+	Cli    *mongo.Client
+	Tracer trace.Tracer
 }
 
-func NewTaskRepo(ctx context.Context, logger *log.Logger) (*TaskRepo, error) {
+func NewTaskRepo(ctx context.Context, logger *log.Logger, tracer trace.Tracer) (*TaskRepo, error) {
 	dburi := os.Getenv("MONGO_DB_URI")
 	if dburi == "" {
 		return nil, fmt.Errorf("MONGO_DB_URI is not set")
@@ -41,7 +43,7 @@ func NewTaskRepo(ctx context.Context, logger *log.Logger) (*TaskRepo, error) {
 		log.Printf("Failed to insert initial tasks: %v", err)
 	}
 
-	return &TaskRepo{Cli: client}, nil
+	return &TaskRepo{Cli: client, Tracer: tracer}, nil
 }
 
 func (tr *TaskRepo) Disconnect(ctx context.Context) error {
@@ -106,7 +108,9 @@ func (tr *TaskRepo) getCollection() *mongo.Collection {
 	return tr.Cli.Database("mongoDemo").Collection("tasks")
 }
 
-func (tr *TaskRepo) Create(task domain.Task) error {
+func (tr *TaskRepo) Create(task domain.Task, ctx context.Context) error {
+	ctx, span := tr.Tracer.Start(ctx, "r.createTask")
+	defer span.End()
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 	log.Println(task)
@@ -128,6 +132,7 @@ func (tr *TaskRepo) Create(task domain.Task) error {
 }
 
 func (tr *TaskRepo) GetAll() ([]domain.Task, error) {
+
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
@@ -161,7 +166,9 @@ func (tr *TaskRepo) GetAll() ([]domain.Task, error) {
 	return tasks, nil
 }
 
-func (tr *TaskRepo) Delete(id string) error {
+func (tr *TaskRepo) Delete(id string, ctx context.Context) error {
+	ctx, span := tr.Tracer.Start(ctx, "r.deleteTask")
+	defer span.End()
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	taskCollection := tr.getCollection()
@@ -177,7 +184,9 @@ func (tr *TaskRepo) Delete(id string) error {
 	return nil
 }
 
-func (tr *TaskRepo) DeleteAllByProjectID(projectID string) error {
+func (tr *TaskRepo) DeleteAllByProjectID(projectID string, ctx context.Context) error {
+	ctx, span := tr.Tracer.Start(ctx, "r.deleteAllByProjectId")
+	defer span.End()
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
@@ -197,7 +206,9 @@ func (tr *TaskRepo) DeleteAllByProjectID(projectID string) error {
 	return nil
 }
 
-func (tr *TaskRepo) GetAllByProjectID(projectID string) (domain.Tasks, error) {
+func (tr *TaskRepo) GetAllByProjectID(projectID string, ctx context.Context) (domain.Tasks, error) {
+	ctx, span := tr.Tracer.Start(ctx, "r.getAllByProjectId")
+	defer span.End()
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
@@ -232,7 +243,9 @@ func (tr *TaskRepo) GetAllByProjectID(projectID string) (domain.Tasks, error) {
 	return tasks, nil
 }
 
-func (tr *TaskRepo) GetById(id string) (*domain.Task, error) {
+func (tr *TaskRepo) GetById(id string, ctx context.Context) (*domain.Task, error) {
+	ctx, span := tr.Tracer.Start(ctx, "r.getById")
+	defer span.End()
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
@@ -257,7 +270,9 @@ func (tr *TaskRepo) GetById(id string) (*domain.Task, error) {
 	return &t, nil
 }
 
-func (tr *TaskRepo) HasIncompleteTasksByProject(id string) (bool, error) {
+func (tr *TaskRepo) HasIncompleteTasksByProject(id string, ctx context.Context) (bool, error) {
+	ctx, span := tr.Tracer.Start(ctx, "r.hasIncompleteTasksByProject")
+	defer span.End()
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
@@ -287,7 +302,9 @@ func (tr *TaskRepo) HasIncompleteTasksByProject(id string) (bool, error) {
 	return count > 0, nil
 }
 
-func (tr *TaskRepo) AddMember(taskId string, user domain.User) error {
+func (tr *TaskRepo) AddMember(taskId string, user domain.User, ctx context.Context) error {
+	ctx, span := tr.Tracer.Start(ctx, "r.addMember")
+	defer span.End()
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
@@ -317,7 +334,9 @@ func (tr *TaskRepo) AddMember(taskId string, user domain.User) error {
 
 	return nil
 }
-func (tr *TaskRepo) RemoveMember(projectId string, userId string) error {
+func (tr *TaskRepo) RemoveMember(projectId string, userId string, ctx context.Context) error {
+	ctx, span := tr.Tracer.Start(ctx, "r.removeMember")
+	defer span.End()
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
@@ -347,7 +366,9 @@ func (tr *TaskRepo) RemoveMember(projectId string, userId string) error {
 
 	return nil
 }
-func (tr *TaskRepo) Update(task domain.Task) error {
+func (tr *TaskRepo) Update(task domain.Task, ctx context.Context) error {
+	ctx, span := tr.Tracer.Start(ctx, "r.UpdateTask")
+	defer span.End()
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 

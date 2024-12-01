@@ -2,6 +2,12 @@ package main
 
 import (
 	"context"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/exporters/jaeger"
+	"go.opentelemetry.io/otel/propagation"
+	"go.opentelemetry.io/otel/sdk/resource"
+	sdktrace "go.opentelemetry.io/otel/sdk/trace"
+	semconv "go.opentelemetry.io/otel/semconv/v1.7.0"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/reflection"
@@ -25,6 +31,18 @@ func main() {
 
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
+
+	exp, err := newExporter(cfg.JaegerEndpoint)
+	if err != nil {
+		log.Fatalf("failed to initialize exporter: %v", err)
+	}
+
+	tp := newTraceProvider(exp)
+	defer func() { _ = tp.Shutdown(ctx) }()
+	otel.SetTracerProvider(tp)
+	otel.SetTextMapPropagator(propagation.TraceContext{})
+
+	tracer := tp.Tracer("task-service")
 
 	listener, err := net.Listen("tcp", cfg.Address)
 	if err != nil {
@@ -56,17 +74,17 @@ func main() {
 	storeLogger := log.New(os.Stdout, "[task-store] ", log.LstdFlags)
 
 	// NoSQL: Initialize Product Repository store
-	repoTask, err := repository.NewTaskRepo(timeoutContext, storeLogger)
+	repoTask, err := repository.NewTaskRepo(timeoutContext, storeLogger, tracer)
 	if err != nil {
 		logger.Fatal(err)
 	}
 	defer repoTask.Disconnect(timeoutContext)
 	handleErr(err)
 
-	serviceProject := service.NewTaskService(*repoTask)
+	serviceProject := service.NewTaskService(*repoTask, tracer)
 	handleErr(err)
 
-	handlerProject := h.NewTaskHandler(serviceProject, projectClient)
+	handlerProject := h.NewTaskHandler(serviceProject, projectClient, tracer)
 	handleErr(err)
 
 	// Bootstrap gRPC server.
@@ -94,4 +112,23 @@ func handleErr(err error) {
 	if err != nil {
 		log.Fatalln(err)
 	}
+}
+func newExporter(address string) (sdktrace.SpanExporter, error) {
+	exp, err := jaeger.New(jaeger.WithCollectorEndpoint(jaeger.WithEndpoint(address)))
+	if err != nil {
+		return nil, err
+	}
+	return exp, nil
+}
+
+func newTraceProvider(exp sdktrace.SpanExporter) *sdktrace.TracerProvider {
+	r := resource.NewWithAttributes(
+		semconv.SchemaURL,
+		semconv.ServiceNameKey.String("user-service"),
+	)
+
+	return sdktrace.NewTracerProvider(
+		sdktrace.WithSyncer(exp),
+		sdktrace.WithResource(r),
+	)
 }

@@ -1,6 +1,8 @@
 package services
 
 import (
+	"context"
+	"go.opentelemetry.io/otel/trace"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -12,16 +14,20 @@ import (
 )
 
 type ProjectService struct {
-	repo repositories.ProjectRepo
+	repo   repositories.ProjectRepo
+	Tracer trace.Tracer
 }
 
-func NewProjectService(repo repositories.ProjectRepo) (ProjectService, error) {
+func NewProjectService(repo repositories.ProjectRepo, tracer trace.Tracer) (ProjectService, error) {
 	return ProjectService{
-		repo: repo,
+		repo:   repo,
+		Tracer: tracer,
 	}, nil
 }
 
-func (s ProjectService) Create(req *proto.Project) error {
+func (s ProjectService) Create(req *proto.Project, ctx context.Context) error {
+	ctx, span := s.Tracer.Start(ctx, "s.createProject")
+	defer span.End()
 	completionDate := req.CompletionDate.AsTime()
 
 	prj := &domain.Project{
@@ -37,23 +43,35 @@ func (s ProjectService) Create(req *proto.Project) error {
 	}
 
 	log.Printf("SERVICE Received Create Project request: %v", req)
-	return s.repo.Create(prj)
+	return s.repo.Create(prj, ctx)
 }
 
-func (s ProjectService) UserOnProject(username string) (bool, error) {
-	return s.repo.DoesManagerExistOnProject(username)
+func (s ProjectService) UserOnProject(username string, ctx context.Context) (bool, error) {
+	ctx, span := s.Tracer.Start(ctx, "s.userOnProject")
+	defer span.End()
+	return s.repo.DoesManagerExistOnProject(username, ctx)
 }
 
-func (s ProjectService) UserOnProjectUser(username string) (bool, error) {
-	return s.repo.DoesUserExistOnProject(username)
+func (s ProjectService) UserOnProjectUser(username string, ctx context.Context) (bool, error) {
+	ctx, span := s.Tracer.Start(ctx, "s.userOnProject")
+	defer span.End()
+	return s.repo.DoesUserExistOnProject(username, ctx)
 }
 
-func (s ProjectService) UserOnOneProject(prjId string, userId string) (bool, error) {
-	return s.repo.DoesMemberExistOnProject(prjId, userId)
+func (s ProjectService) UserOnOneProject(prjId string, userId string, ctx context.Context) (bool, error) {
+	ctx, span := s.Tracer.Start(ctx, "s.userOnAProject")
+	defer span.End()
+	return s.repo.DoesMemberExistOnProject(prjId, userId, ctx)
 }
 
-func (s ProjectService) GetAllProjects(id string) ([]*proto.Project, error) {
-	projects, err := s.repo.GetAllProjects(id)
+func (s ProjectService) GetAllProjects(id string, ctx context.Context) ([]*proto.Project, error) {
+	if s.Tracer == nil {
+		log.Println("Tracer is nil")
+		return nil, status.Error(codes.Internal, "tracer is not initialized")
+	}
+	ctx, span := s.Tracer.Start(ctx, "s.getAllProjects")
+	defer span.End()
+	projects, err := s.repo.GetAllProjects(id, ctx)
 	if err != nil {
 		return nil, status.Error(codes.Internal, "DB exception.")
 	}
@@ -85,12 +103,16 @@ func (s ProjectService) GetAllProjects(id string) ([]*proto.Project, error) {
 	return protoProjects, nil
 }
 
-func (s ProjectService) Delete(id string) error {
-	return s.repo.Delete(id)
+func (s ProjectService) Delete(id string, ctx context.Context) error {
+	ctx, span := s.Tracer.Start(ctx, "s.Delete")
+	defer span.End()
+	return s.repo.Delete(id, ctx)
 }
 
-func (s ProjectService) GetById(id string) (*proto.Project, error) {
-	prj, err := s.repo.GetById(id)
+func (s ProjectService) GetById(id string, ctx context.Context) (*proto.Project, error) {
+	ctx, span := s.Tracer.Start(ctx, "s.getById")
+	defer span.End()
+	prj, err := s.repo.GetById(id, ctx)
 	if err != nil {
 		return nil, status.Error(codes.Internal, "DB exception.")
 	}
@@ -120,8 +142,10 @@ func (s ProjectService) GetById(id string) (*proto.Project, error) {
 	return protoProject, nil
 }
 
-func (s ProjectService) AddMember(projectId string, protoUser *proto.User) error {
-	project, err := s.GetById(projectId)
+func (s ProjectService) AddMember(projectId string, protoUser *proto.User, ctx context.Context) error {
+	ctx, span := s.Tracer.Start(ctx, "s.addMemberToProject")
+	defer span.End()
+	project, err := s.GetById(projectId, ctx)
 	if err != nil {
 		return status.Error(codes.NotFound, "Project not found")
 	}
@@ -143,9 +167,9 @@ func (s ProjectService) AddMember(projectId string, protoUser *proto.User) error
 			return status.Error(codes.AlreadyExists, "Member already part of the project")
 		}
 	}
-	return s.repo.AddMember(projectId, *user)
+	return s.repo.AddMember(projectId, *user, ctx)
 }
 
-func (s ProjectService) RemoveMember(projectId string, userId string) error {
-	return s.repo.RemoveMember(projectId, userId)
+func (s ProjectService) RemoveMember(projectId string, userId string, ctx context.Context) error {
+	return s.repo.RemoveMember(projectId, userId, ctx)
 }
