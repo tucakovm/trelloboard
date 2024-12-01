@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+	otelCodes "go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/trace"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -114,6 +115,7 @@ func (s ProjectService) GetById(id string, ctx context.Context) (*proto.Project,
 	defer span.End()
 	prj, err := s.repo.GetById(id, ctx)
 	if err != nil {
+		span.SetStatus(otelCodes.Error, err.Error())
 		return nil, status.Error(codes.Internal, "DB exception.")
 	}
 	var protoMembers []*proto.User
@@ -147,6 +149,7 @@ func (s ProjectService) AddMember(projectId string, protoUser *proto.User, ctx c
 	defer span.End()
 	project, err := s.GetById(projectId, ctx)
 	if err != nil {
+		span.SetStatus(otelCodes.Error, err.Error())
 		return status.Error(codes.NotFound, "Project not found")
 	}
 	log.Println("len project members:", len(project.Members))

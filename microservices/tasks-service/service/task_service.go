@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	otelCodes "go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/trace"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -83,6 +84,7 @@ func (s *TaskService) GetTasksByProjectId(id string, ctx context.Context) ([]*pr
 	defer span.End()
 	tasks, err := s.repo.GetAllByProjectID(id, ctx)
 	if err != nil {
+		span.SetStatus(otelCodes.Error, err.Error())
 		return nil, status.Error(codes.Internal, "DB exception.")
 	}
 	log.Println("SErvice tasks")
@@ -115,6 +117,7 @@ func (t *TaskService) AddMember(projectId string, protoUser *proto.User, ctx con
 	defer span.End()
 	task, err := t.repo.GetById(projectId, ctx)
 	if err != nil {
+		span.SetStatus(otelCodes.Error, err.Error())
 		return status.Error(codes.NotFound, "Project not found")
 	}
 
@@ -143,6 +146,7 @@ func (s *TaskService) UpdateTask(taskReq *proto.Task, ctx context.Context) error
 	// Fetch the existing task
 	existingTask, err := s.repo.GetById(taskReq.Id, ctx)
 	if err != nil {
+		span.SetStatus(otelCodes.Error, err.Error())
 		return status.Error(codes.NotFound, "Task not found")
 	}
 
@@ -151,6 +155,7 @@ func (s *TaskService) UpdateTask(taskReq *proto.Task, ctx context.Context) error
 
 	statusEnum, err := domain.ParseTaskStatus2(taskReq.Status)
 	if err != nil {
+		span.SetStatus(otelCodes.Error, err.Error())
 		return status.Error(codes.InvalidArgument, "Invalid task status")
 	}
 
@@ -172,6 +177,7 @@ func (s *TaskService) UpdateTask(taskReq *proto.Task, ctx context.Context) error
 	// Call the repository to persist the changes
 	err = s.repo.Update(*existingTask, ctx)
 	if err != nil {
+		span.SetStatus(otelCodes.Error, err.Error())
 		return status.Error(codes.Internal, "Failed to update task in the database")
 	}
 

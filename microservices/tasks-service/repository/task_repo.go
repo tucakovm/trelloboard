@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	otelCodes "go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/trace"
 	"log"
 	"os"
@@ -123,6 +124,7 @@ func (tr *TaskRepo) Create(task domain.Task, ctx context.Context) error {
 
 	_, err := collection.InsertOne(ctx, task)
 	if err != nil {
+		span.SetStatus(otelCodes.Error, err.Error())
 		log.Println("Error inserting task:", err, task)
 		return err
 	}
@@ -177,6 +179,7 @@ func (tr *TaskRepo) Delete(id string, ctx context.Context) error {
 	filter := bson.D{{Key: "_id", Value: objID}}
 	result, err := taskCollection.DeleteOne(ctx, filter)
 	if err != nil {
+		span.SetStatus(otelCodes.Error, err.Error())
 		log.Println(err)
 		return err
 	}
@@ -198,6 +201,7 @@ func (tr *TaskRepo) DeleteAllByProjectID(projectID string, ctx context.Context) 
 	filter := bson.M{"project_id": projectID}
 	_, err := collection.DeleteMany(ctx, filter)
 	if err != nil {
+		span.SetStatus(otelCodes.Error, err.Error())
 		log.Println("Error deleting tasks by ProjectID:", err)
 		return err
 	}
@@ -219,6 +223,7 @@ func (tr *TaskRepo) GetAllByProjectID(projectID string, ctx context.Context) (do
 	filter := bson.M{"project_id": projectID}
 	cursor, err := tasksCollection.Find(ctx, filter)
 	if err != nil {
+		span.SetStatus(otelCodes.Error, err.Error())
 		log.Println("Error finding tasks:", err)
 		return nil, err
 	}
@@ -228,6 +233,7 @@ func (tr *TaskRepo) GetAllByProjectID(projectID string, ctx context.Context) (do
 	for cursor.Next(ctx) {
 		var task *domain.Task
 		if err := cursor.Decode(&task); err != nil {
+			span.SetStatus(otelCodes.Error, err.Error())
 			log.Println("Error decoding task:", err)
 			continue
 		}
@@ -235,6 +241,7 @@ func (tr *TaskRepo) GetAllByProjectID(projectID string, ctx context.Context) (do
 	}
 
 	if err := cursor.Err(); err != nil {
+		span.SetStatus(otelCodes.Error, err.Error())
 		log.Println("Cursor error:", err)
 		return nil, err
 	}
@@ -254,6 +261,7 @@ func (tr *TaskRepo) GetById(id string, ctx context.Context) (*domain.Task, error
 	// Convert id string to ObjectID
 	objID, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
+		span.SetStatus(otelCodes.Error, err.Error())
 		log.Println("Invalid ID format:", err)
 		return nil, err
 	}
@@ -263,6 +271,7 @@ func (tr *TaskRepo) GetById(id string, ctx context.Context) (*domain.Task, error
 	var t domain.Task
 	err = projectsCollection.FindOne(ctx, filter).Decode(&t)
 	if err != nil {
+		span.SetStatus(otelCodes.Error, err.Error())
 		log.Println("Error finding task by ID:", err)
 		return nil, err
 	}
@@ -281,6 +290,7 @@ func (tr *TaskRepo) HasIncompleteTasksByProject(id string, ctx context.Context) 
 	// Convert id string to ObjectID
 	objID, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
+		span.SetStatus(otelCodes.Error, err.Error())
 		log.Println("Invalid ID format:", err)
 		return false, err
 	}
@@ -295,6 +305,7 @@ func (tr *TaskRepo) HasIncompleteTasksByProject(id string, ctx context.Context) 
 	// Check if there is at least one matching document
 	count, err := projectsCollection.CountDocuments(ctx, filter)
 	if err != nil {
+		span.SetStatus(otelCodes.Error, err.Error())
 		log.Println("Error checking for incomplete tasks:", err)
 		return false, err
 	}
@@ -312,6 +323,7 @@ func (tr *TaskRepo) AddMember(taskId string, user domain.User, ctx context.Conte
 
 	objID, err := primitive.ObjectIDFromHex(taskId)
 	if err != nil {
+		span.SetStatus(otelCodes.Error, err.Error())
 		log.Println("Invalid project ID format:", err)
 		return err
 	}
@@ -323,6 +335,7 @@ func (tr *TaskRepo) AddMember(taskId string, user domain.User, ctx context.Conte
 
 	result, err := projectsCollection.UpdateOne(ctx, filter, update)
 	if err != nil {
+		span.SetStatus(otelCodes.Error, err.Error())
 		log.Println("Error adding member to task:", err)
 		return err
 	}
@@ -344,6 +357,7 @@ func (tr *TaskRepo) RemoveMember(projectId string, userId string, ctx context.Co
 
 	objID, err := primitive.ObjectIDFromHex(projectId)
 	if err != nil {
+		span.SetStatus(otelCodes.Error, err.Error())
 		log.Println("Invalid project ID format:", err)
 		return err
 	}
@@ -355,6 +369,7 @@ func (tr *TaskRepo) RemoveMember(projectId string, userId string, ctx context.Co
 
 	result, err := projectsCollection.UpdateOne(ctx, filter, update)
 	if err != nil {
+		span.SetStatus(otelCodes.Error, err.Error())
 		log.Println("Error removing member from task:", err)
 		return err
 	}
@@ -391,6 +406,7 @@ func (tr *TaskRepo) Update(task domain.Task, ctx context.Context) error {
 	filter := bson.M{"_id": objID}
 	result, err := collection.UpdateOne(ctx, filter, update)
 	if err != nil {
+		span.SetStatus(otelCodes.Error, err.Error())
 		log.Println("Error updating task:", err)
 		return err
 	}

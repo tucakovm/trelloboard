@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"context"
+	otelCodes "go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/trace"
 	"log"
 	proto "tasks-service/proto/task"
@@ -31,7 +32,9 @@ func (h *TaskHandler) DoneTasksByProject(ctx context.Context, req *proto.DoneTas
 
 	is, err := h.service.DoneTasksByProject(req.ProjId, ctx)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, "bad request ...")
+		span.SetStatus(otelCodes.Error, err.Error())
+		return nil, status.Error(codes.InvalidArgument,
+			"bad request ...")
 	}
 	doneTasksByProjectReq := &proto.DoneTasksByProjectRes{
 		IsDone: is,
@@ -44,7 +47,9 @@ func (h *TaskHandler) Delete(ctx context.Context, req *proto.DeleteTaskReq) (*pr
 	defer span.End()
 	err := h.service.DeleteTask(req.Id, ctx)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, "bad request ...")
+		span.SetStatus(otelCodes.Error, err.Error())
+		return nil,
+			status.Error(codes.InvalidArgument, "bad request ...")
 	}
 	return nil, nil
 }
@@ -55,6 +60,7 @@ func (h *TaskHandler) Create(ctx context.Context, req *proto.CreateTaskReq) (*pr
 	log.Println(req.Task)
 	err := h.service.Create(req.Task, ctx)
 	if err != nil {
+		span.SetStatus(otelCodes.Error, err.Error())
 		log.Printf("Error creating project: %v", err)
 		return nil, status.Error(codes.InvalidArgument, "bad request ...")
 	}
@@ -66,6 +72,7 @@ func (h *TaskHandler) GetById(ctx context.Context, req *proto.GetByIdReq) (*prot
 	defer span.End()
 	task, err := h.service.GetById(req.Id, ctx)
 	if err != nil {
+		span.SetStatus(otelCodes.Error, err.Error())
 		return nil, status.Error(codes.InvalidArgument, "bad request ...")
 	}
 	response := &proto.TaskResponse{Task: task}
@@ -77,6 +84,7 @@ func (h *TaskHandler) GetAllByProjectId(ctx context.Context, req *proto.GetAllTa
 	defer span.End()
 	allTasks, err := h.service.GetTasksByProjectId(req.Id, ctx)
 	if err != nil {
+		span.SetStatus(otelCodes.Error, err.Error())
 		return nil, status.Errorf(codes.Internal, "Failed to fetch tasks")
 	}
 	response := &proto.GetAllTasksRes{Tasks: allTasks}
@@ -94,12 +102,14 @@ func (h *TaskHandler) AddMemberTask(ctx context.Context, req *proto.AddMemberTas
 
 	projServiceResponse, err := h.projectService.UserOnOneProject(ctx, userOnProjectReq)
 	if err != nil {
+		span.SetStatus(otelCodes.Error, err.Error())
 		return nil, status.Error(codes.Internal, "Error checking project")
 	}
 	if projServiceResponse.IsOnProj {
 		taskId := req.TaskId
 		err = h.service.AddMember(taskId, req.User, ctx)
 		if err != nil {
+			span.SetStatus(otelCodes.Error, err.Error())
 			log.Printf("Error adding member on project: %v", err)
 			return nil, status.Error(codes.InvalidArgument, "Error adding member...")
 		}
@@ -117,6 +127,7 @@ func (h *TaskHandler) RemoveMemberTask(ctx context.Context, req *proto.RemoveMem
 	taskId := req.TaskId
 	err := h.service.RemoveMember(taskId, req.UserId, ctx)
 	if err != nil {
+		span.SetStatus(otelCodes.Error, err.Error())
 		log.Printf("Error creating project: %v", err)
 		return nil, status.Error(codes.InvalidArgument, "Error removing member...")
 	}
@@ -130,6 +141,7 @@ func (h *TaskHandler) UpdateTask(ctx context.Context, req *proto.UpdateTaskReq) 
 	// Validate the task exists
 	existingTask, err := h.service.GetById(req.Id, ctx)
 	if err != nil {
+		span.SetStatus(otelCodes.Error, err.Error())
 		log.Printf("Error fetching task for update: %v", err)
 		return nil, status.Error(codes.NotFound, "Task not found")
 	}
@@ -144,6 +156,7 @@ func (h *TaskHandler) UpdateTask(ctx context.Context, req *proto.UpdateTaskReq) 
 	// Call the service layer to save changes
 	err = h.service.UpdateTask(updatedTask, ctx)
 	if err != nil {
+		span.SetStatus(otelCodes.Error, err.Error())
 		log.Printf("Error updating task: %v", err)
 		return nil, status.Error(codes.Internal, "Failed to update task")
 	}

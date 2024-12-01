@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"context"
+	otelCodes "go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/trace"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -31,6 +32,7 @@ func (h ProjectHandler) Create(ctx context.Context, req *proto.CreateProjectReq)
 	defer span.End()
 	err := h.service.Create(req.Project, ctx)
 	if err != nil {
+		span.SetStatus(otelCodes.Error, err.Error())
 		log.Printf("Error creating project: %v", err)
 		return nil, status.Error(codes.InvalidArgument, "bad request ...")
 	}
@@ -47,6 +49,7 @@ func (h ProjectHandler) GetAllProjects(ctx context.Context, req *proto.GetAllPro
 	defer span.End()
 	allProducts, err := h.service.GetAllProjects(req.Username, ctx)
 	if err != nil {
+		span.SetStatus(otelCodes.Error, err.Error())
 		return nil, status.Error(codes.InvalidArgument, "bad request ...")
 	}
 
@@ -61,6 +64,7 @@ func (h ProjectHandler) Delete(ctx context.Context, req *proto.DeleteProjectReq)
 	defer span.End()
 	err := h.service.Delete(req.Id, ctx)
 	if err != nil {
+		span.SetStatus(otelCodes.Error, err.Error())
 		return nil, status.Error(codes.InvalidArgument, "bad request ...")
 	}
 	return nil, nil
@@ -72,6 +76,7 @@ func (h ProjectHandler) GetById(ctx context.Context, req *proto.GetByIdReq) (*pr
 	defer span.End()
 	project, err := h.service.GetById(req.Id, ctx)
 	if err != nil {
+		span.SetStatus(otelCodes.Error, err.Error())
 		return nil, status.Error(codes.InvalidArgument, "bad request ...")
 	}
 	response := &proto.GetByIdRes{Project: project}
@@ -103,6 +108,7 @@ func (h ProjectHandler) RemoveMember(ctx context.Context, req *proto.RemoveMembe
 	projectId := req.ProjectId
 	err := h.service.RemoveMember(projectId, req.UserId, ctx)
 	if err != nil {
+		span.SetStatus(otelCodes.Error, err.Error())
 		log.Printf("Error creating project: %v", err)
 		return nil, status.Error(codes.InvalidArgument, "Error removing member...")
 	}
@@ -122,6 +128,7 @@ func (h ProjectHandler) UserOnProject(ctx context.Context, req *proto.UserOnProj
 	}
 	res, err := h.service.UserOnProjectUser(req.Username, ctx)
 	if err != nil {
+		span.SetStatus(otelCodes.Error, err.Error())
 		return nil, status.Error(codes.InvalidArgument, "DB exception.")
 	}
 
@@ -134,6 +141,7 @@ func (h ProjectHandler) UserOnOneProject(ctx context.Context, req *proto.UserOnO
 
 	res, err := h.service.UserOnOneProject(req.ProjectId, req.UserId, ctx)
 	if err != nil {
+		span.SetStatus(otelCodes.Error, err.Error())
 		return nil, status.Error(codes.InvalidArgument, "DB exception.")
 	}
 	log.Println("LOG BOOL :")

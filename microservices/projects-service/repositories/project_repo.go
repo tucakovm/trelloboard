@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	otelCodes "go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/trace"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -163,6 +164,7 @@ func (pr *ProjectRepo) Create(project *domain.Project, ctx context.Context) erro
 
 	result, err := projectsCollection.InsertOne(ctx, project)
 	if err != nil {
+		span.SetStatus(otelCodes.Error, err.Error())
 		log.Printf("Error inserting document: %v\n", err)
 		return err
 	}
@@ -194,10 +196,12 @@ func (pr *ProjectRepo) GetAllProjects(id string, ctx context.Context) (domain.Pr
 
 	cursor, err := projectsCollection.Find(ctx, filter)
 	if err != nil {
+		span.SetStatus(otelCodes.Error, err.Error())
 		return nil, err
 	}
 
 	if err = cursor.All(ctx, &projects); err != nil {
+		span.SetStatus(otelCodes.Error, err.Error())
 		return nil, err
 	}
 
@@ -218,6 +222,7 @@ func (pr *ProjectRepo) DoesManagerExistOnProject(id string, ctx context.Context)
 	filter := bson.M{"manager.username": id}
 	count, err := projectsCollection.CountDocuments(ctx, filter)
 	if err != nil {
+		span.SetStatus(otelCodes.Error, err.Error())
 		log.Println("Error counting projects:", err)
 		return false, err
 	}
@@ -240,6 +245,7 @@ func (pr *ProjectRepo) DoesUserExistOnProject(id string, ctx context.Context) (b
 	filter := bson.M{"members.username": id}
 	count, err := projectsCollection.CountDocuments(ctx, filter)
 	if err != nil {
+		span.SetStatus(otelCodes.Error, err.Error())
 		log.Println("Error counting projects:", err)
 		return false, err
 	}
@@ -259,6 +265,7 @@ func (pr *ProjectRepo) DoesMemberExistOnProject(projectId string, userId string,
 
 	objID, err := primitive.ObjectIDFromHex(projectId)
 	if err != nil {
+		span.SetStatus(otelCodes.Error, err.Error())
 		log.Printf("Invalid project ID: %v\n", err)
 		return false, err
 	}
@@ -271,6 +278,7 @@ func (pr *ProjectRepo) DoesMemberExistOnProject(projectId string, userId string,
 	var project bson.M
 	err = projectsCollection.FindOne(ctx, filter).Decode(&project)
 	if err != nil {
+		span.SetStatus(otelCodes.Error, err.Error())
 		if errors.Is(err, mongo.ErrNoDocuments) {
 			return false, nil
 		}
@@ -295,6 +303,7 @@ func (pr *ProjectRepo) Delete(id string, ctx context.Context) error {
 	filter := bson.D{{Key: "_id", Value: objID}}
 	result, err := projectsCollection.DeleteOne(ctx, filter)
 	if err != nil {
+		span.SetStatus(otelCodes.Error, err.Error())
 		log.Println(err)
 		return err
 	}
@@ -314,6 +323,7 @@ func (pr *ProjectRepo) GetById(id string, ctx context.Context) (*domain.Project,
 	// Convert id string to ObjectID
 	objID, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
+		span.SetStatus(otelCodes.Error, err.Error())
 		log.Println("Invalid ID format:", err)
 		return nil, err
 	}
@@ -343,6 +353,7 @@ func (pr *ProjectRepo) AddMember(projectId string, user domain.User, ctx context
 	// Convert projectId string to ObjectID
 	objID, err := primitive.ObjectIDFromHex(projectId)
 	if err != nil {
+		span.SetStatus(otelCodes.Error, err.Error())
 		log.Println("Invalid project ID format:", err)
 		return err
 	}
@@ -355,6 +366,7 @@ func (pr *ProjectRepo) AddMember(projectId string, user domain.User, ctx context
 
 	result, err := projectsCollection.UpdateOne(ctx, filter, update)
 	if err != nil {
+		span.SetStatus(otelCodes.Error, err.Error())
 		log.Println("Error adding member to project:", err)
 		return err
 	}
@@ -380,6 +392,7 @@ func (pr *ProjectRepo) RemoveMember(projectId string, userId string, ctx context
 
 	objID, err := primitive.ObjectIDFromHex(projectId)
 	if err != nil {
+		span.SetStatus(otelCodes.Error, err.Error())
 		log.Println("Invalid project ID format:", err)
 		return err
 	}
@@ -391,6 +404,7 @@ func (pr *ProjectRepo) RemoveMember(projectId string, userId string, ctx context
 
 	result, err := projectsCollection.UpdateOne(ctx, filter, update)
 	if err != nil {
+		span.SetStatus(otelCodes.Error, err.Error())
 		log.Println("Error removing member from project:", err)
 		return err
 	}
