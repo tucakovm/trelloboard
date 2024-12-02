@@ -2,9 +2,12 @@ package handlers
 
 import (
 	"context"
+	"encoding/json"
+	"github.com/nats-io/nats.go"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"log"
+	"strings"
 	proto "tasks-service/proto/task"
 	"tasks-service/service"
 	//"google.golang.org/protobuf/types/known/timestamppb"
@@ -14,23 +17,25 @@ type TaskHandler struct {
 	service        *service.TaskService // Use a pointer here
 	projectService proto.ProjectServiceClient
 	proto.UnimplementedTaskServiceServer
+	natsConn *nats.Conn
 }
 
-func NewTaskHandler(service *service.TaskService, projectService proto.ProjectServiceClient) *TaskHandler {
+func NewTaskHandler(service *service.TaskService, projectService proto.ProjectServiceClient, natsConn *nats.Conn) *TaskHandler {
 	return &TaskHandler{service: service,
-		projectService: projectService}
+		projectService: projectService,
+		natsConn:       natsConn}
 }
 
-func (h *TaskHandler) DoneTasksByProject(ctx context.Context, req *proto.DoneTasksByProjectReq) (*proto.DoneTasksByProjectRes, error) {
-	is, err := h.service.DoneTasksByProject(req.ProjId)
-	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, "bad request ...")
-	}
-	doneTasksByProjectReq := &proto.DoneTasksByProjectRes{
-		IsDone: is,
-	}
-	return doneTasksByProjectReq, nil
-}
+//func (h *TaskHandler) DoneTasksByProject(ctx context.Context, req *proto.DoneTasksByProjectReq) (*proto.DoneTasksByProjectRes, error) {
+//	is, err := h.service.DoneTasksByProject(req.ProjId)
+//	if err != nil {
+//		return nil, status.Error(codes.InvalidArgument, "bad request ...")
+//	}
+//	doneTasksByProjectReq := &proto.DoneTasksByProjectRes{
+//		IsDone: is,
+//	}
+//	return doneTasksByProjectReq, nil
+//}
 
 func (h *TaskHandler) Delete(ctx context.Context, req *proto.DeleteTaskReq) (*proto.EmptyResponse, error) {
 	err := h.service.DeleteTask(req.Id)
@@ -47,6 +52,27 @@ func (h *TaskHandler) Create(ctx context.Context, req *proto.CreateTaskReq) (*pr
 		log.Printf("Error creating project: %v", err)
 		return nil, status.Error(codes.InvalidArgument, "bad request ...")
 	}
+	subject := "create-task"
+
+	message := map[string]string{
+		"TaskName":  req.Task.Name,
+		"ProjectId": req.Task.ProjectId,
+	}
+
+	messageData, err := json.Marshal(message)
+	if err != nil {
+		log.Printf("Error marshaling notification message: %v", err)
+		return nil, status.Error(codes.Internal, "Failed to create notification message...")
+	}
+
+	err = h.natsConn.Publish(subject, messageData)
+	if err != nil {
+		log.Printf("Error publishing notification: %v", err)
+		return nil, status.Error(codes.Internal, "Failed to send notification...")
+	}
+
+	log.Printf("Notification sent: %s", string(messageData))
+
 	return nil, nil
 }
 
@@ -108,12 +134,36 @@ func (h *TaskHandler) AddMemberTask(ctx context.Context, req *proto.AddMemberTas
 		default:
 			// Nastavlja sa dodavanjem člana
 		}
-
+		subject := "add-to-task"
 		err = h.service.AddMember(taskId, req.User)
 		if err != nil {
 			log.Printf("Error adding member to project: %v", err)
 			return nil, status.Error(codes.InvalidArgument, "Error adding member...")
 		}
+		projectFromTaskReq := &proto.GetByIdReq{
+			Id: taskId,
+		}
+		projectFromTask, _ := h.GetById(ctx, projectFromTaskReq)
+		message := map[string]string{
+			"UserId":    req.User.Id,
+			"TaskId":    taskId,
+			"ProjectId": projectFromTask.Task.ProjectId,
+		}
+
+		messageData, err := json.Marshal(message)
+		if err != nil {
+			log.Printf("Error marshaling notification message: %v", err)
+			return nil, status.Error(codes.Internal, "Failed to create notification message...")
+		}
+
+		err = h.natsConn.Publish(subject, messageData)
+		if err != nil {
+			log.Printf("Error publishing notification: %v", err)
+			return nil, status.Error(codes.Internal, "Failed to send notification...")
+		}
+
+		log.Printf("Notification sent: %s", string(messageData))
+
 		return nil, nil
 	} else {
 		return nil, status.Error(codes.Internal, "User is not assigned to a project.")
@@ -127,6 +177,31 @@ func (h *TaskHandler) RemoveMemberTask(ctx context.Context, req *proto.RemoveMem
 		log.Printf("Error creating project: %v", err)
 		return nil, status.Error(codes.InvalidArgument, "Error removing member...")
 	}
+	projectFromTaskReq := &proto.GetByIdReq{
+		Id: taskId,
+	}
+	projectFromTask, _ := h.GetById(ctx, projectFromTaskReq)
+	subject := "remove-from-task"
+	message := map[string]string{
+		"UserId":    req.UserId,
+		"TaskId":    taskId,
+		"ProjectId": projectFromTask.Task.ProjectId,
+	}
+
+	messageData, err := json.Marshal(message)
+	if err != nil {
+		log.Printf("Error marshaling notification message: %v", err)
+		return nil, status.Error(codes.Internal, "Failed to create notification message...")
+	}
+
+	err = h.natsConn.Publish(subject, messageData)
+	if err != nil {
+		log.Printf("Error publishing notification: %v", err)
+		return nil, status.Error(codes.Internal, "Failed to send notification...")
+	}
+
+	log.Printf("Notification sent: %s", string(messageData))
+
 	return nil, nil
 }
 func (h *TaskHandler) UpdateTask(ctx context.Context, req *proto.UpdateTaskReq) (*proto.EmptyResponse, error) {
@@ -154,5 +229,39 @@ func (h *TaskHandler) UpdateTask(ctx context.Context, req *proto.UpdateTaskReq) 
 	}
 
 	log.Println("Task updated successfully:", req.Id)
+
+	getProjReq := &proto.GetByIdReq{
+		Id: req.Id,
+	}
+
+	projId, _ := h.GetById(ctx, getProjReq)
+
+	subject := "update-task"
+	message := map[string]string{
+		"TaskId":     req.Id,
+		"TaskStatus": req.Status,
+		"ProjectId":  projId.Task.ProjectId,
+	}
+	if len(req.Members) > 0 {
+		var memberIds []string
+		for _, member := range req.Members {
+			memberIds = append(memberIds, member.Id)
+		}
+		message["MemberIds"] = strings.Join(memberIds, ",")
+	}
+
+	messageData, err := json.Marshal(message)
+	if err != nil {
+		log.Printf("Error marshaling notification message: %v", err)
+		return nil, status.Error(codes.Internal, "Failed to create notification message...")
+	}
+
+	err = h.natsConn.Publish(subject, messageData)
+	if err != nil {
+		log.Printf("Error publishing notification: %v", err)
+		return nil, status.Error(codes.Internal, "Failed to send notification...")
+	}
+
+	log.Printf("Notification sent: %s", string(messageData))
 	return &proto.EmptyResponse{}, nil
 }

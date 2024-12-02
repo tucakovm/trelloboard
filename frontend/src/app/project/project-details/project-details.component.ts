@@ -100,6 +100,12 @@ export class ProjectDetailsComponent implements OnInit{
     }
   }
 
+  viewNotifications(): void {
+    if (this.id) {
+      this.router.navigate(['/app-notifications-project', this.id]);
+    }
+  }
+
   addMember(){
     if (this.id) {
       this.router.navigate(['/all-projects', this.id,"add-member" ]);

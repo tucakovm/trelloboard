@@ -65,6 +65,11 @@ func insertInitialUsers(client *mongo.Client) error {
 		fmt.Println("Error converting to ObjectID:", err)
 		return nil
 	}
+	bobId, err := primitive.ObjectIDFromHex("6749ac3cfc079b8c923bb9d5")
+	if err != nil {
+		fmt.Println("Error converting to ObjectID:", err)
+		return nil
+	}
 
 	users := []interface{}{
 		models.User{
@@ -79,13 +84,13 @@ func insertInitialUsers(client *mongo.Client) error {
 			Role:      "Manager",
 		},
 		models.User{
-			Id:        primitive.NewObjectID(),
+			Id:        bobId,
 			FirstName: "Bob",
 			LastName:  "Smith",
 			Username:  "bobsmith",
 			Email:     "bob.smith@example.com",
 			Password:  "$2a$12$sH1miPk3Yk1umoZKoJGnDOGofZZzher2JFa1AUceFKTlx6Glcd64O",
-			IsActive:  false,
+			IsActive:  true,
 			Code:      "B456",
 			Role:      "User",
 		},

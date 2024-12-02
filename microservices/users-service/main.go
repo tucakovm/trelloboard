@@ -72,9 +72,6 @@ func main() {
 	defer cancel()
 
 	consulAddress := os.Getenv("CONSUL_ADDRESS")
-	if consulAddress == "" {
-		consulAddress = "localhost:8500" // Default to localhost for fallback
-	}
 
 	log.Println("Initializing User Repository...")
 	repoUser, err := repositories.NewUserRepo(timeoutContext)
@@ -111,29 +108,6 @@ func main() {
 		}
 	}()
 
-	//r := mux.NewRouter()
-	//r.HandleFunc("/register", handlerUser.RegisterHandler).Methods(http.MethodPost)
-	//r.HandleFunc("/verify", handlerUser.VerifyHandler).Methods(http.MethodPost)
-	//r.HandleFunc("/login", handlerUser.LoginUser).Methods(http.MethodPost)
-	//r.HandleFunc("/user/{username}", handlerUser.GetUserByUsername).Methods(http.MethodGet)
-	//r.HandleFunc("/user/{username}", handlerUser.DeleteUserByUsername).Methods(http.MethodDelete)
-	//r.HandleFunc("/user/change-password", handlerUser.ChangePassword).Methods(http.MethodPut)
-	//
-	//corsHandler := handlers.CORS(
-	//	handlers.AllowedOrigins([]string{"http://localhost:4200"}), // Set the correct origin
-	//	handlers.AllowedMethods([]string{"GET", "POST", "DELETE", "OPTIONS", "PUT"}),
-	//	handlers.AllowedHeaders([]string{"Content-Type", "Authorization"}),
-	//)
-	//
-	//// Create the HTTP server with CORS handler
-	//srv := &http.Server{
-	//
-	//	Handler: corsHandler(r), // Apply CORS handler to router
-	//	Addr:    ":8003",        // Use the desired port
-	//}
-	//
-	//// Start the server
-	//log.Fatal(srv.ListenAndServe())
 	stopCh := make(chan os.Signal, 1)
 	signal.Notify(stopCh, syscall.SIGTERM)
 

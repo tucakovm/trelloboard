@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"github.com/nats-io/nats.go"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/reflection"
@@ -46,6 +47,10 @@ func main() {
 	taskClient := proj.NewTaskServiceClient(taskConn)
 	log.Println("TaskService Gateway registered successfully.")
 
+	//Nats Conn
+	natsConn := NatsConn()
+	defer natsConn.Close()
+
 	// Initialize context
 	timeoutContext, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
@@ -65,7 +70,7 @@ func main() {
 	serviceProject, err := services.NewProjectService(*repoProject)
 	handleErr(err)
 
-	handlerProject, err := h.NewConnectionHandler(serviceProject, taskClient)
+	handlerProject, err := h.NewConnectionHandler(serviceProject, taskClient, natsConn)
 	handleErr(err)
 
 	// Bootstrap gRPC server.
@@ -93,4 +98,22 @@ func handleErr(err error) {
 	if err != nil {
 		log.Fatalln(err)
 	}
+}
+
+func NatsConn() *nats.Conn {
+	natsURL := os.Getenv("NATS_URL")
+	if natsURL == "" {
+		log.Fatal("NATS_URL environment variable not set")
+	}
+
+	opts := []nats.Option{
+		nats.Timeout(10 * time.Second), // Postavi timeout za povezivanje
+	}
+
+	conn, err := nats.Connect(natsURL, opts...)
+	if err != nil {
+		log.Fatalf("Failed to connect to NATS at %s: %v", natsURL, err)
+	}
+	log.Println("Connected to NATS at:", natsURL)
+	return conn
 }

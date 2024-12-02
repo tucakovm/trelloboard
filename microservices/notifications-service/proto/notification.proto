@@ -6,7 +6,6 @@ import "google/protobuf/timestamp.proto";
 
 service NotificationService {
   rpc GetAllNots(GetAllNotsReq) returns (GetAllNotsRes) {}
-  rpc CreateNot(CreateNotReq) returns (EmptyResponse){}
 }
 message GetAllNotsReq{
   string userId = 1;
@@ -14,10 +13,6 @@ message GetAllNotsReq{
 message GetAllNotsRes{
   repeated Notification nots = 1;
 }
-message CreateNotReq{
-  Notification not = 1;
-}
-message EmptyResponse{}
 
 message Notification{
   string userId = 1;

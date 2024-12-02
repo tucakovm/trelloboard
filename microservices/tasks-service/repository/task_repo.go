@@ -283,7 +283,7 @@ func (tr *TaskRepo) HasIncompleteTasksByProject(id string) (bool, error) {
 		log.Println("Error checking for incomplete tasks:", err)
 		return false, err
 	}
-
+	log.Println(count)
 	return count > 0, nil
 }
 

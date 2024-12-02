@@ -75,7 +75,7 @@ func insertInitialProjects(client *mongo.Client) error {
 			MinMembers:     2,
 			MaxMembers:     5,
 			Members: []domain.User{
-				{Id: "67386650a0d21b3a8f823720", Username: "bobsmith", Role: "User"},
+				{Id: "6749ac3cfc079b8c923bb9d5", Username: "bobsmith", Role: "User"},
 			},
 			Manager: domain.User{Id: "67386650a0d21b3a8f823722", Username: "alicej", Role: "Manager"},
 		},
@@ -86,7 +86,7 @@ func insertInitialProjects(client *mongo.Client) error {
 			MinMembers:     3,
 			MaxMembers:     6,
 			Members: []domain.User{
-				{Id: "67386650a0d21b3a8f823720", Username: "bobsmith", Role: "User"},
+				{Id: "6749ac3cfc079b8c923bb9d5", Username: "bobsmith", Role: "User"},
 			},
 			Manager: domain.User{Id: "67386650a0d21b3a8f823722", Username: "alicej", Role: "Manager"},
 		},

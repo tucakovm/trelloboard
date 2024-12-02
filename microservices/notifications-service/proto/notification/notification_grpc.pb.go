@@ -20,7 +20,6 @@ const _ = grpc.SupportPackageIsVersion9
 
 const (
 	NotificationService_GetAllNots_FullMethodName = "/NotificationService/GetAllNots"
-	NotificationService_CreateNot_FullMethodName  = "/NotificationService/CreateNot"
 )
 
 // NotificationServiceClient is the client API for NotificationService service.
@@ -28,7 +27,6 @@ const (
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type NotificationServiceClient interface {
 	GetAllNots(ctx context.Context, in *GetAllNotsReq, opts ...grpc.CallOption) (*GetAllNotsRes, error)
-	CreateNot(ctx context.Context, in *CreateNotReq, opts ...grpc.CallOption) (*EmptyResponse, error)
 }
 
 type notificationServiceClient struct {
@@ -49,22 +47,11 @@ func (c *notificationServiceClient) GetAllNots(ctx context.Context, in *GetAllNo
 	return out, nil
 }
 
-func (c *notificationServiceClient) CreateNot(ctx context.Context, in *CreateNotReq, opts ...grpc.CallOption) (*EmptyResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(EmptyResponse)
-	err := c.cc.Invoke(ctx, NotificationService_CreateNot_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
 // NotificationServiceServer is the server API for NotificationService service.
 // All implementations must embed UnimplementedNotificationServiceServer
 // for forward compatibility.
 type NotificationServiceServer interface {
 	GetAllNots(context.Context, *GetAllNotsReq) (*GetAllNotsRes, error)
-	CreateNot(context.Context, *CreateNotReq) (*EmptyResponse, error)
 	mustEmbedUnimplementedNotificationServiceServer()
 }
 
@@ -77,9 +64,6 @@ type UnimplementedNotificationServiceServer struct{}
 
 func (UnimplementedNotificationServiceServer) GetAllNots(context.Context, *GetAllNotsReq) (*GetAllNotsRes, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetAllNots not implemented")
-}
-func (UnimplementedNotificationServiceServer) CreateNot(context.Context, *CreateNotReq) (*EmptyResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method CreateNot not implemented")
 }
 func (UnimplementedNotificationServiceServer) mustEmbedUnimplementedNotificationServiceServer() {}
 func (UnimplementedNotificationServiceServer) testEmbeddedByValue()                             {}
@@ -120,24 +104,6 @@ func _NotificationService_GetAllNots_Handler(srv interface{}, ctx context.Contex
 	return interceptor(ctx, in, info, handler)
 }
 
-func _NotificationService_CreateNot_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(CreateNotReq)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(NotificationServiceServer).CreateNot(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: NotificationService_CreateNot_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(NotificationServiceServer).CreateNot(ctx, req.(*CreateNotReq))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
 // NotificationService_ServiceDesc is the grpc.ServiceDesc for NotificationService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -148,10 +114,6 @@ var NotificationService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetAllNots",
 			Handler:    _NotificationService_GetAllNots_Handler,
-		},
-		{
-			MethodName: "CreateNot",
-			Handler:    _NotificationService_CreateNot_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

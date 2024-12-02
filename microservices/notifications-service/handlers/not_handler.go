@@ -28,7 +28,3 @@ func (h NotificationHandler) GetAllNots(ctx context.Context, req *proto.GetAllNo
 	response := &proto.GetAllNotsRes{Nots: nots}
 	return response, nil
 }
-
-func (h NotificationHandler) CreateNot(ctx context.Context, req *proto.CreateNotReq) (res *proto.EmptyResponse, err error) {
-	return
-}

@@ -17,7 +17,7 @@
         </div>
         <div class="col-md-6">
           <label for="completionDate" class="form-label"
-            >Completion Date:</label
+          >Completion Date:</label
           >
           <input
             type="text"
@@ -55,7 +55,7 @@
       <div class="row mb-4">
         <div class="col-md-6">
           <label for="managerUsername" class="form-label"
-            >Manager Username:</label
+          >Manager Username:</label
           >
           <input
             type="text"
@@ -68,7 +68,6 @@
       </div>
 
       <div class="row mt-4">
-        <!-- Add Task and See All Tasks Buttons Next to Each Other -->
         <div class="col-md-6">
           <button
             *ngIf="isManager()"
@@ -86,7 +85,6 @@
       </div>
 
       <div class="row mt-3">
-        <!-- Add Members and Remove Members Buttons -->
         <div class="col-md-6">
           <button
             *ngIf="!maxLengthAchieved && isManager()"
@@ -107,7 +105,17 @@
         </div>
       </div>
 
-      <!-- Delete Project Button at the Bottom -->
+      <div class="row mt-3">
+        <div class="col-md-12">
+          <button
+            class="btn btn-info w-100 shadow-sm"
+            (click)="viewNotifications()"
+          >
+            Project Notifications
+          </button>
+        </div>
+      </div>
+
       <div class="row mt-4">
         <div class="col-md-12">
           <button

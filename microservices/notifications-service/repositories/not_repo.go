@@ -65,19 +65,19 @@ func (nr *NotRepo) InitDB() {
 		{
 			UserId:    "67386650a0d21b3a8f823722",
 			CreatedAt: time.Now().AddDate(0, 0, -1),
-			Message:   "You have a new message from the team.",
+			Message:   "not1.",
 			Status:    "unread",
 		},
 		{
 			UserId:    "67386650a0d21b3a8f823722",
 			CreatedAt: time.Now().AddDate(0, 0, -2),
-			Message:   "Your task deadline has been extended.",
+			Message:   "not2.",
 			Status:    "unread",
 		},
 		{
 			UserId:    "67386650a0d21b3a8f823722",
 			CreatedAt: time.Now(),
-			Message:   "Reminder: Meeting at 3 PM tomorrow.",
+			Message:   "not3.",
 			Status:    "unread",
 		},
 	}

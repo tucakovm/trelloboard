@@ -28,6 +28,7 @@ services:
       - notifications_server
       - cassandra
       - mongo
+      - nats
     ports:
       - "8000:8000"
     volumes:
@@ -35,7 +36,7 @@ services:
     #dodao sam ovaj volumes
 
   projects_server:
-    image: project-service
+    image: projects-server
     build:
       context: microservices/projects-service
       dockerfile: Dockerfile
@@ -111,8 +112,6 @@ services:
       - "8004:8004"
     env_file:
       microservices/.env
-    environment:
-      - CONSUL_ADDRESS=consul:8500 # Ensure Consul is reachable
     depends_on:
       mongo:
         condition: service_healthy
@@ -143,6 +142,8 @@ services:
       - "8600:8600/tcp"
       - "8600:8600/udp"
     command: "agent -server -ui -node=server-1 -bootstrap-expect=1 -client=0.0.0.0"
+    env_file:
+      microservices/.env
     volumes:
       - ./consul_store:/consul/data
 
@@ -167,7 +168,8 @@ services:
     restart: always
     ports:
       - "9042:9042"
-    # Docker healtcheck - checks if database is "alive"
+    env_file:
+      microservices/.env
     healthcheck:
       test: ["CMD-SHELL", "cqlsh -e 'describe cluster'"]
       interval: 15s
@@ -175,6 +177,13 @@ services:
       retries: 15
     volumes:
       - cass_store:/var/lib/cassandra/data
+
+  nats:
+    image: nats:latest
+    ports:
+      - "4222:4222"
+    expose:
+      - "4222"
 
 volumes:
   mongo_store:

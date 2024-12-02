@@ -25,7 +25,7 @@ export class NotService {
               this.timestampToDate(item.createdAt), // Convert timestamp to Date
               item.userId, // Map to userId
               item.message, // Map to message
-              item.status === 'unread' ? false : true // Map status to boolean
+              item.status !== 'unread' // Map status to boolean
             );
           });
         } else {

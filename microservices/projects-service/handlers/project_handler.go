@@ -2,6 +2,8 @@ package handlers
 
 import (
 	"context"
+	"encoding/json"
+	"github.com/nats-io/nats.go"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"log"
@@ -13,12 +15,14 @@ type ProjectHandler struct {
 	service     services.ProjectService
 	taskService proto.TaskServiceClient
 	proto.UnimplementedProjectServiceServer
+	natsConn *nats.Conn
 }
 
-func NewConnectionHandler(service services.ProjectService, taskService proto.TaskServiceClient) (ProjectHandler, error) {
+func NewConnectionHandler(service services.ProjectService, taskService proto.TaskServiceClient, natsConn *nats.Conn) (ProjectHandler, error) {
 	return ProjectHandler{
 		service:     service,
 		taskService: taskService,
+		natsConn:    natsConn,
 	}, nil
 }
 
@@ -64,30 +68,62 @@ func (h ProjectHandler) GetById(ctx context.Context, req *proto.GetByIdReq) (*pr
 }
 
 func (h ProjectHandler) AddMember(ctx context.Context, req *proto.AddMembersRequest) (*proto.EmptyResponse, error) {
-	projId := req.Id
-	reqForTaskClient := &proto.DoneTasksByProjectReq{
-		ProjId: projId,
-	}
-	is, _ := h.taskService.DoneTasksByProject(ctx, reqForTaskClient)
-	if is.IsDone {
-		err := h.service.AddMember(projId, req.User)
-		if err != nil {
-			log.Printf("Error adding member on project: %v", err)
-			return nil, status.Error(codes.InvalidArgument, "Error adding member...")
-		}
-		return nil, nil
-	}
-	return nil, status.Error(codes.Aborted, "Project has done.")
-}
-func (h ProjectHandler) RemoveMember(ctx context.Context, req *proto.RemoveMembersRequest) (*proto.EmptyResponse, error) {
-	log.Printf("Usao u handler od remove membera")
-	projectId := req.ProjectId
-	err := h.service.RemoveMember(projectId, req.UserId)
+	subject := "add-to-project"
+	err := h.service.AddMember(req.Id, req.User)
 	if err != nil {
-		log.Printf("Error creating project: %v", err)
+		log.Printf("Error adding member on project: %v", err)
+		return nil, status.Error(codes.InvalidArgument, "Error adding member...")
+	}
+
+	message := map[string]string{
+		"UserId":    req.User.Id,
+		"ProjectId": req.Id,
+	}
+
+	messageData, err := json.Marshal(message)
+	if err != nil {
+		log.Printf("Error marshaling notification message: %v", err)
+		return nil, status.Error(codes.Internal, "Failed to create notification message...")
+	}
+
+	err = h.natsConn.Publish(subject, messageData)
+	if err != nil {
+		log.Printf("Error publishing notification: %v", err)
+		return nil, status.Error(codes.Internal, "Failed to send notification...")
+	}
+
+	log.Printf("Notification sent: %s", string(messageData))
+	return &proto.EmptyResponse{}, nil
+
+}
+
+func (h ProjectHandler) RemoveMember(ctx context.Context, req *proto.RemoveMembersRequest) (*proto.EmptyResponse, error) {
+	subject := "removed-from-project"
+
+	err := h.service.RemoveMember(req.ProjectId, req.UserId)
+	if err != nil {
+		log.Printf("Error removing member: %v", err)
 		return nil, status.Error(codes.InvalidArgument, "Error removing member...")
 	}
-	return nil, nil
+
+	message := map[string]string{
+		"UserId":    req.UserId,
+		"ProjectId": req.ProjectId,
+	}
+	messageData, err := json.Marshal(message)
+	if err != nil {
+		log.Printf("Error marshaling notification message: %v", err)
+		return nil, status.Error(codes.Internal, "Failed to create notification message...")
+	}
+
+	err = h.natsConn.Publish(subject, messageData)
+	if err != nil {
+		log.Printf("Error publishing notification: %v", err)
+		return nil, status.Error(codes.Internal, "Failed to send notification...")
+	}
+
+	log.Printf("Notification sent: %s", string(messageData))
+	return &proto.EmptyResponse{}, nil
 }
 
 func (h ProjectHandler) UserOnProject(ctx context.Context, req *proto.UserOnProjectReq) (*proto.UserOnProjectRes, error) {

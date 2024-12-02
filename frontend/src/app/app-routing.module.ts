@@ -18,6 +18,7 @@ import {AddMemberTaskComponent} from "./tasks/add-member-task/add-member-task.co
 import { AuthGuard } from './auth.guard';
 import { UnauthorizedComponent } from './unauthorized/unauthorized.component';
 import {NotificationsComponent} from "./notifications/notifications.component";
+import {NotificationsProjectComponent} from "./notifications-project/notifications-project.component";
 
 const routes: Routes = [
   { path: 'register', component: RegisterComponent },
@@ -42,6 +43,7 @@ const routes: Routes = [
   { path: 'task-add-member/:taskId', component: AddMemberTaskComponent , canActivate: [AuthGuard], data: { roles: ['Manager'] },},
   { path: 'unauthorized', component: UnauthorizedComponent },
   { path: 'app-notifications', component: NotificationsComponent },
+  {path: 'app-notifications-project/:projectId', component: NotificationsProjectComponent },
 
 
 ];
