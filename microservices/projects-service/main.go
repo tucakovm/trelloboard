@@ -3,6 +3,12 @@ package main
 import (
 	"context"
 	"github.com/nats-io/nats.go"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/exporters/jaeger"
+	"go.opentelemetry.io/otel/propagation"
+	"go.opentelemetry.io/otel/sdk/resource"
+	sdktrace "go.opentelemetry.io/otel/sdk/trace"
+	semconv "go.opentelemetry.io/otel/semconv/v1.7.0"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/reflection"
@@ -25,6 +31,18 @@ func main() {
 
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
+
+	exp, err := newExporter(cfg.JaegerEndpoint)
+	if err != nil {
+		log.Fatalf("failed to initialize exporter: %v", err)
+	}
+
+	tp := newTraceProvider(exp)
+	defer func() { _ = tp.Shutdown(ctx) }()
+	otel.SetTracerProvider(tp)
+	otel.SetTextMapPropagator(propagation.TraceContext{})
+
+	tracer := tp.Tracer("project-service")
 
 	listener, err := net.Listen("tcp", cfg.Address)
 	if err != nil {
@@ -60,17 +78,18 @@ func main() {
 	storeLogger := log.New(os.Stdout, "[project-store] ", log.LstdFlags)
 
 	// NoSQL: Initialize Product Repository store
-	repoProject, err := repositories.New(timeoutContext, storeLogger)
+	repoProject, err := repositories.New(timeoutContext, storeLogger, tracer)
 	if err != nil {
 		logger.Fatal(err)
 	}
 	defer repoProject.Disconnect(timeoutContext)
 	handleErr(err)
 
-	serviceProject, err := services.NewProjectService(*repoProject)
+	serviceProject, err := services.NewProjectService(*repoProject, tracer)
 	handleErr(err)
 
-	handlerProject, err := h.NewConnectionHandler(serviceProject, taskClient, natsConn)
+	handlerProject, err := h.NewConnectionHandler(serviceProject, taskClient, natsConn, tracer)
+
 	handleErr(err)
 
 	// Bootstrap gRPC server.
@@ -116,4 +135,23 @@ func NatsConn() *nats.Conn {
 	}
 	log.Println("Connected to NATS at:", natsURL)
 	return conn
+}
+func newExporter(address string) (sdktrace.SpanExporter, error) {
+	exp, err := jaeger.New(jaeger.WithCollectorEndpoint(jaeger.WithEndpoint(address)))
+	if err != nil {
+		return nil, err
+	}
+	return exp, nil
+}
+
+func newTraceProvider(exp sdktrace.SpanExporter) *sdktrace.TracerProvider {
+	r := resource.NewWithAttributes(
+		semconv.SchemaURL,
+		semconv.ServiceNameKey.String("user-service"),
+	)
+
+	return sdktrace.NewTracerProvider(
+		sdktrace.WithSyncer(exp),
+		sdktrace.WithResource(r),
+	)
 }

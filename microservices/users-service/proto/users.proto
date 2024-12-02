@@ -108,4 +108,5 @@ message RecoveryLinkRequest {
 message RecoveryPasswordRequest {
   string newPassword = 1;
   string username = 2;
+  string code = 3;
 }

@@ -1,9 +1,16 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"github.com/nats-io/nats.go"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/exporters/jaeger"
+	"go.opentelemetry.io/otel/propagation"
+	"go.opentelemetry.io/otel/sdk/resource"
+	sdktrace "go.opentelemetry.io/otel/sdk/trace"
+	semconv "go.opentelemetry.io/otel/semconv/v1.7.0"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -24,6 +31,21 @@ import (
 func main() {
 	cfg := config.GetConfig()
 	log.Println(cfg.Address)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	exp, err := newExporter(cfg.JaegerEndpoint)
+	if err != nil {
+		log.Fatalf("failed to initialize exporter: %v", err)
+	}
+
+	tp := newTraceProvider(exp)
+	defer func() { _ = tp.Shutdown(ctx) }()
+	otel.SetTracerProvider(tp)
+	otel.SetTextMapPropagator(propagation.TraceContext{})
+
+	tracer := tp.Tracer("notifications-service")
 
 	listener, err := net.Listen("tcp", cfg.Address)
 	if err != nil {
@@ -47,25 +69,25 @@ func main() {
 	storeLogger := log.New(os.Stdout, "[notification-store] ", log.LstdFlags)
 
 	// NoSQL: Initialize Product Repository store
-	store, err := repositories.New(storeLogger)
+	store, err := repositories.New(storeLogger, tracer)
 	if err != nil {
 		logger.Fatal(err)
 	}
 	defer store.CloseSession()
-	store.CreateTables()
+	store.CreateTables(ctx)
 
-	serviceNot := service.NewNotService(*store)
+	serviceNot := service.NewNotService(*store, tracer)
 
-	handlerNots, err := h.NewConnectionHandler(*serviceNot)
+	handlerNots, err := h.NewConnectionHandler(*serviceNot, tracer)
 	handleErr(err)
 
 	//NATS subs
-	NatsRemoveFromProject(natsConn, *serviceNot)
-	NatsAddToProject(natsConn, *serviceNot)
-	NatsAddToTask(natsConn, *serviceNot)
-	NatsRemoveFromTask(natsConn, *serviceNot)
-	NatsUpdateTask(natsConn, *serviceNot)
-	NatsCreateTask(natsConn, *serviceNot)
+	NatsRemoveFromProject(ctx, natsConn, *serviceNot)
+	NatsAddToProject(ctx, natsConn, *serviceNot)
+	NatsAddToTask(ctx, natsConn, *serviceNot)
+	NatsRemoveFromTask(ctx, natsConn, *serviceNot)
+	NatsUpdateTask(ctx, natsConn, *serviceNot)
+	NatsCreateTask(ctx, natsConn, *serviceNot)
 
 	// Bootstrap gRPC server.
 	grpcServer := grpc.NewServer()
@@ -112,7 +134,7 @@ func NatsConn() *nats.Conn {
 	return conn
 }
 
-func NatsRemoveFromProject(natsConn *nats.Conn, notService service.NotService) {
+func NatsRemoveFromProject(ctx context.Context, natsConn *nats.Conn, notService service.NotService) {
 	subjectRFP := "removed-from-project"
 
 	_, _ = natsConn.Subscribe(subjectRFP, func(msg *nats.Msg) {
@@ -146,13 +168,13 @@ func NatsRemoveFromProject(natsConn *nats.Conn, notService service.NotService) {
 			Status:    "unread",
 		}
 
-		err = notService.Create(notification)
+		err = notService.Create(ctx, notification)
 		if err != nil {
 			log.Printf("Error saving notification: %v", err)
 		} else {
 			log.Printf("Notification saved: %s", notificationMessage)
 		}
-		err = notService.Create(notificationProject)
+		err = notService.Create(ctx, notificationProject)
 		if err != nil {
 			log.Printf("Error saving notification: %v", err)
 		} else {
@@ -161,7 +183,7 @@ func NatsRemoveFromProject(natsConn *nats.Conn, notService service.NotService) {
 	})
 }
 
-func NatsAddToProject(natsConn *nats.Conn, notService service.NotService) {
+func NatsAddToProject(ctx context.Context, natsConn *nats.Conn, notService service.NotService) {
 	subjectATP := "add-to-project"
 
 	_, _ = natsConn.Subscribe(subjectATP, func(msg *nats.Msg) {
@@ -195,13 +217,13 @@ func NatsAddToProject(natsConn *nats.Conn, notService service.NotService) {
 			Status:    "unread",
 		}
 
-		err = notService.Create(notification)
+		err = notService.Create(ctx, notification)
 		if err != nil {
 			log.Printf("Error saving notification: %v", err)
 		} else {
 			log.Printf("Notification saved: %s", notificationMessage)
 		}
-		err = notService.Create(notificationProject)
+		err = notService.Create(ctx, notificationProject)
 		if err != nil {
 			log.Printf("Error saving notification: %v", err)
 		} else {
@@ -210,7 +232,7 @@ func NatsAddToProject(natsConn *nats.Conn, notService service.NotService) {
 	})
 }
 
-func NatsAddToTask(natsConn *nats.Conn, notService service.NotService) {
+func NatsAddToTask(ctx context.Context, natsConn *nats.Conn, notService service.NotService) {
 	subjectATP := "add-to-task"
 
 	_, _ = natsConn.Subscribe(subjectATP, func(msg *nats.Msg) {
@@ -245,13 +267,13 @@ func NatsAddToTask(natsConn *nats.Conn, notService service.NotService) {
 			Status:    "unread",
 		}
 
-		err = notService.Create(notification)
+		err = notService.Create(ctx, notification)
 		if err != nil {
 			log.Printf("Error saving notification: %v", err)
 		} else {
 			log.Printf("Notification saved: %s", notificationMessage)
 		}
-		err = notService.Create(notificationProject)
+		err = notService.Create(ctx, notificationProject)
 		if err != nil {
 			log.Printf("Error saving notification: %v", err)
 		} else {
@@ -260,7 +282,7 @@ func NatsAddToTask(natsConn *nats.Conn, notService service.NotService) {
 	})
 }
 
-func NatsRemoveFromTask(natsConn *nats.Conn, notService service.NotService) {
+func NatsRemoveFromTask(ctx context.Context, natsConn *nats.Conn, notService service.NotService) {
 	subjectRTT := "remove-from-task"
 
 	_, _ = natsConn.Subscribe(subjectRTT, func(msg *nats.Msg) {
@@ -295,13 +317,13 @@ func NatsRemoveFromTask(natsConn *nats.Conn, notService service.NotService) {
 			Status:    "unread",
 		}
 
-		err = notService.Create(notification)
+		err = notService.Create(ctx, notification)
 		if err != nil {
 			log.Printf("Error saving notification: %v", err)
 		} else {
 			log.Printf("Notification saved: %s", notificationMessage)
 		}
-		err = notService.Create(notificationProject)
+		err = notService.Create(ctx, notificationProject)
 		if err != nil {
 			log.Printf("Error saving notification: %v", err)
 		} else {
@@ -310,7 +332,7 @@ func NatsRemoveFromTask(natsConn *nats.Conn, notService service.NotService) {
 	})
 }
 
-func NatsUpdateTask(natsConn *nats.Conn, notService service.NotService) {
+func NatsUpdateTask(ctx context.Context, natsConn *nats.Conn, notService service.NotService) {
 	subjectRTT := "update-task"
 
 	_, _ = natsConn.Subscribe(subjectRTT, func(msg *nats.Msg) {
@@ -343,7 +365,7 @@ func NatsUpdateTask(natsConn *nats.Conn, notService service.NotService) {
 				Status:    "unread",
 			}
 
-			err = notService.Create(notification)
+			err = notService.Create(ctx, notification)
 			if err != nil {
 				log.Printf("Error saving notification for user %s: %v", userId, err)
 			} else {
@@ -359,7 +381,7 @@ func NatsUpdateTask(natsConn *nats.Conn, notService service.NotService) {
 			Status:    "unread",
 		}
 
-		err = notService.Create(notificationProject)
+		err = notService.Create(ctx, notificationProject)
 		if err != nil {
 			log.Printf("Error saving notification for project %s: %v", projectId, err)
 		} else {
@@ -369,7 +391,7 @@ func NatsUpdateTask(natsConn *nats.Conn, notService service.NotService) {
 	})
 }
 
-func NatsCreateTask(natsConn *nats.Conn, notService service.NotService) {
+func NatsCreateTask(ctx context.Context, natsConn *nats.Conn, notService service.NotService) {
 	subjectCT := "create-task"
 
 	_, _ = natsConn.Subscribe(subjectCT, func(msg *nats.Msg) {
@@ -395,11 +417,30 @@ func NatsCreateTask(natsConn *nats.Conn, notService service.NotService) {
 			Status:    "unread",
 		}
 
-		err = notService.Create(notification)
+		err = notService.Create(ctx, notification)
 		if err != nil {
 			log.Printf("Error saving notification: %v", err)
 		} else {
 			log.Printf("Notification saved: %s", notificationMessage)
 		}
 	})
+}
+func newExporter(address string) (sdktrace.SpanExporter, error) {
+	exp, err := jaeger.New(jaeger.WithCollectorEndpoint(jaeger.WithEndpoint(address)))
+	if err != nil {
+		return nil, err
+	}
+	return exp, nil
+}
+
+func newTraceProvider(exp sdktrace.SpanExporter) *sdktrace.TracerProvider {
+	r := resource.NewWithAttributes(
+		semconv.SchemaURL,
+		semconv.ServiceNameKey.String("notifications-service"),
+	)
+
+	return sdktrace.NewTracerProvider(
+		sdktrace.WithSyncer(exp),
+		sdktrace.WithResource(r),
+	)
 }

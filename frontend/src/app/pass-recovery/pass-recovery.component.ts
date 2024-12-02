@@ -32,6 +32,7 @@ export class PassRecoveryComponent {
         ],
       ],
       confirmNewPassword: ['', [Validators.required]],
+      code:['', [Validators.required]]
     });
   }
 
@@ -42,6 +43,9 @@ export class PassRecoveryComponent {
   get confirmNewPassword() {
     return this.changePasswordForm.get('confirmNewPassword');
   }
+  get code(){
+    return this.changePasswordForm.get('code')
+  }
 
   onSubmit() {
     if (this.changePasswordForm.invalid) {
@@ -50,7 +54,7 @@ export class PassRecoveryComponent {
       return;
     }
 
-    const { newPassword, confirmNewPassword } = this.changePasswordForm.value;
+    const { newPassword, confirmNewPassword, code } = this.changePasswordForm.value;
 
     if (newPassword !== confirmNewPassword) {
       this.errorOccurred = true;
@@ -60,14 +64,22 @@ export class PassRecoveryComponent {
 
     const username = this.route.snapshot.queryParamMap.get('username');
 
+
     if (!username) {
       this.errorOccurred = true;
       this.errorMessage = 'Required parameters are missing in the URL.';
       return;
     }
 
+<<<<<<< HEAD
+    console.log(code)
+
+
+    this.userService.recoverPassword(username, newPassword, code).subscribe({
+=======
 
     this.userService.recoverPassword(username, newPassword).subscribe({
+>>>>>>> c4b5a3c39341525041d46da04f5e479b7ee7b10a
       next: (res) => {
         this.successMessage = 'Password changed successfully!';
         this.router.navigate(['/login']);
