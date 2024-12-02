@@ -6,12 +6,13 @@ import (
 )
 
 type Config struct {
-	Address string
+	Address        string
+	JaegerEndpoint string
 }
 
 func GetConfig() Config {
-
 	return Config{
-		Address: fmt.Sprintf(":%s", os.Getenv("NOTIFICATIONS_SERVICE_PORT")),
+		Address:        fmt.Sprintf(":%s", os.Getenv("NOTIFICATIONS_SERVICE_PORT")),
+		JaegerEndpoint: os.Getenv("JAEGER_ENDPOINT"),
 	}
 }

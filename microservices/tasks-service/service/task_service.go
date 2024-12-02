@@ -1,6 +1,9 @@
 package service
 
 import (
+	"context"
+	otelCodes "go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/otel/trace"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"log"
@@ -11,14 +14,15 @@ import (
 )
 
 type TaskService struct {
-	repo repository.TaskRepo
+	repo   repository.TaskRepo
+	Tracer trace.Tracer
 }
 
-func NewTaskService(repo repository.TaskRepo) *TaskService {
-	return &TaskService{repo: repo}
+func NewTaskService(repo repository.TaskRepo, tracer trace.Tracer) *TaskService {
+	return &TaskService{repo: repo, Tracer: tracer}
 }
 
-func (s *TaskService) Create(taskReq *proto.Task) error {
+func (s *TaskService) Create(taskReq *proto.Task, ctx context.Context) error {
 	newTask := &domain.Task{
 		Name:        taskReq.Name,
 		Description: taskReq.Description,
@@ -27,19 +31,25 @@ func (s *TaskService) Create(taskReq *proto.Task) error {
 		Members:     make([]domain.User, 0),
 	}
 	log.Println(newTask)
-	return s.repo.Create(*newTask)
+	return s.repo.Create(*newTask, ctx)
 }
 
-func (s *TaskService) DeleteTask(id string) error {
-	return s.repo.Delete(id)
+func (s *TaskService) DeleteTask(id string, ctx context.Context) error {
+	ctx, span := s.Tracer.Start(ctx, "s.deleteTask")
+	defer span.End()
+	return s.repo.Delete(id, ctx)
 }
 
-func (s *TaskService) DoneTasksByProject(id string) (bool, error) {
-	return s.repo.HasIncompleteTasksByProject(id)
+func (s *TaskService) DoneTasksByProject(id string, ctx context.Context) (bool, error) {
+	ctx, span := s.Tracer.Start(ctx, "s.doneTasksByProject")
+	defer span.End()
+	return s.repo.HasIncompleteTasksByProject(id, ctx)
 }
 
-func (s *TaskService) GetById(id string) (*proto.Task, error) {
-	task, err := s.repo.GetById(id)
+func (s *TaskService) GetById(id string, ctx context.Context) (*proto.Task, error) {
+	ctx, span := s.Tracer.Start(ctx, "s.verify")
+	defer span.End()
+	task, err := s.repo.GetById(id, ctx)
 	if err != nil {
 		return nil, status.Error(codes.Internal, "DB exception.")
 	}
@@ -63,13 +73,18 @@ func (s *TaskService) GetById(id string) (*proto.Task, error) {
 	return protoTask, nil
 }
 
-func (s *TaskService) DeleteTasksByProjectId(id string) error {
-	return s.repo.DeleteAllByProjectID(id)
+func (s *TaskService) DeleteTasksByProjectId(id string, ctx context.Context) error {
+	ctx, span := s.Tracer.Start(ctx, "s.deleteTasksByProjectId")
+	defer span.End()
+	return s.repo.DeleteAllByProjectID(id, ctx)
 }
 
-func (s *TaskService) GetTasksByProjectId(id string) ([]*proto.Task, error) {
-	tasks, err := s.repo.GetAllByProjectID(id)
+func (s *TaskService) GetTasksByProjectId(id string, ctx context.Context) ([]*proto.Task, error) {
+	ctx, span := s.Tracer.Start(ctx, "s.getTasksByProjectId")
+	defer span.End()
+	tasks, err := s.repo.GetAllByProjectID(id, ctx)
 	if err != nil {
+		span.SetStatus(otelCodes.Error, err.Error())
 		return nil, status.Error(codes.Internal, "DB exception.")
 	}
 	log.Println("SErvice tasks")
@@ -97,9 +112,12 @@ func (s *TaskService) GetTasksByProjectId(id string) ([]*proto.Task, error) {
 	return protoTasks, err
 }
 
-func (t *TaskService) AddMember(projectId string, protoUser *proto.User) error {
-	task, err := t.repo.GetById(projectId)
+func (t *TaskService) AddMember(projectId string, protoUser *proto.User, ctx context.Context) error {
+	ctx, span := t.Tracer.Start(ctx, "s.addMember")
+	defer span.End()
+	task, err := t.repo.GetById(projectId, ctx)
 	if err != nil {
+		span.SetStatus(otelCodes.Error, err.Error())
 		return status.Error(codes.NotFound, "Project not found")
 	}
 
@@ -114,16 +132,21 @@ func (t *TaskService) AddMember(projectId string, protoUser *proto.User) error {
 			return status.Error(codes.AlreadyExists, "Member already part of the task")
 		}
 	}
-	return t.repo.AddMember(projectId, *user)
+	return t.repo.AddMember(projectId, *user, ctx)
 }
 
-func (t *TaskService) RemoveMember(projectId string, userId string) error {
-	return t.repo.RemoveMember(projectId, userId)
+func (t *TaskService) RemoveMember(projectId string, userId string, ctx context.Context) error {
+	ctx, span := t.Tracer.Start(ctx, "s.removeMamber")
+	defer span.End()
+	return t.repo.RemoveMember(projectId, userId, ctx)
 }
-func (s *TaskService) UpdateTask(taskReq *proto.Task) error {
+func (s *TaskService) UpdateTask(taskReq *proto.Task, ctx context.Context) error {
+	ctx, span := s.Tracer.Start(ctx, "s.updateTask")
+	defer span.End()
 	// Fetch the existing task
-	existingTask, err := s.repo.GetById(taskReq.Id)
+	existingTask, err := s.repo.GetById(taskReq.Id, ctx)
 	if err != nil {
+		span.SetStatus(otelCodes.Error, err.Error())
 		return status.Error(codes.NotFound, "Task not found")
 	}
 
@@ -132,6 +155,7 @@ func (s *TaskService) UpdateTask(taskReq *proto.Task) error {
 
 	statusEnum, err := domain.ParseTaskStatus2(taskReq.Status)
 	if err != nil {
+		span.SetStatus(otelCodes.Error, err.Error())
 		return status.Error(codes.InvalidArgument, "Invalid task status")
 	}
 
@@ -151,8 +175,9 @@ func (s *TaskService) UpdateTask(taskReq *proto.Task) error {
 	}
 
 	// Call the repository to persist the changes
-	err = s.repo.Update(*existingTask)
+	err = s.repo.Update(*existingTask, ctx)
 	if err != nil {
+		span.SetStatus(otelCodes.Error, err.Error())
 		return status.Error(codes.Internal, "Failed to update task in the database")
 	}
 

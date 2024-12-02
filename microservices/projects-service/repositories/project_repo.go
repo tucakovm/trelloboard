@@ -4,6 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	otelCodes "go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/otel/trace"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	"log"
 	"os"
 	"projects_module/domain"
@@ -17,7 +21,8 @@ import (
 )
 
 type ProjectRepo struct {
-	cli *mongo.Client
+	cli    *mongo.Client
+	Tracer trace.Tracer
 }
 
 func (pr *ProjectRepo) Disconnect(ctx context.Context) error {
@@ -53,6 +58,7 @@ func (pr *ProjectRepo) getCollection() *mongo.Collection {
 }
 
 func insertInitialProjects(client *mongo.Client) error {
+
 	collection := client.Database("mongoDemo").Collection("projects")
 	count, err := collection.CountDocuments(context.Background(), bson.M{})
 	if err != nil {
@@ -121,7 +127,8 @@ func insertInitialProjects(client *mongo.Client) error {
 	return nil
 }
 
-func New(ctx context.Context, logger *log.Logger) (*ProjectRepo, error) {
+func New(ctx context.Context, logger *log.Logger, tracer trace.Tracer) (*ProjectRepo, error) {
+
 	dburi := os.Getenv("MONGO_DB_URI")
 
 	client, err := mongo.Connect(ctx, options.Client().ApplyURI(dburi))
@@ -140,11 +147,15 @@ func New(ctx context.Context, logger *log.Logger) (*ProjectRepo, error) {
 	}
 
 	return &ProjectRepo{
-		cli: client,
+		cli:    client,
+		Tracer: tracer,
 	}, nil
 }
 
-func (pr *ProjectRepo) Create(project *domain.Project) error {
+func (pr *ProjectRepo) Create(project *domain.Project, ctx context.Context) error {
+	ctx, span := pr.Tracer.Start(ctx, "r.createProject")
+	defer span.End()
+
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
@@ -153,6 +164,7 @@ func (pr *ProjectRepo) Create(project *domain.Project) error {
 
 	result, err := projectsCollection.InsertOne(ctx, project)
 	if err != nil {
+		span.SetStatus(otelCodes.Error, err.Error())
 		log.Printf("Error inserting document: %v\n", err)
 		return err
 	}
@@ -161,7 +173,14 @@ func (pr *ProjectRepo) Create(project *domain.Project) error {
 	return nil
 }
 
-func (pr *ProjectRepo) GetAllProjects(id string) (domain.Projects, error) {
+func (pr *ProjectRepo) GetAllProjects(id string, ctx context.Context) (domain.Projects, error) {
+	if pr.Tracer == nil {
+		log.Println("Service is nil")
+		return nil, status.Error(codes.Internal, "service is not initialized")
+	}
+
+	ctx, span := pr.Tracer.Start(ctx, "r.getUserByEmail")
+	defer span.End()
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
@@ -177,18 +196,23 @@ func (pr *ProjectRepo) GetAllProjects(id string) (domain.Projects, error) {
 
 	cursor, err := projectsCollection.Find(ctx, filter)
 	if err != nil {
+		span.SetStatus(otelCodes.Error, err.Error())
 		return nil, err
 	}
 
 	if err = cursor.All(ctx, &projects); err != nil {
+		span.SetStatus(otelCodes.Error, err.Error())
 		return nil, err
 	}
 
 	return projects, nil
 }
 
-func (pr *ProjectRepo) DoesManagerExistOnProject(id string) (bool, error) {
+func (pr *ProjectRepo) DoesManagerExistOnProject(id string, ctx context.Context) (bool, error) {
 	// Initialize context (after 5 seconds timeout, abort operation)
+
+	ctx, span := pr.Tracer.Start(ctx, "r.doesManagerExistOnProject")
+	defer span.End()
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
@@ -198,6 +222,7 @@ func (pr *ProjectRepo) DoesManagerExistOnProject(id string) (bool, error) {
 	filter := bson.M{"manager.username": id}
 	count, err := projectsCollection.CountDocuments(ctx, filter)
 	if err != nil {
+		span.SetStatus(otelCodes.Error, err.Error())
 		log.Println("Error counting projects:", err)
 		return false, err
 	}
@@ -205,8 +230,12 @@ func (pr *ProjectRepo) DoesManagerExistOnProject(id string) (bool, error) {
 	return count > 0, nil
 }
 
-func (pr *ProjectRepo) DoesUserExistOnProject(id string) (bool, error) {
+func (pr *ProjectRepo) DoesUserExistOnProject(id string, ctx context.Context) (bool, error) {
 	// Initialize context (after 5 seconds timeout, abort operation)
+
+	ctx, span := pr.Tracer.Start(ctx, "r.DoesUserExistOnProject")
+	defer span.End()
+
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
@@ -216,6 +245,7 @@ func (pr *ProjectRepo) DoesUserExistOnProject(id string) (bool, error) {
 	filter := bson.M{"members.username": id}
 	count, err := projectsCollection.CountDocuments(ctx, filter)
 	if err != nil {
+		span.SetStatus(otelCodes.Error, err.Error())
 		log.Println("Error counting projects:", err)
 		return false, err
 	}
@@ -223,13 +253,19 @@ func (pr *ProjectRepo) DoesUserExistOnProject(id string) (bool, error) {
 	return count > 0, nil
 }
 
-func (pr *ProjectRepo) DoesMemberExistOnProject(projectId string, userId string) (bool, error) {
+func (pr *ProjectRepo) DoesMemberExistOnProject(projectId string, userId string, ctx context.Context) (bool, error) {
+
+	ctx, span := pr.Tracer.Start(ctx, "r.doesMemberExistOnProject")
+	defer span.End()
+
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
+
 	projectsCollection := pr.getCollection()
 
 	objID, err := primitive.ObjectIDFromHex(projectId)
 	if err != nil {
+		span.SetStatus(otelCodes.Error, err.Error())
 		log.Printf("Invalid project ID: %v\n", err)
 		return false, err
 	}
@@ -242,6 +278,7 @@ func (pr *ProjectRepo) DoesMemberExistOnProject(projectId string, userId string)
 	var project bson.M
 	err = projectsCollection.FindOne(ctx, filter).Decode(&project)
 	if err != nil {
+		span.SetStatus(otelCodes.Error, err.Error())
 		if errors.Is(err, mongo.ErrNoDocuments) {
 			return false, nil
 		}
@@ -252,15 +289,21 @@ func (pr *ProjectRepo) DoesMemberExistOnProject(projectId string, userId string)
 	return true, nil
 }
 
-func (pr *ProjectRepo) Delete(id string) error {
+func (pr *ProjectRepo) Delete(id string, ctx context.Context) error {
+
+	ctx, span := pr.Tracer.Start(ctx, "r.deleteProject")
+	defer span.End()
+
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
+
 	projectsCollection := pr.getCollection()
 
 	objID, _ := primitive.ObjectIDFromHex(id)
 	filter := bson.D{{Key: "_id", Value: objID}}
 	result, err := projectsCollection.DeleteOne(ctx, filter)
 	if err != nil {
+		span.SetStatus(otelCodes.Error, err.Error())
 		log.Println(err)
 		return err
 	}
@@ -268,7 +311,10 @@ func (pr *ProjectRepo) Delete(id string) error {
 	return nil
 }
 
-func (pr *ProjectRepo) GetById(id string) (*domain.Project, error) {
+func (pr *ProjectRepo) GetById(id string, ctx context.Context) (*domain.Project, error) {
+	ctx, span := pr.Tracer.Start(ctx, "r.getProjectById")
+	defer span.End()
+
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
@@ -277,6 +323,7 @@ func (pr *ProjectRepo) GetById(id string) (*domain.Project, error) {
 	// Convert id string to ObjectID
 	objID, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
+		span.SetStatus(otelCodes.Error, err.Error())
 		log.Println("Invalid ID format:", err)
 		return nil, err
 	}
@@ -294,7 +341,10 @@ func (pr *ProjectRepo) GetById(id string) (*domain.Project, error) {
 }
 
 // AddMember adds a user to the project's member list
-func (pr *ProjectRepo) AddMember(projectId string, user domain.User) error {
+func (pr *ProjectRepo) AddMember(projectId string, user domain.User, ctx context.Context) error {
+	ctx, span := pr.Tracer.Start(ctx, "r.addMemberToProject")
+	defer span.End()
+
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
@@ -303,6 +353,7 @@ func (pr *ProjectRepo) AddMember(projectId string, user domain.User) error {
 	// Convert projectId string to ObjectID
 	objID, err := primitive.ObjectIDFromHex(projectId)
 	if err != nil {
+		span.SetStatus(otelCodes.Error, err.Error())
 		log.Println("Invalid project ID format:", err)
 		return err
 	}
@@ -315,6 +366,7 @@ func (pr *ProjectRepo) AddMember(projectId string, user domain.User) error {
 
 	result, err := projectsCollection.UpdateOne(ctx, filter, update)
 	if err != nil {
+		span.SetStatus(otelCodes.Error, err.Error())
 		log.Println("Error adding member to project:", err)
 		return err
 	}
@@ -327,7 +379,11 @@ func (pr *ProjectRepo) AddMember(projectId string, user domain.User) error {
 	log.Printf("User %s added to project %s", user.Username, projectId)
 	return nil
 }
-func (pr *ProjectRepo) RemoveMember(projectId string, userId string) error {
+func (pr *ProjectRepo) RemoveMember(projectId string, userId string, ctx context.Context) error {
+
+	ctx, span := pr.Tracer.Start(ctx, "r.removeMemberFromProject")
+	defer span.End()
+
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
@@ -336,6 +392,7 @@ func (pr *ProjectRepo) RemoveMember(projectId string, userId string) error {
 
 	objID, err := primitive.ObjectIDFromHex(projectId)
 	if err != nil {
+		span.SetStatus(otelCodes.Error, err.Error())
 		log.Println("Invalid project ID format:", err)
 		return err
 	}
@@ -347,6 +404,7 @@ func (pr *ProjectRepo) RemoveMember(projectId string, userId string) error {
 
 	result, err := projectsCollection.UpdateOne(ctx, filter, update)
 	if err != nil {
+		span.SetStatus(otelCodes.Error, err.Error())
 		log.Println("Error removing member from project:", err)
 		return err
 	}

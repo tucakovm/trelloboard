@@ -9,6 +9,7 @@ type Config struct {
 	Address            string
 	TaskServicePort    string
 	TaskServiceAddress string
+	JaegerEndpoint     string
 }
 
 func GetConfig() Config {
@@ -17,6 +18,7 @@ func GetConfig() Config {
 		Address:            fmt.Sprintf(":%s", os.Getenv("PROJECTS_SERVICE_PORT")),
 		TaskServicePort:    fmt.Sprintf(":%s", os.Getenv("TASKS_SERVICE_PORT")),
 		TaskServiceAddress: os.Getenv("TASKS_SERVICE_ADDRESS"),
+		JaegerEndpoint:     os.Getenv("JAEGER_ENDPOINT"),
 	}
 }
 

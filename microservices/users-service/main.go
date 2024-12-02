@@ -3,6 +3,12 @@ package main
 import (
 	"context"
 	"github.com/redis/go-redis/v9"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/exporters/jaeger"
+	"go.opentelemetry.io/otel/propagation"
+	"go.opentelemetry.io/otel/sdk/resource"
+	sdktrace "go.opentelemetry.io/otel/sdk/trace"
+	semconv "go.opentelemetry.io/otel/semconv/v1.7.0"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/reflection"
@@ -25,6 +31,18 @@ func main() {
 
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
+
+	exp, err := newExporter(cfg.JaegerEndpoint)
+	if err != nil {
+		log.Fatalf("failed to initialize exporter: %v", err)
+	}
+
+	tp := newTraceProvider(exp)
+	defer func() { _ = tp.Shutdown(ctx) }()
+	otel.SetTracerProvider(tp)
+	otel.SetTextMapPropagator(propagation.TraceContext{})
+
+	tracer := tp.Tracer("user-service")
 
 	listener, err := net.Listen("tcp", cfg.UserPort)
 	if err != nil {
@@ -77,7 +95,7 @@ func main() {
 	}
 
 	log.Println("Initializing User Repository...")
-	repoUser, err := repositories.NewUserRepo(timeoutContext)
+	repoUser, err := repositories.NewUserRepo(timeoutContext, tracer)
 	if err != nil {
 		log.Fatal("Failed to initialize User Repository: ", err)
 	}
@@ -91,11 +109,12 @@ func main() {
 	}
 	log.Println("Blacklist Service initialized successfully.")
 
-	serviceUser, err := services.NewUserService(*repoUser, blacklistRepo)
+	serviceUser, err := services.NewUserService(*repoUser, blacklistRepo, tracer)
+
 	if err != nil {
 		log.Fatal("Failed to initialize User Service: ", err)
 	}
-	handlerUser, err := h.NewUserHandler(serviceUser, projectClient)
+	handlerUser, err := h.NewUserHandler(serviceUser, projectClient, tracer)
 	if err != nil {
 		log.Fatal("Failed to initialize User Handler: ", err)
 	}
@@ -146,4 +165,24 @@ func handleErr(err error) {
 	if err != nil {
 		log.Fatalln(err)
 	}
+}
+
+func newExporter(address string) (sdktrace.SpanExporter, error) {
+	exp, err := jaeger.New(jaeger.WithCollectorEndpoint(jaeger.WithEndpoint(address)))
+	if err != nil {
+		return nil, err
+	}
+	return exp, nil
+}
+
+func newTraceProvider(exp sdktrace.SpanExporter) *sdktrace.TracerProvider {
+	r := resource.NewWithAttributes(
+		semconv.SchemaURL,
+		semconv.ServiceNameKey.String("user-service"),
+	)
+
+	return sdktrace.NewTracerProvider(
+		sdktrace.WithSyncer(exp),
+		sdktrace.WithResource(r),
+	)
 }
