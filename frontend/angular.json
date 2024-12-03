@@ -73,8 +73,8 @@
           "options": {
             "port": 4200,
             "ssl": true,
-            "sslKey": "ssl/server.key",
-            "sslCert": "ssl/server.crt"
+            "sslKey": "ssl2/cert.key",
+            "sslCert": "ssl2/cert.crt"
           },
           "configurations": {
             "production": {

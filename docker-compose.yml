@@ -33,7 +33,7 @@ services:
     ports:
       - "${GATEWAY_PORT}:${GATEWAY_PORT}"
     volumes:
-      - ./microservices/api-gateway/cert:/api-gateway/cert
+      - ./microservices/api-gateway/cert2:/api-gateway/cert2
 
   projects_server:
     image: projects-server

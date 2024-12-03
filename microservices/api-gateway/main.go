@@ -103,7 +103,7 @@ func main() {
 
 	go func() {
 		log.Printf("API Gateway listening on %s\n", cfg.Address)
-		if err := gwServer.ListenAndServeTLS("api-gateway/cert/server.crt", "api-gateway/cert/server.key"); err != nil && !errors.Is(err, http.ErrServerClosed) {
+		if err := gwServer.ListenAndServeTLS("api-gateway/cert2/cert.crt", "api-gateway/cert2/cert.key"); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			log.Fatalf("HTTPS server error: %v\n", err)
 			//	if err := gwServer.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			//	log.Fatalf("HTTP server error: %v\n", err)
