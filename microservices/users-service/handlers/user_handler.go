@@ -44,31 +44,6 @@ func NewUserHandler(service services.UserService, projectService proto.ProjectSe
 	}, nil
 }
 
-type RegisterRequest struct {
-	FirstName string `json:"first_name"`
-	LastName  string `json:"last_name"`
-	Username  string `json:"username"`
-	Email     string `json:"email"`
-	Password  string `json:"password"`
-	Role      string `json:"role"`
-}
-
-type LoginRequest struct {
-	Username string `json:"username"`
-	Password string `json:"password"`
-}
-
-type VerifyRequest struct {
-	Username string `json:"username"`
-	Code     string `json:"code"`
-}
-
-type ChangePasswordRequest struct {
-	Username        string `json:"username" binding:"required"`
-	CurrentPassword string `json:"currentPassword" binding:"required"`
-	NewPassword     string `json:"newPassword" binding:"required,min=6"`
-}
-
 func (h UserHandler) RegisterHandler(ctx context.Context, req *proto.RegisterReq) (*proto.EmptyResponse, error) {
 	ctx, span := h.Tracer.Start(ctx, "h.register")
 	defer span.End()
@@ -81,6 +56,12 @@ func (h UserHandler) RegisterHandler(ctx context.Context, req *proto.RegisterReq
 
 	user := req.User
 	log.Println("korisnik", user)
+	if err := h.service.CheckPasswordBlacklist(user.Password); err != nil {
+		log.Printf("Password rejected due to blacklist: %v", err)
+		span.SetStatus(otelCodes.Error, err.Error())
+		return nil, status.Error(codes.InvalidArgument, "Password is blacklisted")
+	}
+
 	password, _ := HashPassword(user.Password)
 
 	err = h.service.RegisterUser(user.Firstname, user.Lastname, user.Username, user.Email, password, user.Role, ctx)

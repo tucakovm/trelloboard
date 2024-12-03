@@ -88,6 +88,7 @@ func (h ProjectHandler) GetById(ctx context.Context, req *proto.GetByIdReq) (*pr
 }
 
 func (h ProjectHandler) AddMember(ctx context.Context, req *proto.AddMembersRequest) (*proto.EmptyResponse, error) {
+
 	subject := "add-to-project"
 	err := h.service.AddMember(req.Id, req.User, ctx)
 	if err != nil {

@@ -20,7 +20,7 @@ export class AddMemberComponent implements OnInit {
   project: Project | null = null;
   maximumNumber: boolean = false;
   userAlreadyExists: boolean = false; // Dodato
-  tasks : Task[] | null = null; 
+  tasks : Task[] | null = null;
   cannotAddmemberToProject :boolean = false;
 
   constructor(
@@ -48,7 +48,7 @@ export class AddMemberComponent implements OnInit {
         if (this.id && user) {
           this.projectService.getById(this.id).subscribe((resp) => {
             this.project = resp;
-            
+
             this.userAlreadyExists = false; // Resetuje se pri svakom pokušaju dodavanja
             if(this.id){
               this.taskService.getAllTasksByProjectId(this.id).subscribe((resp)=>{
@@ -60,14 +60,14 @@ export class AddMemberComponent implements OnInit {
                   const exists = this.project.members.some(
                     (member) => member.id === user.id || member.username === user.username
                   );
-                  
+
                   if(this.tasks){
                     this.cannotAddmemberToProject = this.tasks.every(task => task.status === 'Done');
                     console.log(this.cannotAddmemberToProject)
                   }
                   if (exists) {
                     this.userAlreadyExists = true;
-                  } else if (!this.maximumNumber && this.id && !this.cannotAddmemberToProject) {
+                  } else if (!this.maximumNumber && this.id && !this.cannotAddmemberToProject && user.role != "Manager") {
                     this.projectService
                       .createMember(this.id, user)
                       .subscribe(() => console.log('Member successfully added'));

@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"log"
+	"os"
 	"time"
 
 	"github.com/redis/go-redis/v9"
@@ -17,9 +18,9 @@ type RedisRepo struct {
 
 func NewRedisRepo() *RedisRepo {
 	client := redis.NewClient(&redis.Options{
-		Addr:     "localhost:6379", // Replace with your Redis server address
-		Password: "",               // No password by default
-		DB:       0,                // Default DB
+		Addr:     os.Getenv("REDIS_ADDRESS"), // Replace with your Redis server address
+		Password: os.Getenv("PASSWORD"),      // No password by default
+		DB:       0,                          // Default DB
 	})
 
 	_, err := client.Ping(context.Background()).Result()

@@ -10,29 +10,6 @@ type BlacklistConsul struct {
 	Client *api.Client
 }
 
-/*
-	func NewBlacklistConsul() (*BlacklistConsul, error) {
-		// Configure and connect to the Consul agent
-		config := api.DefaultConfig()
-		config.Address = "http://localhost:8500" // Replace with your Consul server address if different
-
-		client, err := api.NewClient(config)
-		if err != nil {
-			log.Printf("Failed to connect to Consul: %v", err)
-			return nil, err
-		}
-
-		log.Println("Connected to Consul successfully")
-
-		// Initialize the blacklist with 15 random entries
-		if err := initializeBlacklist(client); err != nil {
-			log.Printf("Failed to initialize blacklist: %v", err)
-			return nil, err
-		}
-
-		return &BlacklistConsul{Client: client}, nil
-	}
-*/
 func NewBlacklistConsul(address string) (*BlacklistConsul, error) {
 	client, err := api.NewClient(&api.Config{
 		Address: address,
@@ -55,9 +32,9 @@ func initializeBlacklist(client *api.Client) error {
 	kv := client.KV()
 
 	passwords := []string{
-		"Password123", "123456Abc", "Qwerty1234", "Welcome2024", "Admin2023",
-		"Sunshine2024", "QwertyUIOP1", "Password1!", "Test1234!", "Iloveyou2024",
-		"12345ABCDE", "Monkey2024!", "HelloWorld1", "Superman2023", "1Qaz2Wsx",
+		"Password123!", "123456Abc!", "Qwerty1234!", "Welcome2024!", "Admin2023!",
+		"Sunshine2024!", "QwertyUIOP1", "Password1!", "Test1234!", "Iloveyou2024!",
+		"12345ABCDE!", "Monkey2024!", "HelloWorld1", "Superman2023!", "1Qaz2Wsx!",
 	}
 
 	// Check if any keys exist under the "blacklist/" prefix

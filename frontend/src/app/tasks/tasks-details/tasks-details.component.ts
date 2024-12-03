@@ -77,6 +77,7 @@ export class TasksDetailsComponent implements OnInit {
   addMember() {
     if (this.id) {
       this.router.navigate(['/task-add-member', this.id ]);
+      this.getTask();
     }
   }
 

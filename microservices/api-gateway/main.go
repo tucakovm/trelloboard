@@ -22,7 +22,6 @@ import (
 )
 
 func main() {
-	setupDefaultHTTPClient()
 
 	cfg := config.GetConfig()
 
@@ -275,14 +274,4 @@ func enableCORS(h http.Handler) http.Handler {
 func forwardClaimsToServices(ctx context.Context) context.Context {
 	claims := ctx.Value("claims").(jwt.MapClaims)
 	return context.WithValue(ctx, "role", claims["role"])
-}
-
-func setupDefaultHTTPClient() {
-	transport := &http.Transport{
-		MaxIdleConns:        10,
-		MaxIdleConnsPerHost: 10,
-		MaxConnsPerHost:     10,
-	}
-	http.DefaultClient.Transport = transport
-	http.DefaultClient.Timeout = 30 * time.Second
 }

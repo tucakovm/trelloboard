@@ -5,11 +5,12 @@ services:
       dockerfile: Dockerfile
     container_name: angular
     ports:
-      - "4200:4200"
+      - "${ANGULAR_PORT}:${ANGULAR_PORT}"
     depends_on:
       - api_gateway
     env_file:
-      microservices/.env
+      .env
+
 
   api_gateway:
     image: api_gateway
@@ -20,7 +21,7 @@ services:
       dockerfile: Dockerfile
     restart: always
     env_file:
-      microservices/.env
+      .env
     depends_on:
       - projects_server
       - tasks_server
@@ -30,10 +31,9 @@ services:
       - mongo
       - nats
     ports:
-      - "8000:8000"
+      - "${GATEWAY_PORT}:${GATEWAY_PORT}"
     volumes:
       - ./microservices/api-gateway/cert:/api-gateway/cert
-    #dodao sam ovaj volumes
 
   projects_server:
     image: projects-server
@@ -44,9 +44,9 @@ services:
     container_name: "projects-server"
     hostname: "projects-server"
     ports:
-      - "8001:8001"
+      - "${PROJECTS_SERVICE_PORT}:${PROJECTS_SERVICE_PORT}"
     env_file:
-      microservices/.env
+      .env
     depends_on:
       mongo:
         condition: service_healthy
@@ -62,9 +62,9 @@ services:
     container_name: "tasks-server"
     hostname: "tasks-server"
     ports:
-      - "8002:8002"
+      - "${TASKS_SERVICE_PORT}:${TASKS_SERVICE_PORT}"
     env_file:
-      microservices/.env
+      .env
     depends_on:
       mongo:
         condition: service_healthy
@@ -79,11 +79,11 @@ services:
     restart: always
     container_name: "users-server"
     hostname: "users-server"
-    ports:
-      - "8003:8003"
-      - "587:587"
     env_file:
-      - microservices/.env
+      .env
+    ports:
+      - "${USER_SERVICE_PORT}:${USER_SERVICE_PORT}"
+      - "${SMTP_PORT}:${SMTP_PORT}"
     depends_on:
       mongo:
         condition: service_healthy
@@ -93,14 +93,6 @@ services:
         condition: service_healthy
     volumes:
       - ./users-data:/app/data
-    healthcheck:
-      test: [ "CMD", "curl", "-f", "http://localhost:8003/health" ]
-      interval: 10s
-      timeout: 5s
-      retries: 3
-    environment:
-      REDIS_HOST: redis
-      REDIS_PORT: 6379
 
 
 
@@ -113,9 +105,9 @@ services:
     container_name: "notifications-server"
     hostname: "notifications-server"
     ports:
-      - "8004:8004"
+      - "${NOTIFICATIONS_SERVICE_PORT}:${NOTIFICATIONS_SERVICE_PORT}"
     env_file:
-      microservices/.env
+      .env
     depends_on:
       mongo:
         condition: service_healthy
@@ -126,7 +118,7 @@ services:
     image: mongo
     restart: always
     ports:
-      - "27017:27017"
+      - "${MONGO_PORT}:${MONGO_PORT}"
     environment:
       MONGO_INITDB_ROOT_USERNAME: root
       MONGO_INITDB_ROOT_PASSWORD: pass
@@ -142,12 +134,12 @@ services:
   consul:
     image: hashicorp/consul:latest
     ports:
-      - "8500:8500"
-      - "8600:8600/tcp"
-      - "8600:8600/udp"
+      - "${CONSUL_PORT}:${CONSUL_PORT}"
+      - "${CONSUL_PORT_TCP}"
+      - "${CONSUL_PORT_UDP}"
     command: "agent -server -ui -node=server-1 -bootstrap-expect=1 -client=0.0.0.0"
     env_file:
-      microservices/.env
+      .env
     volumes:
       - ./consul_store:/consul/data
 
@@ -155,15 +147,15 @@ services:
     image: mongo-express
     restart: always
     environment:
-      - ME_CONFIG_MONGODB_SERVER=mongo
-      - ME_CONFIG_MONGODB_ADMINUSERNAME=root
-      - ME_CONFIG_MONGODB_ADMINPASSWORD=pass
-      - ME_CONFIG_BASICAUTH_USERNAME=admin
-      - ME_CONFIG_BASICAUTH_PASSWORD=admin
+      ME_CONFIG_MONGODB_SERVER: "${ME_CONFIG_MONGODB_SERVER}"
+      ME_CONFIG_MONGODB_ADMINUSERNAME: "${ME_CONFIG_MONGODB_ADMINUSERNAME}"
+      ME_CONFIG_MONGODB_ADMINPASSWORD: "${ME_CONFIG_MONGODB_ADMINPASSWORD}"
+      ME_CONFIG_BASICAUTH_USERNAME: "${ME_CONFIG_BASICAUTH_USERNAME}"
+      ME_CONFIG_BASICAUTH_PASSWORD: "${ME_CONFIG_BASICAUTH_PASSWORD}"
     depends_on:
       - mongo
     ports:
-      - "8081:8081"
+      - "${MONGO_EXPRESS_PORT}:${MONGO_EXPRESS_PORT}"
     volumes:
       - mongo_express_data:/data/db
 
@@ -171,9 +163,9 @@ services:
     image: cassandra
     restart: always
     ports:
-      - "9042:9042"
+      - "${CASSANDRA_PORT}:${CASSANDRA_PORT}"
     env_file:
-      microservices/.env
+      .env
     healthcheck:
       test: ["CMD-SHELL", "cqlsh -e 'describe cluster'"]
       interval: 15s
@@ -186,16 +178,16 @@ services:
   nats:
     image: nats:latest
     ports:
-      - "4222:4222"
+      - "${NATS_PORT}:${NATS_PORT}"
     expose:
-      - "4222"
+      - "${NATS_PORT}"
 
   redis:
     image: redis:latest
     container_name: redis
     hostname: redis
     ports:
-      - "6379:6379"
+      - "${REDIS_PORT}:${REDIS_PORT}"
     volumes:
       - redis-data:/data
     healthcheck:
@@ -211,11 +203,11 @@ services:
     ports:
       - "6831:6831/udp"
       - "6832:6832/udp"
-      - "16686:16686"
+      - "${JAEGER_UI_PORT}:${JAEGER_UI_PORT}"
       - "14268:14268"
       - "14250:14250"
     env_file:
-      microservices/.env
+      .env
 
 volumes:
   mongo_store:

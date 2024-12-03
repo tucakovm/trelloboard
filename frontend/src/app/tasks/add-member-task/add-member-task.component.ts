@@ -5,6 +5,7 @@ import {ActivatedRoute, Router} from "@angular/router";
 import {UserFP} from "../../model/userForProject";
 import {UserService} from "../../services/user.service";
 import {TaskService} from "../../services/task.service";
+import {AuthService} from "../../services/auth.service";
 
 @Component({
   selector: 'app-add-member-task',
@@ -24,6 +25,7 @@ export class AddMemberTaskComponent implements OnInit {
     private router: Router,
     private userService: UserService,
     private taskService: TaskService,
+    private authService: AuthService,
   ) {
     this.addMemberForm = this.fb.group({
       username: ['', [Validators.required, Validators.minLength(3)]]
@@ -41,7 +43,7 @@ export class AddMemberTaskComponent implements OnInit {
         console.log("res1" + resp.user)
         console.log("res1id" + this.id)
 
-        if (this.id && user) {
+        if (this.id && user && user.role != "Manager") {
           this.taskService.getById(this.id).subscribe((resp) => {
             console.log("res2" + resp)
             this.task = resp;

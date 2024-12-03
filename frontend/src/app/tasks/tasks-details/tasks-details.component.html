@@ -62,6 +62,7 @@
             <strong>{{ member.username }}</strong> ({{ member.role }})
           </span>
           <button
+            *ngIf="isManager()"
             class="btn btn-danger btn-sm"
             (click)="deleteMember(member.id)"
           >
