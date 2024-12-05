@@ -117,7 +117,7 @@ func (s UserService) VerifyUser(username, code string, ctx context.Context) erro
 		span.SetStatus(otelCodes.Error, err.Error())
 		return err
 	}
-	if user.Code != code && code != "123456" {
+	if user.Code != code {
 		return errors.New("invalid verification code")
 	}
 

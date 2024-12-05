@@ -133,6 +133,7 @@ func (h *TaskHandler) AddMemberTask(ctx context.Context, req *proto.AddMemberTas
 
 	ctx, span := h.Tracer.Start(ctx, "h.AddMemberTask")
 	defer span.End()
+
 	select {
 	case <-ctx.Done():
 		log.Printf("Handler detected context cancellation or timeout: %v", ctx.Err())
@@ -141,6 +142,10 @@ func (h *TaskHandler) AddMemberTask(ctx context.Context, req *proto.AddMemberTas
 	}
 
 	task, _ := h.service.GetById(req.TaskId, ctx)
+	if task.Status == "Done" {
+		log.Printf("cannot add members to a done task")
+		return nil, status.Error(codes.FailedPrecondition, "cannot add members to a done task")
+	}
 	userOnProjectReq := &proto.UserOnOneProjectReq{
 		UserId:    req.User.Username,
 		ProjectId: task.ProjectId,
@@ -218,7 +223,17 @@ func (h *TaskHandler) RemoveMemberTask(ctx context.Context, req *proto.RemoveMem
 	ctx, span := h.Tracer.Start(ctx, "h.removeMemberTask")
 	defer span.End()
 	taskId := req.TaskId
-	err := h.service.RemoveMember(taskId, req.UserId, ctx)
+	task, err := h.service.GetById(taskId, ctx)
+	if err != nil {
+		log.Printf("Error getting task: %v", err)
+		return nil, status.Error(codes.Internal, "Error getting task")
+	}
+	log.Println(task.Status)
+	if task.Status == "Done" {
+		log.Printf("cannot remove member from a done task")
+		return nil, status.Error(codes.FailedPrecondition, "cannot remove member from a done task")
+	}
+	err = h.service.RemoveMember(taskId, req.UserId, ctx)
 	if err != nil {
 		span.SetStatus(otelCodes.Error, err.Error())
 		log.Printf("Error creating project: %v", err)
@@ -265,11 +280,12 @@ func (h *TaskHandler) UpdateTask(ctx context.Context, req *proto.UpdateTaskReq) 
 	}
 
 	// Update the fields of the task
+	//Commented out the actual update logic in order to leave only status update
 	updatedTask := existingTask
-	updatedTask.Name = req.Name
-	updatedTask.Description = req.Description
+	//pdatedTask.Name = req.Name
+	//updatedTask.Description = req.Description
 	updatedTask.Status = req.Status
-	updatedTask.Members = req.Members
+	//updatedTask.Members = req.Members
 
 	// Call the service layer to save changes
 	err = h.service.UpdateTask(updatedTask, ctx)

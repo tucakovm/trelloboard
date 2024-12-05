@@ -247,6 +247,7 @@ func CheckPassword(hashedPassword, password string) bool {
 func (h *UserHandler) ChangePassword(ctx context.Context, req *proto.ChangePasswordReq) (*proto.EmptyResponse, error) {
 	ctx, span := h.Tracer.Start(ctx, "h.changePassword")
 	defer span.End()
+
 	err := h.service.ChangePassword(req.ChangeUser.Username, req.ChangeUser.CurrentPassword, req.ChangeUser.NewPassword, ctx)
 	if err != nil {
 		err := errors.New("bad request")
@@ -332,7 +333,7 @@ func (h UserHandler) MagicLink(ctx context.Context, req *proto.MagicLinkReq) (*p
 		return nil, status.Error(codes.Internal, "Error generating token")
 	}
 
-	frontendURL := "http://localhost:4200"
+	frontendURL := "https://localhost:4200"
 	magicLink := fmt.Sprintf("%s/magic-login?token=%s", frontendURL, token)
 
 	err = services.SendMagicLinkEmail(user.Email, magicLink)

@@ -11,6 +11,7 @@ import (
 	"log"
 	proto "projects_module/proto/project"
 	"projects_module/services"
+	"time"
 )
 
 type ProjectHandler struct {
@@ -34,6 +35,15 @@ func (h ProjectHandler) Create(ctx context.Context, req *proto.CreateProjectReq)
 	log.Printf("Received Create Project request: %v", req.Project)
 	ctx, span := h.Tracer.Start(ctx, "h.createProject")
 	defer span.End()
+	if req.Project.MaxMembers <= req.Project.MinMembers {
+		span.SetStatus(otelCodes.Error, "Max members must be more than Min member")
+		return nil, status.Error(codes.ResourceExhausted, "Max members must be more than Min member")
+	}
+	log.Println(req.Project.CompletionDate.AsTime())
+	if time.Now().Truncate(24 * time.Hour).After(req.Project.CompletionDate.AsTime()) {
+		span.SetStatus(otelCodes.Error, "Invalid completion date")
+		return nil, status.Error(codes.ResourceExhausted, "Invalid completion date")
+	}
 	err := h.service.Create(req.Project, ctx)
 	if err != nil {
 		span.SetStatus(otelCodes.Error, err.Error())
@@ -66,6 +76,7 @@ func (h ProjectHandler) GetAllProjects(ctx context.Context, req *proto.GetAllPro
 func (h ProjectHandler) Delete(ctx context.Context, req *proto.DeleteProjectReq) (*proto.EmptyResponse, error) {
 	ctx, span := h.Tracer.Start(ctx, "h.deleteProject")
 	defer span.End()
+
 	err := h.service.Delete(req.Id, ctx)
 	if err != nil {
 		span.SetStatus(otelCodes.Error, err.Error())
@@ -90,6 +101,17 @@ func (h ProjectHandler) GetById(ctx context.Context, req *proto.GetByIdReq) (*pr
 func (h ProjectHandler) AddMember(ctx context.Context, req *proto.AddMembersRequest) (*proto.EmptyResponse, error) {
 
 	subject := "add-to-project"
+
+	project, _ := h.service.GetById(req.Id, ctx)
+	numMembers := len(project.Members)
+	if int32(numMembers) >= project.MaxMembers {
+		log.Printf("Error adding member, project capacity full")
+		return nil, status.Error(codes.ResourceExhausted, "Max members must be less than Min member")
+	}
+	if req.User.Role == "Manager" {
+		log.Printf("Error adding member to project, cannot add a manager")
+		return nil, status.Error(codes.Internal, "Error adding member to project, cannot add a manager to a project ")
+	}
 	err := h.service.AddMember(req.Id, req.User, ctx)
 	if err != nil {
 		log.Printf("Error adding member on project: %v", err)
