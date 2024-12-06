@@ -123,7 +123,6 @@ services:
       - "8005:8005"
     env_file:
       .env
-
     depends_on:
       - neo4j
       - tracing
@@ -234,6 +233,11 @@ services:
     ports:
       - "7687:7687"
       - "7474:7474"
+    healthcheck:
+      test: [ "CMD", "cypher-shell", "-u", "neo4j", "-p", "password", "RETURN 1" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
 volumes:
   mongo_store:

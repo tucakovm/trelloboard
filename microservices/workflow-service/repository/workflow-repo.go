@@ -12,8 +12,8 @@ type WorkflowRepository struct {
 }
 
 func NewWorkflowRepository(ctx context.Context) (*WorkflowRepository, error) {
-	// Create a Neo4j driver
-	driver, err := neo4j.NewDriverWithContext("bolt://localhost:7687", neo4j.BasicAuth("neo4j", "password", ""))
+	// Create a Neo4j driver once
+	driver, err := neo4j.NewDriverWithContext("bolt://neo4j:7687", neo4j.BasicAuth("neo4j", "password", ""))
 	if err != nil {
 		return nil, fmt.Errorf("failed to create Neo4j driver: %w", err)
 	}
@@ -22,6 +22,7 @@ func NewWorkflowRepository(ctx context.Context) (*WorkflowRepository, error) {
 }
 
 func (r *WorkflowRepository) CreateWorkflow(ctx context.Context, workflow models.Workflow) error {
+	// Create session for this transaction
 	session := r.Driver.NewSession(ctx, neo4j.SessionConfig{})
 	defer session.Close(ctx)
 
@@ -45,10 +46,7 @@ func (r *WorkflowRepository) AddTask(ctx context.Context, projectID string, task
 
 	_, err := session.ExecuteWrite(ctx, func(tx neo4j.ManagedTransaction) (interface{}, error) {
 		// Add the task to the project
-		taskQuery := `
-			MATCH (p:Project {id: $projectID})
-			CREATE (t:Task {id: $taskID, name: $taskName, blocked: false})
-			CREATE (p)-[:HAS_TASK]->(t)`
+		taskQuery := `MATCH (p:Project {id: $projectID}) CREATE (t:Task {id: $taskID, name: $taskName, blocked: false}) CREATE (p)-[:HAS_TASK]->(t)`
 		_, err := tx.Run(ctx, taskQuery, map[string]interface{}{
 			"projectID": projectID,
 			"taskID":    task.TaskID,
@@ -60,9 +58,7 @@ func (r *WorkflowRepository) AddTask(ctx context.Context, projectID string, task
 
 		// Create task dependencies
 		for _, depID := range task.Dependencies {
-			dependencyQuery := `
-				MATCH (t:Task {id: $taskID}), (d:Task {id: $depID})
-				CREATE (t)-[:DEPENDS_ON]->(d)`
+			dependencyQuery := `MATCH (t:Task {id: $taskID}), (d:Task {id: $depID}) CREATE (t)-[:DEPENDS_ON]->(d)`
 			_, err = tx.Run(ctx, dependencyQuery, map[string]interface{}{
 				"taskID": task.TaskID,
 				"depID":  depID,
@@ -186,42 +182,42 @@ func (r *WorkflowRepository) DeleteWorkflowByProjectID(ctx context.Context, proj
 	}
 	return nil
 }
-
-func (r *WorkflowRepository) CheckTaskDependencies(ctx context.Context, projectID string, taskID string) (bool, error) {
+func (r *WorkflowRepository) CheckWorkflowsExist(ctx context.Context) (bool, error) {
 	session := r.Driver.NewSession(ctx, neo4j.SessionConfig{})
 	defer session.Close(ctx)
 
-	// Execute the read transaction to check the dependencies
-	_, err := session.ExecuteRead(ctx, func(tx neo4j.ManagedTransaction) (interface{}, error) {
-		// Query to find all tasks that this task depends on
-		query := `
-			MATCH (t:Task {id: $taskID})-[:DEPENDS_ON]->(d:Task)
-			RETURN d.id AS dependencyID, d.blocked AS blocked`
-		result, err := tx.Run(ctx, query, map[string]interface{}{
-			"taskID": taskID,
-		})
+	exists, err := session.ExecuteRead(ctx, func(tx neo4j.ManagedTransaction) (interface{}, error) {
+		query := "MATCH (w:Workflow) RETURN COUNT(w) > 0 AS exists"
+		result, err := tx.Run(ctx, query, nil)
 		if err != nil {
 			return nil, fmt.Errorf("failed to run query: %w", err)
 		}
 
-		// Iterate over the dependencies and check if any are blocked
-		for result.Next(ctx) {
+		if result.Next(ctx) {
 			record := result.Record()
-			blocked := record.Values[1].(bool)
-			if blocked {
-				// If any dependency is blocked, return false
-				return false, nil
-			}
+			return record.Values[0].(bool), nil
 		}
-		if err := result.Err(); err != nil {
-			return nil, fmt.Errorf("failed to read results: %w", err)
-		}
-
-		return true, nil
+		return false, result.Err()
 	})
+
 	if err != nil {
 		return false, err
 	}
 
-	return true, nil
+	return exists.(bool), nil
+}
+
+func checkWorkflowsExist(ctx context.Context, session neo4j.Session) (bool, error) {
+	query := "MATCH (w:Workflow) RETURN COUNT(w) > 0 AS exists"
+	result, err := session.Run(query, nil)
+	if err != nil {
+		return false, err
+	}
+
+	if result.Next() {
+		exists, _ := result.Record().Get("exists")
+		return exists.(bool), nil
+	}
+
+	return false, result.Err()
 }

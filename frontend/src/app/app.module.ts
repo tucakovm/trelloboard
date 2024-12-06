@@ -25,6 +25,7 @@ import { AddMemberTaskComponent } from './tasks/add-member-task/add-member-task.
 import { UnauthorizedComponent } from './unauthorized/unauthorized.component';
 import { NotificationsComponent } from './notifications/notifications.component';
 import { NotificationsProjectComponent } from './notifications-project/notifications-project.component';
+import { NgxGraphModule } from '@swimlane/ngx-graph';
 @NgModule({
   declarations: [
     AppComponent,
@@ -54,6 +55,8 @@ import { NotificationsProjectComponent } from './notifications-project/notificat
     HttpClientModule,
     FormsModule,
     RecaptchaModule,
+    NgxGraphModule,
+
   ],
   providers: [
     {

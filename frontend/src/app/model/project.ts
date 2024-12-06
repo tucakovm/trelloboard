@@ -1,13 +1,15 @@
+
 import { UserFP } from "./userForProject";
 
 export class Project {
     id : string;
     name: string;
-    completionDate: Date;  
+    completionDate: Date;
     minMembers: number;
     maxMembers: number;
     manager:UserFP;
     members:UserFP[];
+    tasks?: Task[];
 
     constructor(
         id : string,
@@ -27,3 +29,11 @@ export class Project {
         this.members = members;
     }
 }
+export interface Task {
+  id: string;
+  name: string;
+  description: string;
+  dependencies: string[];
+  blocked: boolean;
+}
+

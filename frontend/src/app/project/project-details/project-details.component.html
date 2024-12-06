@@ -66,6 +66,36 @@
           />
         </div>
       </div>
+      <div class="container mt-5">
+        <div class="card shadow-lg border-0">
+          <div class="card-header bg-primary text-white text-center py-3">
+            <h3>{{ workflow.projectName }} - Task Details</h3>
+          </div>
+          <div class="card-body p-4">
+            <div class="row mb-4">
+              <div class="col-md-6">
+                <label for="projectName" class="form-label">Project Name:</label>
+                <input type="text" id="projectNamew" class="form-control border-0 input-readonly" [(ngModel)]="workflow.projectName" readonly />
+              </div>
+            </div>
+
+            <h5 class="mt-4">Tasks</h5>
+            <div *ngFor="let task of workflow.tasks" class="card shadow-sm mb-3">
+              <div class="card-body">
+                <h6>{{ task.taskName }}</h6>
+                <p><strong>Description:</strong> {{ task.taskDescription }}</p>
+                <p><strong>Blocked:</strong> {{ task.blocked ? 'Yes' : 'No' }}</p>
+                <p><strong>Dependencies:</strong>
+                  <span *ngIf="task.dependencies.length > 0">
+              {{ task.dependencies.join(', ') }}
+            </span>
+                  <span *ngIf="task.dependencies.length === 0">None</span>
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
 
       <div class="row mt-4">
         <div class="col-md-6">
@@ -127,6 +157,7 @@
           </button>
         </div>
       </div>
+      <button (click)="createTestWorkflow()">Create Test Workflow</button>
     </div>
   </div>
 </div>

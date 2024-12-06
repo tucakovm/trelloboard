@@ -2,7 +2,7 @@ package main
 
 import (
 	"context"
-	"github.com/redis/go-redis/v9"
+	"fmt"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/exporters/jaeger"
 	"go.opentelemetry.io/otel/propagation"
@@ -16,7 +16,9 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"workflow-service/config"
 	h "workflow-service/handlers"
+	"workflow-service/models"
 	workflow "workflow-service/proto/workflows"
 	"workflow-service/repository"
 	"workflow-service/services"
@@ -25,6 +27,7 @@ import (
 func main() {
 	// Ensure required environment variables are set
 	checkEnvVars()
+	cfg := config.LoadConfig()
 
 	// Initialize context and cancel function
 	ctx, cancel := context.WithCancel(context.Background())
@@ -41,26 +44,11 @@ func main() {
 	otel.SetTextMapPropagator(propagation.TraceContext{})
 
 	// Create gRPC listener
-	listener, err := net.Listen("tcp", os.Getenv("WORKFLOW_ENDPOINT"))
+	listener, err := net.Listen("tcp", cfg.WorkflowServiceport)
 	if err != nil {
 		log.Fatalf("Failed to create listener: %v", err)
 	}
 	defer listener.Close()
-
-	// Set up Redis client
-	log.Println("Initializing Redis client...")
-	redisClient := redis.NewClient(&redis.Options{
-		Addr:     os.Getenv("REDIS_ADDRESS"),
-		Password: os.Getenv("PASSWORD"),
-		DB:       0,
-	})
-	defer redisClient.Close()
-
-	// Test Redis connection
-	if _, err := redisClient.Ping(ctx).Result(); err != nil {
-		log.Fatalf("Failed to connect to Redis: %v", err)
-	}
-	log.Println("Connected to Redis successfully.")
 
 	// Initialize Workflow Repository
 	log.Println("Initializing Workflow Repository...")
@@ -68,7 +56,8 @@ func main() {
 	if err != nil {
 		log.Fatalf("Failed to initialize Workflow Repository: %v", err)
 	}
-	defer repoWorkflow.Driver.Close(ctx)
+	log.Println("Initialized repo")
+	//defer repoWorkflow.Driver.Close(ctx)
 
 	// Initialize service
 	serviceWorkflow := services.NewWorkflowService(*repoWorkflow)
@@ -86,6 +75,20 @@ func main() {
 			log.Fatalf("gRPC server error: %v", err)
 		}
 	}()
+	/*
+	   /*
+	   	exists, err := repoWorkflow.CheckWorkflowsExist(ctx)
+	   	if err != nil {
+	   		log.Fatalf("Error checking if workflows exist: %v", err)
+	   	}
+
+	   	if exists {
+	   		log.Println("Workflows already exist in the database. Skipping workflow generation.")
+	   	} else {
+	   		// Add test workflows if no workflows exist
+	   		log.Println("No workflows found in the database. Generating test workflows...")*/
+	generateTestWorkflows(ctx, repoWorkflow)
+	//}
 
 	// Wait for termination signal
 	stopCh := make(chan os.Signal, 1)
@@ -107,7 +110,7 @@ func handleErr(err error) {
 // checkEnvVars checks that the necessary environment variables are set.
 func checkEnvVars() {
 	requiredVars := []string{
-		"JAEGER_ENDPOINT", "WORKFLOW_ENDPOINT", "REDIS_ADDRESS", "PASSWORD",
+		"JAEGER_ENDPOINT", "WORKFLOW_ENDPOINT",
 	}
 
 	for _, v := range requiredVars {
@@ -137,4 +140,57 @@ func newTraceProvider(exp sdktrace.SpanExporter) *sdktrace.TracerProvider {
 		sdktrace.WithSyncer(exp),
 		sdktrace.WithResource(r),
 	)
+}
+
+func generateTestWorkflows(ctx context.Context, repo *repository.WorkflowRepository) {
+	testProjects := []struct {
+		ProjectID   string
+		ProjectName string
+	}{
+		{"1", "Project One"},
+		{"2", "Project Two"},
+		{"3", "Project Three"},
+	}
+
+	for _, project := range testProjects {
+		// Create the workflow
+		err := repo.CreateWorkflow(ctx, models.Workflow{
+			ProjectID:   project.ProjectID,
+			ProjectName: project.ProjectName,
+		})
+		if err != nil {
+			log.Printf("Failed to create workflow for project %s: %v", project.ProjectID, err)
+			continue
+		}
+
+		// Add main task
+		mainTask := models.TaskNode{
+			TaskID:   fmt.Sprintf("main-task-%s", project.ProjectID),
+			TaskName: "Main Task",
+		}
+		err = repo.AddTask(ctx, project.ProjectID, mainTask)
+		if err != nil {
+			log.Printf("Failed to add main task for project %s: %v", project.ProjectID, err)
+			continue
+		}
+
+		// Add dependent task
+		dependentTask := models.TaskNode{
+			TaskID:       fmt.Sprintf("dependent-task-%s", project.ProjectID),
+			TaskName:     "Dependent Task",
+			Dependencies: []string{mainTask.TaskID},
+		}
+		err = repo.AddTask(ctx, project.ProjectID, dependentTask)
+		if err != nil {
+			log.Printf("Failed to add dependent task for project %s: %v", project.ProjectID, err)
+			continue
+		}
+
+		log.Printf("Successfully created test workflow for project %s", project.ProjectID)
+	}
+}
+
+func fetchWorkflows(repo *repository.WorkflowRepository) {
+	workflow, _ := repo.GetWorkflow(context.Background(), "1")
+	log.Println(workflow)
 }
