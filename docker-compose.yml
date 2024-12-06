@@ -114,6 +114,22 @@ services:
       cassandra:
         condition: service_healthy
 
+
+  workflow-service:
+    build:
+      context: microservices/workflow-service
+      dockerfile: Dockerfile
+    ports:
+      - "8005:8005"
+    env_file:
+      .env
+
+    depends_on:
+      - neo4j
+      - tracing
+
+
+
   mongo:
     image: mongo
     restart: always
@@ -208,6 +224,16 @@ services:
       - "14250:14250"
     env_file:
       .env
+
+
+  neo4j:
+    image: neo4j:latest
+    container_name: neo4j
+    environment:
+      - NEO4J_AUTH=neo4j/password
+    ports:
+      - "7687:7687"
+      - "7474:7474"
 
 volumes:
   mongo_store:

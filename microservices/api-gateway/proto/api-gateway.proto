@@ -342,3 +342,85 @@ message Notification{
   string status = 5;
 }
 
+
+
+service WorkflowService {
+  // Create a new workflow
+  rpc CreateWorkflow(CreateWorkflowReq) returns (EmptyResponse) {
+    option (google.api.http) = {
+      post: "/api/workflows/create",
+      body: "workflow"
+    };
+  }
+
+  // Add a task to a project
+  rpc AddTask(AddTaskReq) returns (EmptyResponse) {
+    option (google.api.http) = {
+      post: "/api/workflows/addtask",
+      body: "task"
+    };
+  }
+
+  // Get the workflow details by project ID
+  rpc GetWorkflowByProjectID(GetWorkflowReq) returns (GetWorkflowRes) {
+    option (google.api.http) = {
+      get: "/api/workflows/{project_id}"
+    };
+  }
+
+  // Delete a workflow by project ID
+  rpc DeleteWorkflowByProjectID(GetWorkflowReq) returns (EmptyResponse) {
+    option (google.api.http) = {
+      delete: "/api/workflows/{project_id}"
+    };
+  }
+
+  // Check if all task dependencies are met
+  rpc CheckTaskDependencies(CheckTaskDependenciesReq) returns (CheckTaskDependenciesRes) {
+    option (google.api.http) = {
+      post: "/api/workflows/checktaskdependencies",
+      body: "task_dependencies"
+    };
+  }
+}
+
+message CreateWorkflowReq {
+  string project_id = 1;
+  string project_name = 2;
+}
+
+message AddTaskReq {
+  string project_id = 1;
+  TaskFW task = 2;
+}
+
+message GetWorkflowReq {
+  string project_id = 1;
+}
+
+message GetWorkflowRes {
+  Workflow workflow = 1;
+}
+
+message Workflow {
+  string project_id = 1;
+  string project_name = 2;
+  repeated TaskFW tasks = 3;
+}
+
+message TaskFW {
+  string id = 1;
+  string name = 2;
+  string description = 3;
+  repeated string dependencies = 4;
+  bool blocked = 5;
+}
+
+message CheckTaskDependenciesReq {
+  string project_id = 1;
+  string task_id = 2;
+}
+
+message CheckTaskDependenciesRes {
+  bool allDependenciesMet = 1;
+}

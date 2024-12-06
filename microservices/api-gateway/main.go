@@ -147,6 +147,10 @@ var publicRoutes = []string{
 	"/api/users/magic-link",
 	"/api/users/recovery",
 	"/api/users/recover-password",
+	"/api/workflows/create",
+	"/api/workflows/addtask",
+	"/api/workflows/{id}",
+	"/api/workflows/checktaskdependencies",
 }
 
 func matchesRoute(path string, template string) bool {
