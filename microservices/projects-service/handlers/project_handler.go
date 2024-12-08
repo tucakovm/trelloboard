@@ -3,15 +3,17 @@ package handlers
 import (
 	"context"
 	"encoding/json"
+	"log"
+	nats_helper "projects_module/nats_helper"
+	proto "projects_module/proto/project"
+	"projects_module/services"
+	"time"
+
 	"github.com/nats-io/nats.go"
 	otelCodes "go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/trace"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	"log"
-	proto "projects_module/proto/project"
-	"projects_module/services"
-	"time"
 )
 
 type ProjectHandler struct {
@@ -99,6 +101,12 @@ func (h ProjectHandler) GetById(ctx context.Context, req *proto.GetByIdReq) (*pr
 }
 
 func (h ProjectHandler) AddMember(ctx context.Context, req *proto.AddMembersRequest) (*proto.EmptyResponse, error) {
+	_, span := h.Tracer.Start(ctx, "Publisher.AddMember")
+	defer span.End()
+
+	headers := nats.Header{}
+	headers.Set(nats_helper.TRACE_ID, span.SpanContext().TraceID().String())
+	headers.Set(nats_helper.SPAN_ID, span.SpanContext().SpanID().String())
 
 	subject := "add-to-project"
 
@@ -129,7 +137,12 @@ func (h ProjectHandler) AddMember(ctx context.Context, req *proto.AddMembersRequ
 		return nil, status.Error(codes.Internal, "Failed to create notification message...")
 	}
 
-	err = h.natsConn.Publish(subject, messageData)
+	msg := &nats.Msg{
+		Subject: subject,
+		Header:  headers,
+		Data:    messageData,
+	}
+	err = h.natsConn.PublishMsg(msg)
 	if err != nil {
 		log.Printf("Error publishing notification: %v", err)
 		return nil, status.Error(codes.Internal, "Failed to send notification...")
@@ -141,9 +154,14 @@ func (h ProjectHandler) AddMember(ctx context.Context, req *proto.AddMembersRequ
 }
 
 func (h ProjectHandler) RemoveMember(ctx context.Context, req *proto.RemoveMembersRequest) (*proto.EmptyResponse, error) {
-	subject := "removed-from-project"
-	ctx, span := h.Tracer.Start(ctx, "h.removeMemberFromProject")
+	_, span := h.Tracer.Start(ctx, "Publisher.AddMember")
 	defer span.End()
+
+	headers := nats.Header{}
+	headers.Set(nats_helper.TRACE_ID, span.SpanContext().TraceID().String())
+	headers.Set(nats_helper.SPAN_ID, span.SpanContext().SpanID().String())
+
+	subject := "removed-from-project"
 	log.Printf("Usao u handler od remove membera")
 	projectId := req.ProjectId
 	err := h.service.RemoveMember(projectId, req.UserId, ctx)
@@ -163,7 +181,12 @@ func (h ProjectHandler) RemoveMember(ctx context.Context, req *proto.RemoveMembe
 		return nil, status.Error(codes.Internal, "Failed to create notification message...")
 	}
 
-	err = h.natsConn.Publish(subject, messageData)
+	msg := &nats.Msg{
+		Subject: subject,
+		Header:  headers,
+		Data:    messageData,
+	}
+	err = h.natsConn.PublishMsg(msg)
 	if err != nil {
 		log.Printf("Error publishing notification: %v", err)
 		return nil, status.Error(codes.Internal, "Failed to send notification...")

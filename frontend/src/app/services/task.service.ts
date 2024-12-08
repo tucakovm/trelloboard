@@ -1,9 +1,9 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
-import { map, Observable, of } from 'rxjs';
+import { map, Observable, of,BehaviorSubject, } from 'rxjs';
 import { Task } from '../model/task';
 import { Project } from '../model/project';
-import { catchError } from 'rxjs/operators';
+import { catchError,tap } from 'rxjs/operators';
 import { UserFP } from '../model/userForProject';
 @Injectable({
   providedIn: 'root',
@@ -11,6 +11,9 @@ import { UserFP } from '../model/userForProject';
 export class TaskService {
   private apiUrl = 'https://localhost:8000/api';
   constructor(private http: HttpClient) {}
+
+  private taskSubject = new BehaviorSubject<Task | null>(null); // BehaviorSubject za emitovanje podataka
+  task$: Observable<Task | null> = this.taskSubject.asObservable(); // Observable za pretplatu
 
   createTask(task: Task): Observable<Task> {
     return this.http.post<Task>(this.apiUrl + '/task', task, {
@@ -30,24 +33,16 @@ export class TaskService {
   getById(id: string): Observable<Task | null> {
     return this.http.get<any>(`${this.apiUrl}/task/${id}`).pipe(
       map((response: any) => {
-        console.log('API Response:', response);
-        const item = response.task;
-        console.log('Mapped task members:', item.users); // Proveri podatke
-
-        return new Task(
-          item.id,
-          item.name,
-          item.description,
-          item.status,
-          item.project_id,
-          item.members && Array.isArray(item.members)
-            ? item.members.map((user: any) => ({
-                id: user.id,
-                username: user.username,
-                role: user.role,
-              }))
-            : [] // Ako nema korisnika, vraća prazan niz
+        const task = new Task(
+          response.task.id,
+          response.task.name,
+          response.task.description,
+          response.task.status,
+          response.task.project_id,
+          response.task.members || []
         );
+        this.taskSubject.next(task); // Emitovanje nove vrednosti zadatka
+        return task;
       }),
       catchError((error) => {
         console.error('Error fetching task:', error);
@@ -56,12 +51,24 @@ export class TaskService {
     );
   }
 
-  AddMemberToTask(id: string, member: UserFP, timeout: number) {
+  // Metoda za dodavanje člana u zadatak
+  AddMemberToTask(id: string, user: UserFP, timeout: number): Observable<any> {
     const headers = new HttpHeaders({
-      'Timeout': timeout.toString() // Dodavanje timeout-a u header
+      'Timeout': timeout.toString(),
     });
-
-    return this.http.put<any>(`${this.apiUrl}/task/${id}/members`, member, { headers });
+    return this.http
+      .put<any>(`${this.apiUrl}/task/${id}/members`, user, { headers })
+      .pipe(
+        map((response) => {
+          console.log('Member added response:', response);
+          // Osvežavanje zadatka nakon dodavanja člana
+          this.getById(id).subscribe();
+        }),
+        catchError((error) => {
+          console.error('Error adding member:', error);
+          return of(null);
+        })
+      );
   }
 
 

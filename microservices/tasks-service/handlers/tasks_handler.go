@@ -3,6 +3,8 @@ package handlers
 import (
 	"context"
 	"encoding/json"
+	nats_helper "tasks-service/nats_helper"
+
 	"github.com/nats-io/nats.go"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -72,8 +74,13 @@ func (h *TaskHandler) Delete(ctx context.Context, req *proto.DeleteTaskReq) (*pr
 }
 
 func (h *TaskHandler) Create(ctx context.Context, req *proto.CreateTaskReq) (*proto.EmptyResponse, error) {
-	ctx, span := h.Tracer.Start(ctx, "h.create")
+	_, span := h.Tracer.Start(ctx, "Publisher.CreateTask")
 	defer span.End()
+
+	headers := nats.Header{}
+	headers.Set(nats_helper.TRACE_ID, span.SpanContext().TraceID().String())
+	headers.Set(nats_helper.SPAN_ID, span.SpanContext().SpanID().String())
+
 	log.Println(req.Task)
 	err := h.service.Create(req.Task, ctx)
 	if err != nil {
@@ -94,7 +101,12 @@ func (h *TaskHandler) Create(ctx context.Context, req *proto.CreateTaskReq) (*pr
 		return nil, status.Error(codes.Internal, "Failed to create notification message...")
 	}
 
-	err = h.natsConn.Publish(subject, messageData)
+	msg := &nats.Msg{
+		Subject: subject,
+		Header:  headers,
+		Data:    messageData,
+	}
+	err = h.natsConn.PublishMsg(msg)
 	if err != nil {
 		log.Printf("Error publishing notification: %v", err)
 		return nil, status.Error(codes.Internal, "Failed to send notification...")
@@ -131,8 +143,12 @@ func (h *TaskHandler) GetAllByProjectId(ctx context.Context, req *proto.GetAllTa
 
 func (h *TaskHandler) AddMemberTask(ctx context.Context, req *proto.AddMemberTaskReq) (*proto.EmptyResponse, error) {
 
-	ctx, span := h.Tracer.Start(ctx, "h.AddMemberTask")
+	_, span := h.Tracer.Start(ctx, "Publisher.AddMemberToTask")
 	defer span.End()
+
+	headers := nats.Header{}
+	headers.Set(nats_helper.TRACE_ID, span.SpanContext().TraceID().String())
+	headers.Set(nats_helper.SPAN_ID, span.SpanContext().SpanID().String())
 
 	select {
 	case <-ctx.Done():
@@ -205,7 +221,12 @@ func (h *TaskHandler) AddMemberTask(ctx context.Context, req *proto.AddMemberTas
 			return nil, status.Error(codes.Internal, "Failed to create notification message...")
 		}
 
-		err = h.natsConn.Publish(subject, messageData)
+		msg := &nats.Msg{
+			Subject: subject,
+			Header:  headers,
+			Data:    messageData,
+		}
+		err = h.natsConn.PublishMsg(msg)
 		if err != nil {
 			log.Printf("Error publishing notification: %v", err)
 			return nil, status.Error(codes.Internal, "Failed to send notification...")
@@ -220,8 +241,13 @@ func (h *TaskHandler) AddMemberTask(ctx context.Context, req *proto.AddMemberTas
 }
 
 func (h *TaskHandler) RemoveMemberTask(ctx context.Context, req *proto.RemoveMemberTaskReq) (*proto.EmptyResponse, error) {
-	ctx, span := h.Tracer.Start(ctx, "h.removeMemberTask")
+	_, span := h.Tracer.Start(ctx, "Publisher.RemoveMemberFromTask")
 	defer span.End()
+
+	headers := nats.Header{}
+	headers.Set(nats_helper.TRACE_ID, span.SpanContext().TraceID().String())
+	headers.Set(nats_helper.SPAN_ID, span.SpanContext().SpanID().String())
+
 	taskId := req.TaskId
 	task, err := h.service.GetById(taskId, ctx)
 	if err != nil {
@@ -256,7 +282,12 @@ func (h *TaskHandler) RemoveMemberTask(ctx context.Context, req *proto.RemoveMem
 		return nil, status.Error(codes.Internal, "Failed to create notification message...")
 	}
 
-	err = h.natsConn.Publish(subject, messageData)
+	msg := &nats.Msg{
+		Subject: subject,
+		Header:  headers,
+		Data:    messageData,
+	}
+	err = h.natsConn.PublishMsg(msg)
 	if err != nil {
 		log.Printf("Error publishing notification: %v", err)
 		return nil, status.Error(codes.Internal, "Failed to send notification...")
@@ -267,8 +298,13 @@ func (h *TaskHandler) RemoveMemberTask(ctx context.Context, req *proto.RemoveMem
 	return nil, nil
 }
 func (h *TaskHandler) UpdateTask(ctx context.Context, req *proto.UpdateTaskReq) (*proto.EmptyResponse, error) {
-	ctx, span := h.Tracer.Start(ctx, "h.updateTask")
+	_, span := h.Tracer.Start(ctx, "Publisher.UpdateTask")
 	defer span.End()
+
+	headers := nats.Header{}
+	headers.Set(nats_helper.TRACE_ID, span.SpanContext().TraceID().String())
+	headers.Set(nats_helper.SPAN_ID, span.SpanContext().SpanID().String())
+
 	log.Println("Received UpdateTask request for task ID:", req.Id)
 
 	// Validate the task exists
@@ -323,7 +359,12 @@ func (h *TaskHandler) UpdateTask(ctx context.Context, req *proto.UpdateTaskReq) 
 		return nil, status.Error(codes.Internal, "Failed to create notification message...")
 	}
 
-	err = h.natsConn.Publish(subject, messageData)
+	msg := &nats.Msg{
+		Subject: subject,
+		Header:  headers,
+		Data:    messageData,
+	}
+	err = h.natsConn.PublishMsg(msg)
 	if err != nil {
 		log.Printf("Error publishing notification: %v", err)
 		return nil, status.Error(codes.Internal, "Failed to send notification...")

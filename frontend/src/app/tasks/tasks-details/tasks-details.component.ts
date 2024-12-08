@@ -1,10 +1,11 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit , OnChanges, SimpleChanges} from '@angular/core';
 import { ProjectService } from "../../services/project.service";
-import { ActivatedRoute, Router } from "@angular/router";
+import { ActivatedRoute, Router , NavigationEnd } from "@angular/router";
 import { TaskService } from "../../services/task.service";
 import { Task } from "../../model/task";
 import { Location } from '@angular/common';
 import { AuthService} from "../../services/auth.service";
+import { Subscription } from 'rxjs';
 
 @Component({
   selector: 'app-tasks-details',
@@ -21,6 +22,7 @@ export class TasksDetailsComponent implements OnInit {
     project_id: '',
     members: []
   };
+  private taskSubscription: Subscription | null = null;
 
   constructor(
     private projectService: ProjectService,
@@ -29,29 +31,37 @@ export class TasksDetailsComponent implements OnInit {
     private router: Router,
     private location: Location,
     private authService: AuthService,
+    
   ) {}
 
   ngOnInit(): void {
-    this.getTask();
-  }
-
-  getTask() {
     this.id = this.activatedRoute.snapshot.paramMap.get('id');
     if (this.id) {
-      this.taskService.getById(this.id).subscribe(
-        (task: Task | null) => {
-          if (task) {
-            this.task = task;
-          } else {
-            console.error('Task not found or an error occurred.');
-          }
-        },
-        (error) => {
-          console.error('Error fetching task:', error);
-        }
-      );
+      this.getTask();
     }
   }
+
+  ngOnDestroy(): void {
+    // Prestanak pretplate pri uništavanju komponente
+    if (this.taskSubscription) {
+      this.taskSubscription.unsubscribe();
+    }
+  }
+
+
+  getTask() {
+    this.taskSubscription = this.taskService.task$.subscribe(
+      (task) => {
+        if (task && task.id === this.id) {
+          this.task = task;
+        } else {
+          // Ako zadatak nije pronađen, ponovo dohvatite zadatak sa API-ja
+          this.taskService.getById(this.id!).subscribe();
+        }
+      }
+    );
+  }
+
 
   deleteMember(memberId: string) {
     if (!this.id) return;
@@ -77,7 +87,6 @@ export class TasksDetailsComponent implements OnInit {
   addMember() {
     if (this.id) {
       this.router.navigate(['/task-add-member', this.id ]);
-      this.getTask();
     }
   }
 
@@ -90,8 +99,10 @@ export class TasksDetailsComponent implements OnInit {
 
     this.taskService.updateTask(this.task.id, this.task).subscribe(
       (updatedTask: Task) => {
+        this.getTask();
         console.log('Task updated successfully:', updatedTask);
         alert('Task updated successfully!');
+        
       },
       (error) => {
         console.error('Error updating task:', error);

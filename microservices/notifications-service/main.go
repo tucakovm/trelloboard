@@ -4,20 +4,11 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/nats-io/nats.go"
-	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/exporters/jaeger"
-	"go.opentelemetry.io/otel/propagation"
-	"go.opentelemetry.io/otel/sdk/resource"
-	sdktrace "go.opentelemetry.io/otel/sdk/trace"
-	semconv "go.opentelemetry.io/otel/semconv/v1.7.0"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/reflection"
-	"google.golang.org/protobuf/types/known/timestamppb"
 	"log"
 	"net"
 	"not_module/config"
 	h "not_module/handlers"
+	nats_helper "not_module/nats_helper"
 	not "not_module/proto/notification"
 	"not_module/repositories"
 	"not_module/service"
@@ -26,6 +17,18 @@ import (
 	"strings"
 	"syscall"
 	"time"
+
+	"github.com/nats-io/nats.go"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/exporters/jaeger"
+	"go.opentelemetry.io/otel/propagation"
+	"go.opentelemetry.io/otel/sdk/resource"
+	sdktrace "go.opentelemetry.io/otel/sdk/trace"
+	semconv "go.opentelemetry.io/otel/semconv/v1.7.0"
+	"go.opentelemetry.io/otel/trace"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/reflection"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 func main() {
@@ -82,12 +85,12 @@ func main() {
 	handleErr(err)
 
 	//NATS subs
-	NatsRemoveFromProject(ctx, natsConn, *serviceNot)
-	NatsAddToProject(ctx, natsConn, *serviceNot)
-	NatsAddToTask(ctx, natsConn, *serviceNot)
-	NatsRemoveFromTask(ctx, natsConn, *serviceNot)
-	NatsUpdateTask(ctx, natsConn, *serviceNot)
-	NatsCreateTask(ctx, natsConn, *serviceNot)
+	NatsRemoveFromProject(ctx, natsConn, *serviceNot, tracer)
+	NatsAddToProject(ctx, natsConn, *serviceNot, tracer)
+	NatsAddToTask(ctx, natsConn, *serviceNot, tracer)
+	NatsRemoveFromTask(ctx, natsConn, *serviceNot, tracer)
+	NatsUpdateTask(ctx, natsConn, *serviceNot, tracer)
+	NatsCreateTask(ctx, natsConn, *serviceNot, tracer)
 
 	// Bootstrap gRPC server.
 	grpcServer := grpc.NewServer()
@@ -134,16 +137,33 @@ func NatsConn() *nats.Conn {
 	return conn
 }
 
-func NatsRemoveFromProject(ctx context.Context, natsConn *nats.Conn, notService service.NotService) {
+func NatsRemoveFromProject(ctx context.Context, natsConn *nats.Conn, notService service.NotService, tracer trace.Tracer) {
 	subjectRFP := "removed-from-project"
 
 	_, _ = natsConn.Subscribe(subjectRFP, func(msg *nats.Msg) {
+
 		var message map[string]string
 		err := json.Unmarshal(msg.Data, &message)
 		if err != nil {
 			log.Printf("Error unmarshaling message: %v", err)
 			return
 		}
+
+		traceID := msg.Header.Get(nats_helper.TRACE_ID)
+		spanID := msg.Header.Get(nats_helper.SPAN_ID)
+
+		if traceID == "" || spanID == "" {
+			log.Println("Missing tracing headers in NATS message")
+			return
+		}
+
+		remoteCtx, err := nats_helper.GetNATSParentContext(msg)
+		if err != nil {
+			log.Fatal(err)
+		}
+		_, span := tracer.Start(trace.ContextWithRemoteSpanContext(ctx, remoteCtx), "Subscriber.RemoveFromProject")
+		defer span.End()
+
 		userId, userOk := message["UserId"]
 		projectId, projectOk := message["ProjectId"]
 
@@ -183,7 +203,7 @@ func NatsRemoveFromProject(ctx context.Context, natsConn *nats.Conn, notService 
 	})
 }
 
-func NatsAddToProject(ctx context.Context, natsConn *nats.Conn, notService service.NotService) {
+func NatsAddToProject(ctx context.Context, natsConn *nats.Conn, notService service.NotService, tracer trace.Tracer) {
 	subjectATP := "add-to-project"
 
 	_, _ = natsConn.Subscribe(subjectATP, func(msg *nats.Msg) {
@@ -193,6 +213,22 @@ func NatsAddToProject(ctx context.Context, natsConn *nats.Conn, notService servi
 			log.Printf("Error unmarshaling message: %v", err)
 			return
 		}
+
+		traceID := msg.Header.Get(nats_helper.TRACE_ID)
+		spanID := msg.Header.Get(nats_helper.SPAN_ID)
+
+		if traceID == "" || spanID == "" {
+			log.Println("Missing tracing headers in NATS message")
+			return
+		}
+
+		remoteCtx, err := nats_helper.GetNATSParentContext(msg)
+		if err != nil {
+			log.Fatal(err)
+		}
+		_, span := tracer.Start(trace.ContextWithRemoteSpanContext(ctx, remoteCtx), "Subscriber.AddToProject")
+		defer span.End()
+
 		userId, userOk := message["UserId"]
 		projectId, projectOk := message["ProjectId"]
 
@@ -232,7 +268,7 @@ func NatsAddToProject(ctx context.Context, natsConn *nats.Conn, notService servi
 	})
 }
 
-func NatsAddToTask(ctx context.Context, natsConn *nats.Conn, notService service.NotService) {
+func NatsAddToTask(ctx context.Context, natsConn *nats.Conn, notService service.NotService, tracer trace.Tracer) {
 	subjectATP := "add-to-task"
 
 	_, _ = natsConn.Subscribe(subjectATP, func(msg *nats.Msg) {
@@ -242,6 +278,22 @@ func NatsAddToTask(ctx context.Context, natsConn *nats.Conn, notService service.
 			log.Printf("Error unmarshaling message: %v", err)
 			return
 		}
+
+		traceID := msg.Header.Get(nats_helper.TRACE_ID)
+		spanID := msg.Header.Get(nats_helper.SPAN_ID)
+
+		if traceID == "" || spanID == "" {
+			log.Println("Missing tracing headers in NATS message")
+			return
+		}
+
+		remoteCtx, err := nats_helper.GetNATSParentContext(msg)
+		if err != nil {
+			log.Fatal(err)
+		}
+		_, span := tracer.Start(trace.ContextWithRemoteSpanContext(ctx, remoteCtx), "Subscriber.AddToTask")
+		defer span.End()
+
 		userId, userOk := message["UserId"]
 		taskId, taskOk := message["TaskId"]
 		projectId, projectOk := message["ProjectId"]
@@ -282,7 +334,7 @@ func NatsAddToTask(ctx context.Context, natsConn *nats.Conn, notService service.
 	})
 }
 
-func NatsRemoveFromTask(ctx context.Context, natsConn *nats.Conn, notService service.NotService) {
+func NatsRemoveFromTask(ctx context.Context, natsConn *nats.Conn, notService service.NotService, tracer trace.Tracer) {
 	subjectRTT := "remove-from-task"
 
 	_, _ = natsConn.Subscribe(subjectRTT, func(msg *nats.Msg) {
@@ -292,6 +344,22 @@ func NatsRemoveFromTask(ctx context.Context, natsConn *nats.Conn, notService ser
 			log.Printf("Error unmarshaling message: %v", err)
 			return
 		}
+
+		traceID := msg.Header.Get(nats_helper.TRACE_ID)
+		spanID := msg.Header.Get(nats_helper.SPAN_ID)
+
+		if traceID == "" || spanID == "" {
+			log.Println("Missing tracing headers in NATS message")
+			return
+		}
+
+		remoteCtx, err := nats_helper.GetNATSParentContext(msg)
+		if err != nil {
+			log.Fatal(err)
+		}
+		_, span := tracer.Start(trace.ContextWithRemoteSpanContext(ctx, remoteCtx), "Subscriber.RemoveFromTask")
+		defer span.End()
+
 		userId, userOk := message["UserId"]
 		taskId, taskOk := message["TaskId"]
 		projectId, projectOk := message["ProjectId"]
@@ -332,7 +400,7 @@ func NatsRemoveFromTask(ctx context.Context, natsConn *nats.Conn, notService ser
 	})
 }
 
-func NatsUpdateTask(ctx context.Context, natsConn *nats.Conn, notService service.NotService) {
+func NatsUpdateTask(ctx context.Context, natsConn *nats.Conn, notService service.NotService, tracer trace.Tracer) {
 	subjectRTT := "update-task"
 
 	_, _ = natsConn.Subscribe(subjectRTT, func(msg *nats.Msg) {
@@ -342,6 +410,21 @@ func NatsUpdateTask(ctx context.Context, natsConn *nats.Conn, notService service
 			log.Printf("Error unmarshaling message: %v", err)
 			return
 		}
+
+		traceID := msg.Header.Get(nats_helper.TRACE_ID)
+		spanID := msg.Header.Get(nats_helper.SPAN_ID)
+
+		if traceID == "" || spanID == "" {
+			log.Println("Missing tracing headers in NATS message")
+			return
+		}
+
+		remoteCtx, err := nats_helper.GetNATSParentContext(msg)
+		if err != nil {
+			log.Fatal(err)
+		}
+		_, span := tracer.Start(trace.ContextWithRemoteSpanContext(ctx, remoteCtx), "Subscriber.UpdateTask")
+		defer span.End()
 
 		taskId, taskOk := message["TaskId"]
 		memberIds, membersOk := message["MemberIds"]
@@ -391,7 +474,7 @@ func NatsUpdateTask(ctx context.Context, natsConn *nats.Conn, notService service
 	})
 }
 
-func NatsCreateTask(ctx context.Context, natsConn *nats.Conn, notService service.NotService) {
+func NatsCreateTask(ctx context.Context, natsConn *nats.Conn, notService service.NotService, tracer trace.Tracer) {
 	subjectCT := "create-task"
 
 	_, _ = natsConn.Subscribe(subjectCT, func(msg *nats.Msg) {
@@ -401,6 +484,22 @@ func NatsCreateTask(ctx context.Context, natsConn *nats.Conn, notService service
 			log.Printf("Error unmarshaling message: %v", err)
 			return
 		}
+
+		traceID := msg.Header.Get(nats_helper.TRACE_ID)
+		spanID := msg.Header.Get(nats_helper.SPAN_ID)
+
+		if traceID == "" || spanID == "" {
+			log.Println("Missing tracing headers in NATS message")
+			return
+		}
+
+		remoteCtx, err := nats_helper.GetNATSParentContext(msg)
+		if err != nil {
+			log.Fatal(err)
+		}
+		_, span := tracer.Start(trace.ContextWithRemoteSpanContext(ctx, remoteCtx), "Subscriber.CreateTask")
+		defer span.End()
+
 		taskName, taskNameOk := message["TaskName"]
 		projectId, projectIdOk := message["ProjectId"]
 

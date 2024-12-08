@@ -2,16 +2,6 @@ package main
 
 import (
 	"context"
-	"github.com/nats-io/nats.go"
-	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/exporters/jaeger"
-	"go.opentelemetry.io/otel/propagation"
-	"go.opentelemetry.io/otel/sdk/resource"
-	sdktrace "go.opentelemetry.io/otel/sdk/trace"
-	semconv "go.opentelemetry.io/otel/semconv/v1.7.0"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
-	"google.golang.org/grpc/reflection"
 	"log"
 	"net"
 	"os"
@@ -23,6 +13,18 @@ import (
 	"projects_module/services"
 	"syscall"
 	"time"
+
+	"github.com/nats-io/nats.go"
+	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/exporters/jaeger"
+	"go.opentelemetry.io/otel/propagation"
+	"go.opentelemetry.io/otel/sdk/resource"
+	sdktrace "go.opentelemetry.io/otel/sdk/trace"
+	semconv "go.opentelemetry.io/otel/semconv/v1.7.0"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/grpc/reflection"
 )
 
 func main() {
@@ -61,6 +63,7 @@ func main() {
 		cfg.FullTaskServiceAddress(),
 		grpc.WithBlock(),
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
+		grpc.WithUnaryInterceptor(otelgrpc.UnaryClientInterceptor()),
 	)
 	taskClient := proj.NewTaskServiceClient(taskConn)
 	log.Println("TaskService Gateway registered successfully.")
@@ -93,7 +96,9 @@ func main() {
 	handleErr(err)
 
 	// Bootstrap gRPC server.
-	grpcServer := grpc.NewServer()
+	grpcServer := grpc.NewServer(
+		grpc.UnaryInterceptor(otelgrpc.UnaryServerInterceptor()),
+	)
 	reflection.Register(grpcServer)
 
 	// Bootstrap gRPC service server and respond to request.
@@ -147,7 +152,7 @@ func newExporter(address string) (sdktrace.SpanExporter, error) {
 func newTraceProvider(exp sdktrace.SpanExporter) *sdktrace.TracerProvider {
 	r := resource.NewWithAttributes(
 		semconv.SchemaURL,
-		semconv.ServiceNameKey.String("user-service"),
+		semconv.ServiceNameKey.String("project-service"),
 	)
 
 	return sdktrace.NewTracerProvider(
