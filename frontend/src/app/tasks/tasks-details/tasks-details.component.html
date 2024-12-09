@@ -97,6 +97,16 @@
             Save Changes
           </button>
         </div>
+        <div class="row mt-4">
+          <div class="col-md-4">
+            <button
+              *ngIf="isManager()"
+              class="btn btn-primary w-100 shadow-sm"
+              (click)="navigateToFileUpload()"
+            >
+              Upload File
+            </button>
+          </div>
       </div>
     </div>
   </div>

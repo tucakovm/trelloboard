@@ -11,6 +11,9 @@ service TaskService {
   rpc RemoveMemberTask(RemoveMemberTaskReq) returns (EmptyResponse) {}
   rpc UpdateTask(UpdateTaskReq) returns (EmptyResponse);
   rpc DoneTasksByProject(DoneTasksByProjectReq) returns (DoneTasksByProjectRes);
+  rpc UploadFile(UploadFileRequest) returns (EmptyResponse);
+  rpc DownloadFile(DownloadFileRequest) returns (DownloadFileResponse);
+  rpc DeleteFile(DeleteFileRequest) returns (EmptyResponse);
 }
 message DoneTasksByProjectReq {
   string proj_id = 1;
@@ -80,5 +83,25 @@ message UpdateTaskReq {
   string description = 3;     // Updated description
   string status = 4;          // Updated status
   repeated User members = 5;  // Updated members
+}
+
+message UploadFileRequest {
+  string task_id = 1;
+  string file_name = 2;
+  bytes file_content = 3;
+}
+
+message DownloadFileRequest {
+  string task_id = 1;
+  string file_name = 2;
+}
+
+message DownloadFileResponse {
+  bytes file_content = 1;
+}
+
+message DeleteFileRequest {
+  string task_id = 1;
+  string file_name = 2;
 }
 

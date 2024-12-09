@@ -373,3 +373,52 @@ func (h *TaskHandler) UpdateTask(ctx context.Context, req *proto.UpdateTaskReq) 
 	log.Printf("Notification sent: %s", string(messageData))
 	return &proto.EmptyResponse{}, nil
 }
+
+func (h *TaskHandler) UploadFile(ctx context.Context, req *proto.UploadFileRequest) (*proto.EmptyResponse, error) {
+	_, span := h.Tracer.Start(ctx, "Publisher.UploadFile")
+	defer span.End()
+
+	headers := nats.Header{}
+	headers.Set(nats_helper.TRACE_ID, span.SpanContext().TraceID().String())
+	headers.Set(nats_helper.SPAN_ID, span.SpanContext().SpanID().String())
+
+	err := h.service.UploadFile(req.TaskId, req.FileName, req.FileContent)
+	if err != nil {
+		span.SetStatus(otelCodes.Error, err.Error())
+		return nil, status.Error(codes.Internal, "Failed to upload file")
+	}
+
+	log.Printf("File uploaded : %s")
+
+	return &proto.EmptyResponse{}, nil
+}
+
+func (h *TaskHandler) DownloadFile(ctx context.Context, req *proto.DownloadFileRequest) (*proto.DownloadFileResponse, error) {
+	_, span := h.Tracer.Start(ctx, "Publisher.DownloadFile")
+	defer span.End()
+
+	fileContent, err := h.service.DownloadFile(req.TaskId, req.FileName)
+	if err != nil {
+		span.SetStatus(otelCodes.Error, err.Error())
+		return nil, status.Error(codes.Internal, "Failed to download file")
+	}
+
+	return &proto.DownloadFileResponse{
+		FileContent: fileContent,
+	}, nil
+}
+
+func (h *TaskHandler) DeleteFile(ctx context.Context, req *proto.DeleteFileRequest) (*proto.EmptyResponse, error) {
+	_, span := h.Tracer.Start(ctx, "Publisher.DeleteFile")
+	defer span.End()
+
+	err := h.service.DeleteFile(req.TaskId, req.FileName)
+	if err != nil {
+		span.SetStatus(otelCodes.Error, err.Error())
+		return nil, status.Error(codes.Internal, "Failed to delete file")
+	}
+
+	log.Printf("File deleted and notification sent: %s")
+
+	return &proto.EmptyResponse{}, nil
+}

@@ -25,6 +25,7 @@ import { AddMemberTaskComponent } from './tasks/add-member-task/add-member-task.
 import { UnauthorizedComponent } from './unauthorized/unauthorized.component';
 import { NotificationsComponent } from './notifications/notifications.component';
 import { NotificationsProjectComponent } from './notifications-project/notifications-project.component';
+import { TaskFileComponent } from './tasks/tasks-details/task-file/task-file.component';
 @NgModule({
   declarations: [
     AppComponent,
@@ -46,6 +47,7 @@ import { NotificationsProjectComponent } from './notifications-project/notificat
     UnauthorizedComponent,
     NotificationsComponent,
     NotificationsProjectComponent,
+    TaskFileComponent,
   ],
   imports: [
     BrowserModule,

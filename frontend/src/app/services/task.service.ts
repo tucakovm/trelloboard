@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { HttpClient, HttpHeaders } from '@angular/common/http';
+import {HttpClient, HttpHeaders, HttpResponse} from '@angular/common/http';
 import { map, Observable, of,BehaviorSubject, } from 'rxjs';
 import { Task } from '../model/task';
 import { Project } from '../model/project';
@@ -79,5 +79,22 @@ export class TaskService {
   }
   updateTask(id: string, task: Task): Observable<Task> {
     return this.http.put<Task>(`${this.apiUrl}/tasks/${id}`, task);
+  }
+
+//files stuff
+  uploadFile(taskId: string, fileData: FormData): Observable<any> {
+    return this.http.post(`${this.apiUrl}/${taskId}/files`, fileData);
+  }
+
+
+  getFiles(taskId: string): Observable<any[]> {
+    return this.http.get<any[]>(`${this.apiUrl}/${taskId}/files`);
+  }
+
+  downloadFile(fileId: string): Observable<HttpResponse<Blob>> {
+    return this.http.get(`${this.apiUrl}/files/download/${fileId}`, {
+      responseType: 'blob',
+      observe: 'response', // Observe the full response, including headers
+    });
   }
 }

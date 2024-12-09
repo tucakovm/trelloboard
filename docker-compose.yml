@@ -208,9 +208,34 @@ services:
       - "14250:14250"
     env_file:
       .env
+  hdfs-namenode:
+    image: bde2020/hadoop-namenode:2.0.0-hadoop3.2.1-java8
+    container_name: namenode
+    ports:
+      - 9870:9870
+      - 9000:9000
+    volumes:
+      - hdfs_namenode_data:/hadoop/dfs/name
+    environment:
+      - CLUSTER_NAME=test
+      - NAMENODE_URI=hdfs://namenode:9000
+    env_file:
+      .env
+
+  hdfs-datanode:
+    image: bde2020/hadoop-datanode:2.0.0-hadoop3.2.1-java8
+    container_name: datanode1
+    volumes:
+      - hdfs_datanode_data:/hadoop/dfs/data
+    environment:
+      SERVICE_PRECONDITION: "namenode:9870"
+    env_file:
+      .env
 
 volumes:
   mongo_store:
   mongo_express_data:
   cass_store:
   redis-data:
+  hdfs_namenode_data:
+  hdfs_datanode_data:

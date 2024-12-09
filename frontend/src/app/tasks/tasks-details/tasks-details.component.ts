@@ -31,7 +31,7 @@ export class TasksDetailsComponent implements OnInit {
     private router: Router,
     private location: Location,
     private authService: AuthService,
-    
+
   ) {}
 
   ngOnInit(): void {
@@ -102,13 +102,18 @@ export class TasksDetailsComponent implements OnInit {
         this.getTask();
         console.log('Task updated successfully:', updatedTask);
         alert('Task updated successfully!');
-        
+
       },
       (error) => {
         console.error('Error updating task:', error);
         alert('An error occurred while updating the task.');
       }
     );
+  }
+  navigateToFileUpload() {
+    if (this.id) {
+      this.router.navigate(['/task-file', this.id]);
+    }
   }
   isManager(): boolean{
     return this.authService.isManager()

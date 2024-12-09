@@ -14,8 +14,9 @@ import (
 )
 
 type TaskService struct {
-	repo   repository.TaskRepo
-	Tracer trace.Tracer
+	repo     repository.TaskRepo
+	Tracer   trace.Tracer
+	hdfsRepo repository.HDFSRepository
 }
 
 func NewTaskService(repo repository.TaskRepo, tracer trace.Tracer) *TaskService {
@@ -182,4 +183,25 @@ func (s *TaskService) UpdateTask(taskReq *proto.Task, ctx context.Context) error
 	}
 
 	return nil
+}
+func (s *TaskService) UploadFile(taskID string, fileName string, fileContent []byte) error {
+	err := s.hdfsRepo.UploadFile(taskID, fileName, fileContent)
+	if err != nil {
+		return err
+	}
+
+	return err
+}
+
+func (s *TaskService) DownloadFile(taskID string, fileName string) ([]byte, error) {
+	return s.hdfsRepo.DownloadFile(taskID, fileName)
+}
+
+func (s *TaskService) DeleteFile(taskID string, fileName string) error {
+	err := s.hdfsRepo.DeleteFile(taskID, fileName)
+	if err != nil {
+		return err
+	}
+
+	return err
 }

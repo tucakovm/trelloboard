@@ -342,3 +342,47 @@ message Notification{
   string status = 5;
 }
 
+
+service FileService {
+  rpc UploadFile(UploadFileRequest) returns (FileResponse) {
+    option (google.api.http) = {
+      post: "/api/tasks/{taskId}/files",
+      body: "file"
+    };
+  }
+
+  rpc GetFile(GetFileRequest) returns (FileResponse) {
+    option (google.api.http) = {
+      get: "/api/tasks/{taskId}/files/{fileId}"
+    };
+  }
+
+  rpc DeleteFile(DeleteFileRequest) returns (EmptyResponse) {
+    option (google.api.http) = {
+      delete: "/api/tasks/{taskId}/files/{fileId}"
+    };
+  }
+}
+
+message UploadFileRequest {
+  string taskId = 1;
+  bytes fileContent = 2;
+  string fileName = 3;
+}
+
+message GetFileRequest {
+  string taskId = 1;
+  string fileId = 2;
+}
+
+message FileResponse {
+  string fileId = 1;
+  string taskId = 2;
+  string fileName = 3;
+  bytes fileContent = 4;
+}
+
+message DeleteFileRequest {
+  string taskId = 1;
+  string fileId = 2;
+}
