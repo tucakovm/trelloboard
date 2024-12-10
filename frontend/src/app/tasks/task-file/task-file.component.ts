@@ -10,7 +10,7 @@ import { TaskService } from '../../services/task.service';
 export class TaskFileComponent implements OnInit {
   taskId: string | null = null;
   selectedFile: File | null = null;
-  files: any[] = []; // Array to hold the files associated with the task
+  files: any[] = [];
 
   constructor(
     private activatedRoute: ActivatedRoute,
@@ -21,7 +21,7 @@ export class TaskFileComponent implements OnInit {
   ngOnInit(): void {
     this.taskId = this.activatedRoute.snapshot.paramMap.get('id');
     if (this.taskId) {
-      this.getFiles(); // Fetch the files associated with the task when the component initializes
+      this.getFiles();
     }
   }
 
@@ -32,12 +32,14 @@ export class TaskFileComponent implements OnInit {
   uploadFile(): void {
     if (this.selectedFile && this.taskId) {
       const formData = new FormData();
+      formData.append('task_id', this.taskId);
+      formData.append('file_name', this.selectedFile.name);
       formData.append('file', this.selectedFile, this.selectedFile.name);
 
       this.taskService.uploadFile(this.taskId, formData).subscribe(
         () => {
           alert('File uploaded successfully!');
-          this.getFiles(); // Refresh the list of files after upload
+          this.getFiles();
         },
         (error) => {
           console.error('Error uploading file:', error);
@@ -66,8 +68,8 @@ export class TaskFileComponent implements OnInit {
   downloadFile(fileId: string): void {
     this.taskService.downloadFile(fileId).subscribe(
       (response) => {
-        const blob = response.body as Blob;  // Access the Blob body
-        const fileName = response.headers.get('filename') || 'file';  // Get the filename from headers
+        const blob = response.body as Blob; // Access the Blob body
+        const fileName = response.headers.get('filename') || 'file'; // Get the filename from headers
 
         const link = document.createElement('a');
         link.href = URL.createObjectURL(blob);
@@ -80,5 +82,4 @@ export class TaskFileComponent implements OnInit {
       }
     );
   }
-
 }

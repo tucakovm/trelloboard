@@ -377,6 +377,7 @@ func (h *TaskHandler) UpdateTask(ctx context.Context, req *proto.UpdateTaskReq) 
 func (h *TaskHandler) UploadFile(ctx context.Context, req *proto.UploadFileRequest) (*proto.EmptyResponse, error) {
 	_, span := h.Tracer.Start(ctx, "Publisher.UploadFile")
 	defer span.End()
+	log.Printf("handler upload file")
 
 	headers := nats.Header{}
 	headers.Set(nats_helper.TRACE_ID, span.SpanContext().TraceID().String())

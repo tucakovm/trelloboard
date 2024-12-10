@@ -185,6 +185,7 @@ func (s *TaskService) UpdateTask(taskReq *proto.Task, ctx context.Context) error
 	return nil
 }
 func (s *TaskService) UploadFile(taskID string, fileName string, fileContent []byte) error {
+	log.Printf("service upload file")
 	err := s.hdfsRepo.UploadFile(taskID, fileName, fileContent)
 	if err != nil {
 		return err

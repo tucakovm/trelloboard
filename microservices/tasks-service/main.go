@@ -89,11 +89,12 @@ func main() {
 	defer repoTask.Disconnect(timeoutContext)
 	handleErr(err)
 
-	repo, err := repository.NewHDFSRepository(storeLogger, "namenode:9000")
+	repo, err := repository.NewHDFSRepository(storeLogger, "namenode:8020")
 	if err != nil {
 		log.Fatalf("Failed to initialize HDFS client: %v", err)
 	}
 	defer repo.Close()
+	log.Println("created hdfs repo")
 
 	serviceProject := service.NewTaskService(*repoTask, tracer)
 	handleErr(err)

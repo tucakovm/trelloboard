@@ -1,9 +1,9 @@
 import { Injectable } from '@angular/core';
-import {HttpClient, HttpHeaders, HttpResponse} from '@angular/common/http';
-import { map, Observable, of,BehaviorSubject, } from 'rxjs';
+import { HttpClient, HttpHeaders, HttpResponse } from '@angular/common/http';
+import { map, Observable, of, BehaviorSubject } from 'rxjs';
 import { Task } from '../model/task';
 import { Project } from '../model/project';
-import { catchError,tap } from 'rxjs/operators';
+import { catchError, tap } from 'rxjs/operators';
 import { UserFP } from '../model/userForProject';
 @Injectable({
   providedIn: 'root',
@@ -54,7 +54,7 @@ export class TaskService {
   // Metoda za dodavanje člana u zadatak
   AddMemberToTask(id: string, user: UserFP, timeout: number): Observable<any> {
     const headers = new HttpHeaders({
-      'Timeout': timeout.toString(),
+      Timeout: timeout.toString(),
     });
     return this.http
       .put<any>(`${this.apiUrl}/task/${id}/members`, user, { headers })
@@ -71,7 +71,6 @@ export class TaskService {
       );
   }
 
-
   removeMemberFromTask(taskId: string, userId: string): Observable<any> {
     return this.http.delete<any>(
       `${this.apiUrl}/task/${taskId}/members/${userId}`
@@ -81,18 +80,17 @@ export class TaskService {
     return this.http.put<Task>(`${this.apiUrl}/tasks/${id}`, task);
   }
 
-//files stuff
+  //files stuff
   uploadFile(taskId: string, fileData: FormData): Observable<any> {
-    return this.http.post(`${this.apiUrl}/${taskId}/files`, fileData);
+    return this.http.post(`${this.apiUrl}/tasks/${taskId}/files`, fileData);
   }
 
-
   getFiles(taskId: string): Observable<any[]> {
-    return this.http.get<any[]>(`${this.apiUrl}/${taskId}/files`);
+    return this.http.get<any[]>(`${this.apiUrl}/tasks/${taskId}/files`);
   }
 
   downloadFile(fileId: string): Observable<HttpResponse<Blob>> {
-    return this.http.get(`${this.apiUrl}/files/download/${fileId}`, {
+    return this.http.get(`${this.apiUrl}/tasks/files/download/${fileId}`, {
       responseType: 'blob',
       observe: 'response', // Observe the full response, including headers
     });

@@ -208,34 +208,74 @@ services:
       - "14250:14250"
     env_file:
       .env
-  hdfs-namenode:
+
+  #hadoop-namenode:
+   # image: bde2020/hadoop-namenode:2.0.0-hadoop3.2.1-java8
+    #container_name: namenode
+    #environment:
+     # - CORE_CONF_fs_defaultFS=hdfs://namenode:8020
+      #- HDFS_CONF_dfs_replication=1
+      #- HDFS_CONF_dfs_namenode_name_dir=file:///hadoop/dfs/name
+      #- HDFS_CONF_dfs_namenode_rpc-address=namenode:9000
+    #ports:
+     # - "9870:9870" # Web UI for NameNode
+      #- "9000:9000" # RPC port for NameNode
+   # volumes:
+    #  - namenode_data:/hadoop/dfs/name
+    #command: ["sh", "-c", "hdfs namenode -format && tail -f /dev/null"]
+    #depends_on:
+    #  - hdfs-datanode # Ensure DataNode starts first
+    #  -
+
+
+  namenode:
     image: bde2020/hadoop-namenode:2.0.0-hadoop3.2.1-java8
     container_name: namenode
     ports:
       - 9870:9870
       - 9000:9000
+      - 8200:8200
     volumes:
-      - hdfs_namenode_data:/hadoop/dfs/name
+      - hadoop_namenode:/hadoop/dfs/name
     environment:
+      - CORE_CONF_fs_defaultFS=hdfs://namenode:8020
       - CLUSTER_NAME=test
-      - NAMENODE_URI=hdfs://namenode:9000
     env_file:
-      .env
+       .env
 
-  hdfs-datanode:
+  datanode1:
     image: bde2020/hadoop-datanode:2.0.0-hadoop3.2.1-java8
     container_name: datanode1
     volumes:
-      - hdfs_datanode_data:/hadoop/dfs/data
+      - hadoop_datanode1:/hadoop/dfs/data
     environment:
-      SERVICE_PRECONDITION: "namenode:9870"
+      - CORE_CONF_fs_defaultFS=hdfs://namenode:8020
     env_file:
       .env
+    depends_on:
+      - namenode
 
+
+ # hdfs-datanode:
+  #  image: bde2020/hadoop-datanode:2.0.0-hadoop3.2.1-java8
+   # container_name: datanode1
+    #environment:
+     # - CORE_CONF_fs_defaultFS=hdfs://namenode:8020
+      #- HDFS_CONF_dfs_datanode_data_dir=file:///hadoop/dfs/data
+      #- SERVICE_PRECONDITION=namenode:9000
+    #volumes:
+     # - datanode_data:/hadoop/dfs/data
+    #depends_on:
+     # - tasks_server
+    #env_file:
+     # .env
 volumes:
   mongo_store:
   mongo_express_data:
   cass_store:
   redis-data:
-  hdfs_namenode_data:
-  hdfs_datanode_data:
+  #namenode_data:
+  #datanode_data:
+
+  hadoop_namenode:
+  hadoop_datanode1:
