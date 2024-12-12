@@ -126,14 +126,14 @@ var rolePermissions = map[string]map[string][]string{
 	"User": {
 		"GET": {"/api/projects/{username}", "/api/project/{id}", "/api/tasks/{id}", "/api/task/{id}",
 			"/api/users/{username}", "/api/notifications/{userId}", "/api/tasks/{taskId}/files/{fileId}"},
-		"POST":   {"/api/tasks/{taskId}/files"},
+		"POST":   {"/api/tasks/files"},
 		"DELETE": {"/api/users/{username}", "/api/tasks/{taskId}/files/{fileId}"},
 		"PUT":    {"/api/users/change-password", "/api/tasks/{id}"},
 	},
 	"Manager": {
 		"GET": {"/api/projects/{username}", "/api/project/{id}", "/api/tasks/{id}", "/api/task/{id}",
 			"/api/users/{username}", "/api/notifications/{userId}", "/api/tasks/{taskId}/files/{fileId}"},
-		"POST": {"/api/project", "/api/task", "/api/tasks/{taskId}/files"},
+		"POST": {"/api/project", "/api/task", "/api/tasks/files"},
 		"DELETE": {"/api/project/{id}", "/api/task/{id}", "/api/users/{username}", "/api/task/{projectId}/members/{userId}",
 			"/api/projects/{projectId}/members/{userId}", "/api/tasks/{taskId}/files/{fileId}"},
 		"PUT": {"/api/users/change-password", "/api/task/{id}/members", "/api/projects/{projectId}/members", "/api/tasks/{id}"},

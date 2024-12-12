@@ -375,6 +375,7 @@ func (h *TaskHandler) UpdateTask(ctx context.Context, req *proto.UpdateTaskReq) 
 }
 
 func (h *TaskHandler) UploadFile(ctx context.Context, req *proto.UploadFileRequest) (*proto.EmptyResponse, error) {
+	log.Printf("Received task_id: %s, file_name: %s, file_content length: %d", req.TaskId, req.FileName, len(req.FileContent))
 	_, span := h.Tracer.Start(ctx, "Publisher.UploadFile")
 	defer span.End()
 	log.Printf("handler upload file")

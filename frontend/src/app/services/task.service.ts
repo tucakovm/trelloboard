@@ -81,8 +81,13 @@ export class TaskService {
   }
 
   //files stuff
-  uploadFile(taskId: string, fileData: FormData): Observable<any> {
-    return this.http.post(`${this.apiUrl}/tasks/${taskId}/files`, fileData);
+  uploadFile(taskId: string | null, fileName: string, fileContent: string): Observable<any> {
+    const body = {
+      taskId: taskId,
+      fileContent: fileContent,
+      fileName: fileName,
+    };
+    return this.http.post(`${this.apiUrl}/tasks/files`, body);
   }
 
   getFiles(taskId: string): Observable<any[]> {

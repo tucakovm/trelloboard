@@ -10,6 +10,7 @@ import (
 	tsk "tasks-service/proto/task"
 	"tasks-service/repository"
 	"tasks-service/service"
+	"tasks-service/utils"
 	"time"
 
 	"github.com/nats-io/nats.go"
@@ -95,6 +96,7 @@ func main() {
 	}
 	defer repo.Close()
 	log.Println("created hdfs repo")
+	checkHDFSConnection(repo)
 
 	serviceProject := service.NewTaskService(*repoTask, tracer)
 	handleErr(err)
@@ -166,4 +168,21 @@ func newTraceProvider(exp sdktrace.SpanExporter) *sdktrace.TracerProvider {
 		sdktrace.WithSyncer(exp),
 		sdktrace.WithResource(r),
 	)
+}
+func checkHDFSConnection(repo *repository.HDFSRepository) {
+
+	err := repo.Client.MkdirAll("/tasks/test-dir", 0755)
+	if err != nil {
+		log.Fatalf("Error creating test directory in HDFS: %v", err)
+	} else {
+		log.Println("HDFS connection successful: Test directory created.")
+	}
+	name := utils.GenerateCode()
+	testFileContent := []byte("This is a test file uploaded on startup.")
+	err = repo.UploadFile("test-task-id", name, testFileContent)
+	if err != nil {
+		log.Fatalf("Error uploading test file to HDFS: %v", err)
+	} else {
+		log.Println("Test file uploaded successfully to HDFS.")
+	}
 }

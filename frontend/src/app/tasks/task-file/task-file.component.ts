@@ -31,21 +31,31 @@ export class TaskFileComponent implements OnInit {
 
   uploadFile(): void {
     if (this.selectedFile && this.taskId) {
-      const formData = new FormData();
-      formData.append('task_id', this.taskId);
-      formData.append('file_name', this.selectedFile.name);
-      formData.append('file', this.selectedFile, this.selectedFile.name);
+      const reader = new FileReader();
 
-      this.taskService.uploadFile(this.taskId, formData).subscribe(
-        () => {
-          alert('File uploaded successfully!');
-          this.getFiles();
-        },
-        (error) => {
-          console.error('Error uploading file:', error);
-          alert('Failed to upload file.');
-        }
-      );
+      reader.onload = () => {
+        const fileContent = (reader.result as string).split(',')[1];
+        // Extract base64 content
+
+        // @ts-ignore
+        this.taskService.uploadFile(this.taskId, this.selectedFile.name, fileContent).subscribe(
+          () => {
+            alert('File uploaded successfully!');
+            this.getFiles();
+          },
+          (error) => {
+            console.error('Error uploading file:', error);
+            alert('Failed to upload file.');
+          }
+        );
+      };
+
+      reader.onerror = (error) => {
+        console.error('Error reading file:', error);
+        alert('Failed to process file.');
+      };
+
+      reader.readAsDataURL(this.selectedFile);
     } else {
       alert('Please select a file first.');
     }

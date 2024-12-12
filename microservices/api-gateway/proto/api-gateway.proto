@@ -129,6 +129,24 @@ service TaskService {
       body: "*"
     };
   }
+  rpc UploadFile(UploadFileRequest) returns (FileResponse) {
+    option (google.api.http) = {
+      post: "/api/tasks/files",
+      body: "*"
+    };
+  }
+
+  rpc GetFile(GetFileRequest) returns (FileResponse) {
+    option (google.api.http) = {
+      get: "/api/tasks/{taskId}/files/{fileId}"
+    };
+  }
+
+  rpc DeleteFile(DeleteFileRequest) returns (EmptyResponse) {
+    option (google.api.http) = {
+      delete: "/api/tasks/{taskId}/files/{fileId}"
+    };
+  }
 }
 
 message Task {
@@ -341,29 +359,6 @@ message Notification{
   string message = 4;
   string status = 5;
 }
-
-
-service FileService {
-  rpc UploadFile(UploadFileRequest) returns (FileResponse) {
-    option (google.api.http) = {
-      post: "/api/tasks/{taskId}/files",
-      body: "file"
-    };
-  }
-
-  rpc GetFile(GetFileRequest) returns (FileResponse) {
-    option (google.api.http) = {
-      get: "/api/tasks/{taskId}/files/{fileId}"
-    };
-  }
-
-  rpc DeleteFile(DeleteFileRequest) returns (EmptyResponse) {
-    option (google.api.http) = {
-      delete: "/api/tasks/{taskId}/files/{fileId}"
-    };
-  }
-}
-
 message UploadFileRequest {
   string taskId = 1;
   bytes fileContent = 2;
