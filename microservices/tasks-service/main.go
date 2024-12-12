@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/base64"
 	"log"
 	"net"
 	"os"
@@ -169,20 +170,48 @@ func newTraceProvider(exp sdktrace.SpanExporter) *sdktrace.TracerProvider {
 		sdktrace.WithResource(r),
 	)
 }
-func checkHDFSConnection(repo *repository.HDFSRepository) {
 
+func checkHDFSConnection(repo *repository.HDFSRepository) {
+	// Create a test directory in HDFS
 	err := repo.Client.MkdirAll("/tasks/test-dir", 0755)
 	if err != nil {
 		log.Fatalf("Error creating test directory in HDFS: %v", err)
 	} else {
 		log.Println("HDFS connection successful: Test directory created.")
 	}
+
+	// Generate a unique file name for testing
+	// The repo doesn't allow files with the same name
 	name := utils.GenerateCode()
-	testFileContent := []byte("This is a test file uploaded on startup.")
-	err = repo.UploadFile("test-task-id", name, testFileContent)
+
+	// Create test file content and encode it to Base64
+	testFileContent := "This is a test file uploaded on startup."
+	encodedContent := base64.StdEncoding.EncodeToString([]byte(testFileContent))
+
+	// Convert Base64 string to []byte
+	encodedContentBytes := []byte(encodedContent)
+
+	// Upload the test file to HDFS
+	err = repo.UploadFile("test-task-id", name, encodedContentBytes)
 	if err != nil {
 		log.Fatalf("Error uploading test file to HDFS: %v", err)
 	} else {
 		log.Println("Test file uploaded successfully to HDFS.")
+	}
+
+	// Attempt to download the test file from HDFS
+	file, err := repo.DownloadFile("test-task-id", name)
+	if err != nil {
+		log.Println("Error downloading test file from HDFS:", err)
+	} else {
+		log.Printf("Downloaded file content: %s\n", string(file))
+	}
+
+	// Delete the test file from HDFS
+	err = repo.DeleteFile("test-task-id", name)
+	if err != nil {
+		log.Println("Error deleting test file from HDFS:", err)
+	} else {
+		log.Println("Deleted test file from HDFS successfully.")
 	}
 }
