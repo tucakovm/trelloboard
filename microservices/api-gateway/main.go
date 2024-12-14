@@ -95,6 +95,22 @@ func main() {
 		log.Fatal("Notification service client is nil")
 	}
 
+	// WorkflowService connection
+	workflowConn, err := grpc.DialContext(
+		ctx,
+		cfg.FullWorkflowServiceAddress(),
+		grpc.WithBlock(),
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
+	)
+	if err != nil {
+		log.Fatalf("Failed to dial WorkflowService: %v", err)
+	}
+	workflowClient := gateway.NewWorkflowServiceClient(workflowConn)
+	if err := gateway.RegisterWorkflowServiceHandlerClient(ctx, gwmux, workflowClient); err != nil {
+		log.Fatalf("Failed to register WorkflowService gateway: %v", err)
+	}
+	log.Println("WorkflowService Gateway registered successfully.")
+
 	// Start the HTTP server
 	gwServer := &http.Server{
 		Addr:    cfg.Address,
@@ -133,7 +149,7 @@ var rolePermissions = map[string]map[string][]string{
 	"Manager": {
 		"GET": {"/api/projects/{username}", "/api/project/{id}", "/api/tasks/{id}", "/api/task/{id}",
 			"/api/users/{username}", "/api/notifications/{userId}"},
-		"POST": {"/api/project", "/api/task"},
+		"POST": {"/api/project", "/api/task", "/api/workflows/create", "/api/workflows/addtask"},
 		"DELETE": {"/api/project/{id}", "/api/task/{id}", "/api/users/{username}", "/api/task/{projectId}/members/{userId}",
 			"/api/projects/{projectId}/members/{userId}"},
 		"PUT": {"/api/users/change-password", "/api/task/{id}/members", "/api/projects/{projectId}/members", "/api/tasks/{id}"},
@@ -147,6 +163,10 @@ var publicRoutes = []string{
 	"/api/users/magic-link",
 	"/api/users/recovery",
 	"/api/users/recover-password",
+	"/api/workflows/create",
+	"/api/workflows/addtask",
+	"/api/workflows/{project_id}",
+	"/api/workflows/checktaskdependencies",
 }
 
 func matchesRoute(path string, template string) bool {

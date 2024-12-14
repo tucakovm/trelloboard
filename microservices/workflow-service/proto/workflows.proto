@@ -1,0 +1,64 @@
+syntax = "proto3";
+
+option go_package = "proto/workflows";
+
+service WorkflowService {
+  // Create a new workflow
+  rpc CreateWorkflow(CreateWorkflowReq) returns (VoidResponse) {}
+
+  // Add a task to an existing workflow
+  rpc AddTask(AddTaskReq) returns (VoidResponse) {}
+
+  // Retrieve a workflow by its project ID
+  rpc GetWorkflowByProjectID(GetWorkflowReq) returns (GetWorkflowRes) {}
+
+  // Delete a workflow by its project ID
+  rpc DeleteWorkflowByProjectID(GetWorkflowReq) returns (VoidResponse) {}
+
+  // Check task dependencies
+  rpc CheckTaskDependencies(CheckTaskDependenciesReq) returns (TaskDependenciesStatus) {}
+}
+
+// Messages for Workflow Service
+message VoidResponse {}
+
+message CreateWorkflowReq {
+  string project_id = 1;
+  string project_name = 2;
+}
+
+message AddTaskReq {
+  string project_id = 1;
+  Task task = 2;
+}
+
+message GetWorkflowReq {
+  string project_id = 1;
+}
+
+message GetWorkflowRes {
+  Workflow workflow = 1;
+}
+
+message Workflow {
+  string project_id = 1;
+  string project_name = 2;
+  repeated Task tasks = 3;
+}
+
+message Task {
+  string id = 1;
+  string name = 2;
+  string description = 3;
+  repeated string dependencies = 4;
+  bool blocked = 5;
+}
+
+message CheckTaskDependenciesReq {
+  string project_id = 1;
+  string task_id = 2;
+}
+
+message TaskDependenciesStatus {
+  bool allDependenciesMet = 1;
+}
