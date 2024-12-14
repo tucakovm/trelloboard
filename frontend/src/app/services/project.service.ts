@@ -114,6 +114,13 @@ export class ProjectService {
       `${this.apiUrl}/projects/${id}/members/${member.id}`
     );
   }
+  //dodavanje workflow-a
+  createWorkflow(projectId: string, projectName: string): Observable<any> {
+    return this.http.post(`${this.apiUrl}/workflows/create`, {
+      projectId: projectId,
+      projectName: projectName
+    });
+  }
 }
 
 interface User {

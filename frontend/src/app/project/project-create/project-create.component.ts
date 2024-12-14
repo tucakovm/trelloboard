@@ -88,6 +88,17 @@ export class ProjectCreateComponent{
         next: (response) => {
           this.router.navigate(['/all-projects'])
           console.log('Project created successfully:', response);
+
+          // Kreiraj workflow nakon uspešnog kreiranja projekta
+          this.projectService.createWorkflow(response.id, response.name).subscribe({
+            next: (workflowResponse) => {
+              console.log('Workflow created:', workflowResponse);
+              this.router.navigate(['/all-projects']);
+            },
+            error: (error) => {
+              console.error('Error creating workflow:', error);
+            }
+          });
         },
         error: (error) => {
           console.error('Error creating project:', error);

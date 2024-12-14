@@ -119,13 +119,16 @@ services:
     build:
       context: microservices/workflow-service
       dockerfile: Dockerfile
+    restart: always
     ports:
       - "${WORKFLOW_SERVICE_PORT}:${WORKFLOW_SERVICE_PORT}" 
     env_file:
       .env
     depends_on:
-      - neo4j
-      - tracing
+      neo4j:
+        condition: service_healthy
+      tracing:
+        condition: service_healthy
 
   mongo:
     image: mongo
@@ -219,6 +222,11 @@ services:
       - "${JAEGER_UI_PORT}:${JAEGER_UI_PORT}"
       - "14268:14268"
       - "14250:14250"
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:16686" ]
+      interval: 10s
+      timeout: 5s
+      retries: 3
     env_file:
       .env
   neo4j:
