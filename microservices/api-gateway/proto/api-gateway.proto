@@ -147,6 +147,11 @@ service TaskService {
       delete: "/api/tasks/{taskId}/files/{fileId}"
     };
   }
+  rpc GetAllFiles(GetTaskFilesRequest) returns (GetTaskFilesResponse){
+    option (google.api.http) = {
+      get: "/api/tasks/{taskId}/files"
+    };
+  }
 }
 
 message Task {
@@ -380,4 +385,11 @@ message FileResponse {
 message DeleteFileRequest {
   string taskId = 1;
   string fileId = 2;
+}
+message GetTaskFilesRequest {
+  string task_id = 1;
+}
+
+message GetTaskFilesResponse {
+  repeated string file_names = 1;
 }

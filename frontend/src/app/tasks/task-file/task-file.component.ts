@@ -34,19 +34,20 @@ export class TaskFileComponent implements OnInit {
       const reader = new FileReader();
 
       reader.onload = () => {
-        // The result here is an ArrayBuffer (raw bytes)
-        const fileContent = new Uint8Array(reader.result as ArrayBuffer);
+        // Base64 encode the file content
+        const fileContentBase64 = btoa(String.fromCharCode(...new Uint8Array(reader.result as ArrayBuffer)));
 
-        // Prepare the FormData object to send the raw binary data
-        const formData = new FormData();
-        // @ts-ignore
-        formData.append('taskId', this.taskId);
-        // @ts-ignore
-        formData.append('fileName', this.selectedFile.name);
-        formData.append('fileContent', new Blob([fileContent])); // Append the raw byte content as Blob
+        // Create the request payload
 
-        // Send the FormData to the backend
-        this.taskService.uploadFile(formData).subscribe(
+
+        const payload = {
+          taskId: this.taskId,
+          fileContent: fileContentBase64,
+          fileName: this.selectedFile?.name,
+        };
+
+        // Send the payload to the backend
+        this.taskService.uploadFile(payload).subscribe(
           () => {
             alert('File uploaded successfully!');
             this.getFiles();
@@ -58,15 +59,7 @@ export class TaskFileComponent implements OnInit {
         );
       };
 
-      reader.onerror = (error) => {
-        console.error('Error reading file:', error);
-        alert('Failed to process file.');
-      };
-
-      // Read the file as an ArrayBuffer (raw binary data)
       reader.readAsArrayBuffer(this.selectedFile);
-    } else {
-      alert('Please select a file first.');
     }
   }
 

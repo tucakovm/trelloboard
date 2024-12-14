@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"encoding/base64"
 	otelCodes "go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/trace"
 	"google.golang.org/grpc/codes"
@@ -186,12 +187,15 @@ func (s *TaskService) UpdateTask(taskReq *proto.Task, ctx context.Context) error
 }
 func (s *TaskService) UploadFile(taskID string, fileName string, fileContent []byte) error {
 	log.Printf("service upload file")
-	err := s.hdfsRepo.UploadFile(taskID, fileName, fileContent)
+
+	fileContentBase64 := base64.StdEncoding.EncodeToString(fileContent)
+
+	err := s.hdfsRepo.UploadFile(taskID, fileName, fileContentBase64)
 	if err != nil {
 		return err
 	}
 
-	return err
+	return nil
 }
 
 func (s *TaskService) DownloadFile(taskID string, fileName string) ([]byte, error) {
@@ -205,4 +209,16 @@ func (s *TaskService) DeleteFile(taskID string, fileName string) error {
 	}
 
 	return err
+}
+func (s *TaskService) GetTaskFiles(taskID string) ([]string, error) {
+	log.Printf("Service: Fetching file names for task_id: %s", taskID)
+
+	// Call repository to get the file names for the task
+	files, err := s.hdfsRepo.GetFileNamesForTask(taskID)
+	if err != nil {
+		log.Printf("Error fetching files for task_id %s: %v", taskID, err)
+		return nil, err
+	}
+
+	return files, nil
 }

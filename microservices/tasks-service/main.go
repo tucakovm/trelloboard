@@ -97,7 +97,7 @@ func main() {
 	}
 	defer repo.Close()
 	log.Println("created hdfs repo")
-	checkHDFSConnection(repo)
+	//checkHDFSConnection(repo)
 
 	serviceProject := service.NewTaskService(*repoTask, tracer)
 	handleErr(err)
@@ -113,7 +113,9 @@ func main() {
 
 	// Bootstrap gRPC service server and respond to request.
 	tsk.RegisterTaskServiceServer(grpcServer, handlerProject)
-
+	if repo.Client == nil {
+		log.Println("main.go repo.client nil")
+	}
 	go func() {
 		if err := grpcServer.Serve(listener); err != nil {
 			log.Fatal("server error: ", err)
@@ -186,13 +188,10 @@ func checkHDFSConnection(repo *repository.HDFSRepository) {
 
 	// Create test file content and encode it to Base64
 	testFileContent := "This is a test file uploaded on startup."
-	encodedContent := base64.StdEncoding.EncodeToString([]byte(testFileContent))
-
-	// Convert Base64 string to []byte
-	encodedContentBytes := []byte(encodedContent)
+	encodedContent := base64.StdEncoding.EncodeToString([]byte(testFileContent)) // Base64 encode content
 
 	// Upload the test file to HDFS
-	err = repo.UploadFile("test-task-id", name, encodedContentBytes)
+	err = repo.UploadFile("test-task-id", name, encodedContent)
 	if err != nil {
 		log.Fatalf("Error uploading test file to HDFS: %v", err)
 	} else {
@@ -204,7 +203,13 @@ func checkHDFSConnection(repo *repository.HDFSRepository) {
 	if err != nil {
 		log.Println("Error downloading test file from HDFS:", err)
 	} else {
-		log.Printf("Downloaded file content: %s\n", string(file))
+		// Decode Base64 content after downloading
+		decodedContent, decodeErr := base64.StdEncoding.DecodeString(string(file))
+		if decodeErr != nil {
+			log.Println("Error decoding downloaded file content:", decodeErr)
+		} else {
+			log.Printf("Downloaded file content: %s\n", string(decodedContent))
+		}
 	}
 
 	// Delete the test file from HDFS

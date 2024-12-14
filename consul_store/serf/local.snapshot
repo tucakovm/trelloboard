@@ -174,3 +174,25 @@ alive: server-1 172.18.0.7:8301
 event-clock: 27
 alive: server-1 172.18.0.8:8301
 event-clock: 28
+alive: server-1 172.18.0.8:8301
+event-clock: 29
+alive: server-1 172.18.0.6:8301
+event-clock: 30
+alive: server-1 172.18.0.8:8301
+event-clock: 31
+alive: server-1 172.18.0.7:8301
+event-clock: 32
+alive: server-1 172.18.0.8:8301
+event-clock: 33
+alive: server-1 172.18.0.8:8301
+event-clock: 34
+alive: server-1 172.18.0.3:8301
+event-clock: 35
+alive: server-1 172.18.0.4:8301
+event-clock: 36
+alive: server-1 172.18.0.8:8301
+event-clock: 37
+alive: server-1 172.18.0.6:8301
+event-clock: 38
+alive: server-1 172.18.0.7:8301
+event-clock: 39

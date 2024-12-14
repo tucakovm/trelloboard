@@ -125,7 +125,7 @@ func main() {
 var rolePermissions = map[string]map[string][]string{
 	"User": {
 		"GET": {"/api/projects/{username}", "/api/project/{id}", "/api/tasks/{id}", "/api/task/{id}",
-			"/api/users/{username}", "/api/notifications/{userId}", "/api/tasks/{taskId}/files/{fileId}"},
+			"/api/users/{username}", "/api/notifications/{userId}", "/api/tasks/{taskId}/files/{fileId}", "/api/tasks/{taskId}/files"},
 		"POST":   {"/api/tasks/files"},
 		"DELETE": {"/api/users/{username}", "/api/tasks/{taskId}/files/{fileId}"},
 		"PUT":    {"/api/users/change-password", "/api/tasks/{id}"},

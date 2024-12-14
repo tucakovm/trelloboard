@@ -376,15 +376,20 @@ func (h *TaskHandler) UpdateTask(ctx context.Context, req *proto.UpdateTaskReq) 
 
 func (h *TaskHandler) UploadFile(ctx context.Context, req *proto.UploadFileRequest) (*proto.EmptyResponse, error) {
 	log.Printf("Received task_id: %s, file_name: %s, file_content length: %d", req.TaskId, req.FileName, len(req.FileContent))
+
 	_, span := h.Tracer.Start(ctx, "Publisher.UploadFile")
 	defer span.End()
+
 	log.Printf("handler upload file")
+	log.Println("task name", req.FileName)
+	log.Println("end on file name")
 
 	headers := nats.Header{}
 	headers.Set(nats_helper.TRACE_ID, span.SpanContext().TraceID().String())
 	headers.Set(nats_helper.SPAN_ID, span.SpanContext().SpanID().String())
 
-	err := h.service.UploadFile(req.TaskId, req.FileName, req.FileContent)
+	// Pass the task ID, file name, and raw file content to the service
+	err := h.service.UploadFile(req.TaskId, string(req.FileContent), []byte(req.FileName))
 	if err != nil {
 		span.SetStatus(otelCodes.Error, err.Error())
 		return nil, status.Error(codes.Internal, "Failed to upload file")
@@ -423,4 +428,25 @@ func (h *TaskHandler) DeleteFile(ctx context.Context, req *proto.DeleteFileReque
 	log.Printf("File deleted and notification sent: %s")
 
 	return &proto.EmptyResponse{}, nil
+}
+
+func (h *TaskHandler) GetTaskFiles(ctx context.Context, req *proto.GetTaskFilesRequest) (*proto.GetTaskFilesResponse, error) {
+	log.Printf("Received request for task_id: %s", req.TaskId)
+
+	_, span := h.Tracer.Start(ctx, "Handler.GetTaskFiles")
+	defer span.End()
+
+	// Call service layer to fetch the file names
+	fileNames, err := h.service.GetTaskFiles(req.TaskId)
+	if err != nil {
+		span.SetStatus(otelCodes.Error, err.Error())
+		return nil, status.Error(codes.Internal, "Failed to fetch files")
+	}
+
+	log.Printf("Successfully fetched file names for task_id: %s", req.TaskId)
+
+	// Return the response with the file names
+	return &proto.GetTaskFilesResponse{
+		FileNames: fileNames,
+	}, nil
 }
