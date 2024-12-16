@@ -62,7 +62,7 @@ func (repo *HDFSRepository) UploadFile(taskID, fileName string, content string) 
 	hdfsPath := fmt.Sprintf("/tasks/%s/%s", taskID, fileName)
 
 	if repo.Client == nil {
-		log.Println("HDFS client is not initialized. KYS")
+		log.Println("HDFS client is not initialized.")
 	}
 	file, err := repo.Client.Create(hdfsPath)
 	if err != nil {
