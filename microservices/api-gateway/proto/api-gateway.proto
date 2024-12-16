@@ -348,7 +348,7 @@ service WorkflowService {
   rpc CreateWorkflow(CreateWorkflowReq) returns (EmptyResponse) {
     option (google.api.http) = {
       post: "/api/workflows/create",
-      body: "*" // trebalo bi da ovo dobaci ceo objekat || bilo je workflow
+      body: "workflow" // trebalo bi da ovo dobaci ceo objekat || bilo je workflow
     };
   }
 

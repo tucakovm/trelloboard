@@ -67,7 +67,7 @@ export class ProjectDetailsComponent implements OnInit{
 
   getWorkflow(): void {
     if (this.id) {
-      this.workflowService.getWorkflowByProjectId(this.id).subscribe({
+      this.projectService.getWorkflowByProjectId(this.project.id).subscribe({
         next: (workflow) => {
           this.workflow = workflow;
           console.log('Workflow:', this.workflow);
@@ -107,19 +107,19 @@ export class ProjectDetailsComponent implements OnInit{
       })
     }
   }
-
+//ovde sam dodao project.id umesto id
   createWorkflow() {
-    if (this.id && this.project.name) {
-      const newWorkflow = { project_id: this.id, project_name: this.project.name };
-      this.workflowService.createWorkflow(newWorkflow).subscribe(
-        (workflow: any) => {
-          this.workflow = workflow; // Ažuriraj lokalni workflow
-          console.log('Workflow created:', workflow);
-        },
-        (error) => {
-          console.error('Error creating workflow:', error);
-        }
-      );
+    if (this.project.id && this.project.name) {
+      //const newWorkflow = { project_id: this.project.id, project_name: this.project.name };
+      this.projectService.createWorkflow(this.project.id,this.project.name).subscribe(
+        {
+          next: (workflowResponse) => {
+            console.log('Workflow created:', workflowResponse);
+          },
+          error: (error) => {
+            console.error('Error creating workflow:', error);
+          }
+        });
     }
   }
 

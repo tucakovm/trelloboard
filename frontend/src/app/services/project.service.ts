@@ -3,7 +3,7 @@ import { Injectable } from '@angular/core';
 import { map, Observable } from 'rxjs';
 import { Project } from '../model/project';
 import { UserFP } from '../model/userForProject';
-import { catchError } from 'rxjs/operators';
+import {catchError, tap} from 'rxjs/operators';
 import { of } from 'rxjs';
 import { AuthService } from './auth.service';
 
@@ -121,6 +121,20 @@ export class ProjectService {
       projectName: projectName
     });
   }
+
+
+  getWorkflowByProjectId(projectId: string): Observable<any> {
+    console.log('Fetching workflow for project ID:', projectId); // Log pred slanje zahteva
+
+    return this.http.get<any>(`${this.apiUrl}/workflows/${projectId}`).pipe(
+      tap(response => console.log('Received workflow response:', response)), // Log nakon odgovora
+      catchError(error => {
+        console.error('Error fetching workflow:', error); // Log ako dođe do greške
+        throw error;
+      })
+    );
+  }
+
 }
 
 interface User {
