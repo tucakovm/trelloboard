@@ -128,7 +128,9 @@ services:
       neo4j:
         condition: service_healthy
       tracing:
-        condition: service_healthy
+        condition: service_started
+
+
 
   mongo:
     image: mongo

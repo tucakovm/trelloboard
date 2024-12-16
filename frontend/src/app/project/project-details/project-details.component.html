@@ -51,6 +51,29 @@
           />
         </div>
       </div>
+      #WORKFLOW
+      <div class="row mt-4">
+        <div class="col-md-12 text-center">
+          <ng-container *ngIf="workflow; else createWorkflowBlock">
+            <h4 class="text-success">Workflow Details</h4>
+            <p><strong>ID:</strong> {{ workflow.id }}</p>
+            <p><strong>Name:</strong> {{ workflow.name }}</p>
+          </ng-container>
+
+          <ng-template #createWorkflowBlock>
+            <button
+              *ngIf="isManager()"
+              class="btn btn-primary w-100 shadow-sm"
+              (click)="createWorkflow()"
+            >
+              Create Workflow
+            </button>
+          </ng-template>
+        </div>
+      </div>
+
+
+
 
       <div class="row mb-4">
         <div class="col-md-6">

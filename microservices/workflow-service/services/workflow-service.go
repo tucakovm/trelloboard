@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"fmt"
+	"log"
 	"workflow-service/models"
 	"workflow-service/repository"
 )
@@ -27,11 +28,17 @@ func NewWorkflowService(repo repository.WorkflowRepository) WorkflowService {
 
 // CreateWorkflow creates a new workflow
 func (s *workflowService) CreateWorkflow(workflow models.Workflow) error {
+	log.Printf("Creating workflow in service for project_id=%s, project_name=%s", workflow.ProjectID, workflow.ProjectName)
+
 	ctx := context.Background()
 	// Ensure proper error handling when calling the repository method
 	if err := s.repo.CreateWorkflow(ctx, workflow); err != nil {
+		log.Printf("Error creating workflow in repository: %v", err)
+
 		return fmt.Errorf("failed to create workflow: %w", err)
 	}
+	log.Printf("Workflow created successfully in repository for project_id=%s", workflow.ProjectID)
+
 	return nil
 }
 

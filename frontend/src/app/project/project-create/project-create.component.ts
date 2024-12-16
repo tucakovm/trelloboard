@@ -90,7 +90,7 @@ export class ProjectCreateComponent{
           console.log('Project created successfully:', response);
 
           // Kreiraj workflow nakon uspešnog kreiranja projekta
-          this.projectService.createWorkflow(response.id, response.name).subscribe({
+          this.projectService.createWorkflow("nekiId", "nekoIme").subscribe({
             next: (workflowResponse) => {
               console.log('Workflow created:', workflowResponse);
               this.router.navigate(['/all-projects']);

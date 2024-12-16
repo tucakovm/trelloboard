@@ -4,6 +4,7 @@ import { ProjectService } from '../../services/project.service';
 import { ActivatedRoute, Router } from '@angular/router';
 import { TaskService } from '../../services/task.service';
 import { AuthService } from '../../services/auth.service';
+import {WorkflowService} from "../../services/workflow.service";
 
 @Component({
   selector: 'app-project-details',
@@ -31,12 +32,15 @@ export class ProjectDetailsComponent implements OnInit{
       },
     ]
   }
+  workflow: any | null = null;
   maxLengthAchieved:boolean = false;
-  constructor(private projectService:ProjectService,private route: ActivatedRoute,private tasksService:TaskService, private router:Router, private authService:AuthService){}
+  constructor(private projectService:ProjectService, private workflowService: WorkflowService,private route: ActivatedRoute,private tasksService:TaskService, private router:Router, private authService:AuthService){}
 
   ngOnInit(): void {
     this.getProject();
+    this.getWorkflow();
     console.log(this.project)
+    console.log(this.workflow)
   }
 
   getProject() {
@@ -60,6 +64,21 @@ export class ProjectDetailsComponent implements OnInit{
     }
   }
 
+
+  getWorkflow(): void {
+    if (this.id) {
+      this.workflowService.getWorkflowByProjectId(this.id).subscribe({
+        next: (workflow) => {
+          this.workflow = workflow;
+          console.log('Workflow:', this.workflow);
+        },
+        error: (error) => {
+          console.error('Error fetching workflow:', error);
+          this.workflow = null;
+        }
+      });
+    }
+  }
 
   deleteAllTasksByProjectId(id:string){
     this.tasksService.deleteTasksByProjectId(id).subscribe({
@@ -88,6 +107,22 @@ export class ProjectDetailsComponent implements OnInit{
       })
     }
   }
+
+  createWorkflow() {
+    if (this.id && this.project.name) {
+      const newWorkflow = { project_id: this.id, project_name: this.project.name };
+      this.workflowService.createWorkflow(newWorkflow).subscribe(
+        (workflow: any) => {
+          this.workflow = workflow; // Ažuriraj lokalni workflow
+          console.log('Workflow created:', workflow);
+        },
+        (error) => {
+          console.error('Error creating workflow:', error);
+        }
+      );
+    }
+  }
+
   addTask(): void {
     if (this.id) {
       this.router.navigate(['/tasks/create', this.id]);

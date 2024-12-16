@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"context"
+	"log"
 	"workflow-service/models"
 	proto "workflow-service/proto/workflows" // Import your generated proto package
 	"workflow-service/services"
@@ -18,6 +19,8 @@ func NewWorkflowHandler(service services.WorkflowService) *WorkflowHandler {
 
 // Implement the gRPC method for CreateWorkflow
 func (h *WorkflowHandler) CreateWorkflow(ctx context.Context, req *proto.CreateWorkflowReq) (*proto.VoidResponse, error) {
+	log.Printf("Received CreateWorkflow request: project_id=%s, project_name=%s", req.ProjectId, req.ProjectName)
+
 	// Convert the proto request to your models
 	workflow := models.Workflow{
 		ProjectID:   req.ProjectId,
@@ -30,6 +33,7 @@ func (h *WorkflowHandler) CreateWorkflow(ctx context.Context, req *proto.CreateW
 		return nil, err
 	}
 
+	log.Printf("Workflow created successfully for project_id=%s", req.ProjectId)
 	return &proto.VoidResponse{}, nil
 }
 

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/neo4j/neo4j-go-driver/v5/neo4j"
+	"log"
 	"workflow-service/models"
 )
 
@@ -22,6 +23,8 @@ func NewWorkflowRepository(ctx context.Context) (*WorkflowRepository, error) {
 }
 
 func (r *WorkflowRepository) CreateWorkflow(ctx context.Context, workflow models.Workflow) error {
+	log.Printf("Creating workflow in database: project_id=%s, project_name=%s", workflow.ProjectID, workflow.ProjectName)
+
 	// Create session for this transaction
 	session := r.Driver.NewSession(ctx, neo4j.SessionConfig{})
 	defer session.Close(ctx)
@@ -35,8 +38,13 @@ func (r *WorkflowRepository) CreateWorkflow(ctx context.Context, workflow models
 		return nil, err
 	})
 	if err != nil {
+		log.Printf("Error creating workflow in Neo4j: %v", err)
+
 		return fmt.Errorf("failed to create workflow: %w", err)
 	}
+
+	log.Printf("Workflow created successfully in Neo4j: project_id=%s", workflow.ProjectID)
+
 	return nil
 }
 
