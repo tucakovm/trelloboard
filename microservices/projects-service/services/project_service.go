@@ -2,16 +2,17 @@ package services
 
 import (
 	"context"
-	otelCodes "go.opentelemetry.io/otel/codes"
-	"go.opentelemetry.io/otel/trace"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
-	"google.golang.org/protobuf/types/known/timestamppb"
 	"log"
 	"projects_module/domain"
 	proto "projects_module/proto/project"
 	"projects_module/repositories"
 	"strings"
+
+	otelCodes "go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/otel/trace"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 type ProjectService struct {
@@ -27,6 +28,7 @@ func NewProjectService(repo repositories.ProjectRepo, tracer trace.Tracer) (Proj
 }
 
 func (s ProjectService) Create(req *proto.Project, ctx context.Context) error {
+
 	ctx, span := s.Tracer.Start(ctx, "s.createProject")
 	defer span.End()
 	completionDate := req.CompletionDate.AsTime()
