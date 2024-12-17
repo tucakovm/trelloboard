@@ -27,7 +27,9 @@ import (
 	semconv "go.opentelemetry.io/otel/semconv/v1.7.0"
 	"go.opentelemetry.io/otel/trace"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/reflection"
+	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -93,7 +95,9 @@ func main() {
 	NatsCreateTask(ctx, natsConn, *serviceNot, tracer)
 
 	// Bootstrap gRPC server.
-	grpcServer := grpc.NewServer()
+	grpcServer := grpc.NewServer(
+		grpc.UnaryInterceptor(timeoutUnaryInterceptor(5 * time.Second)), // Timeout na 5 sekundi
+	)
 	reflection.Register(grpcServer)
 
 	// Bootstrap gRPC service server and respond to request.
@@ -111,6 +115,28 @@ func main() {
 	<-stopCh
 
 	grpcServer.Stop()
+}
+
+func timeoutUnaryInterceptor(timeout time.Duration) grpc.UnaryServerInterceptor {
+	return func(
+		ctx context.Context,
+		req interface{},
+		info *grpc.UnaryServerInfo,
+		handler grpc.UnaryHandler,
+	) (interface{}, error) {
+		// Kreiraj novi kontekst sa timeout-om
+		ctx, cancel := context.WithTimeout(ctx, timeout)
+		defer cancel()
+
+		// Obradi zahtev sa novim kontekstom
+		resp, err := handler(ctx, req)
+
+		// Ako je kontekst istekao, vrati odgovarajući status
+		if ctx.Err() == context.DeadlineExceeded {
+			return nil, status.Error(codes.DeadlineExceeded, "Request timed out")
+		}
+		return resp, err
+	}
 }
 
 func handleErr(err error) {
