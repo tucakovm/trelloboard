@@ -116,3 +116,10 @@ services:
 volumes:
   mongo_store:
   mongo_express_data:
+<<<<<<< Updated upstream
+=======
+  cass_store:
+  redis-data:
+  hadoop_namenode:
+  hadoop_datanode1:
+>>>>>>> Stashed changes

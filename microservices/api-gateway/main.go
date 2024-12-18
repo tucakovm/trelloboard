@@ -110,8 +110,10 @@ var rolePermissions = map[string]map[string][]string{
 	},
 	"Manager": {
 		"GET": {"/api/projects/{username}", "/api/project/{id}", "/api/tasks/{id}", "/api/task/{id}",
-			"/api/users/{username}"},
-		"POST": {"/api/project", "/api/task"},
+
+			"/api/users/{username}", "/api/notifications/{userId}", "/api/tasks/{taskId}/files/{fileId}", "/api/tasks/{taskId}/files"},
+		"POST": {"/api/project", "/api/task", "/api/tasks/files"},
+
 		"DELETE": {"/api/project/{id}", "/api/task/{id}", "/api/users/{username}", "/api/task/{projectId}/members/{userId}",
 			"/api/projects/{projectId}/members/{userId}"},
 		"PUT": {"/api/users/change-password", "/api/task/{id}/members", "/api/projects/{projectId}/members", "/api/tasks/{id}"},
