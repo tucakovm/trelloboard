@@ -46,3 +46,13 @@ func (cfg Config) FullUserServiceAddress() string {
 func (cfg Config) FullNotServiceAddress() string {
 	return fmt.Sprintf("%s%s", cfg.NotServiceAddress, cfg.NotServicePort)
 }
+
+type ErrResp struct {
+	URL        string
+	Method     string
+	StatusCode int
+}
+
+func (e ErrResp) Error() string {
+	return fmt.Sprintf("error [status code %d] for request: HTTP %s %s", e.StatusCode, e.Method, e.URL)
+}

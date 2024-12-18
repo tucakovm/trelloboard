@@ -52,15 +52,16 @@ func main() {
 		grpc.WithBlock(),
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 	)
+	if err != nil {
+		log.Fatalln("Failed to dial UserService:", err)
+	}
+
 	userClient := gateway.NewUsersServiceClient(userConn)
+
 	if err := gateway.RegisterUsersServiceHandlerClient(ctx, gwmux, userClient); err != nil {
-		log.Fatalln("Failed to register ProjectService gateway:", err)
+		log.Fatalln("Failed to register UserService gateway:", err)
 	}
 	log.Println("UserService Gateway registered successfully.")
-
-	if err != nil {
-		log.Fatalln("Failed to dial ProjectService:", err)
-	}
 
 	// TaskService connection
 	taskConn, err := grpc.DialContext(
@@ -272,7 +273,7 @@ func enableCORS(h http.Handler) http.Handler {
 	})
 }
 
-func forwardClaimsToServices(ctx context.Context) context.Context {
-	claims := ctx.Value("claims").(jwt.MapClaims)
-	return context.WithValue(ctx, "role", claims["role"])
-}
+//func forwardClaimsToServices(ctx context.Context) context.Context {
+//	claims := ctx.Value("claims").(jwt.MapClaims)
+//	return context.WithValue(ctx, "role", claims["role"])
+//}

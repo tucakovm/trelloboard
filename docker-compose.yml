@@ -209,8 +209,6 @@ services:
     env_file:
       .env
 
-
-
   namenode:
     image: bde2020/hadoop-namenode:2.0.0-hadoop3.2.1-java8
     container_name: namenode
@@ -245,8 +243,8 @@ volumes:
   mongo_express_data:
   cass_store:
   redis-data:
+
   #namenode_data:
   #datanode_data:
-
   hadoop_namenode:
   hadoop_datanode1:
