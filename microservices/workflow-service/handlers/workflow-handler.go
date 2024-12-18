@@ -39,6 +39,7 @@ func (h *WorkflowHandler) CreateWorkflow(ctx context.Context, req *proto.CreateW
 
 // Implement the gRPC method for AddTask
 func (h *WorkflowHandler) AddTask(ctx context.Context, req *proto.AddTaskReq) (*proto.VoidResponse, error) {
+
 	projectID := req.ProjectId
 	task := models.TaskNode{
 		TaskID:   req.Task.Id,
@@ -47,6 +48,8 @@ func (h *WorkflowHandler) AddTask(ctx context.Context, req *proto.AddTaskReq) (*
 		Dependencies: req.Task.Dependencies,
 		Blocked:      req.Task.Blocked, // Include Blocked field
 	}
+
+	log.Printf("Handler for task %s with projectId: %v", task.TaskID, projectID)
 
 	// Call the service to add the task
 	if err := h.WorkflowService.AddTask(projectID, task); err != nil {

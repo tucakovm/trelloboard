@@ -87,7 +87,7 @@ func main() {
 	   	} else {
 	   		// Add test workflows if no workflows exist
 	   		log.Println("No workflows found in the database. Generating test workflows...")*/
-	generateTestWorkflows(ctx, repoWorkflow)
+	//generateTestWorkflows(ctx, repoWorkflow)
 	//}
 
 	// Wait for termination signal

@@ -141,14 +141,14 @@ func main() {
 var rolePermissions = map[string]map[string][]string{
 	"User": {
 		"GET": {"/api/projects/{username}", "/api/project/{id}", "/api/tasks/{id}", "/api/task/{id}",
-			"/api/users/{username}", "/api/notifications/{userId}"},
+			"/api/users/{username}", "/api/notifications/{userId}", "/api/workflows/{project_id}"},
 		"POST":   {},
 		"DELETE": {"/api/users/{username}"},
 		"PUT":    {"/api/users/change-password", "/api/tasks/{id}"},
 	},
 	"Manager": {
 		"GET": {"/api/projects/{username}", "/api/project/{id}", "/api/tasks/{id}", "/api/task/{id}",
-			"/api/users/{username}", "/api/notifications/{userId}"},
+			"/api/users/{username}", "/api/notifications/{userId}", "/api/workflows/{project_id}"},
 		"POST": {"/api/project", "/api/task", "/api/workflows/create", "/api/workflows/addtask"},
 		"DELETE": {"/api/project/{id}", "/api/task/{id}", "/api/users/{username}", "/api/task/{projectId}/members/{userId}",
 			"/api/projects/{projectId}/members/{userId}"},

@@ -15,6 +15,7 @@ export class ProjectService {
   constructor(private http: HttpClient, private authService: AuthService) {}
 
   createProject(project: Project): Observable<Project> {
+
     return this.http.post<Project>(this.apiUrl + '/project', project, {
       headers: new HttpHeaders({
         'Content-Type': 'application/json',
@@ -116,10 +117,17 @@ export class ProjectService {
   }
   //dodavanje workflow-a
   createWorkflow(projectId: string, projectName: string): Observable<any> {
-    return this.http.post(`${this.apiUrl}/workflows/create`, {
-      projectId: projectId,
-      projectName: projectName
-    });
+    const workflow = {
+      project_id: projectId,
+      project_name: projectName
+    };
+    return this.http.post(`${this.apiUrl}/workflows/create`, workflow, {
+        headers: new HttpHeaders({
+          'Content-Type': 'application/json',
+          Authorization: 'Bearer ' + this.authService.getToken(),
+        }),
+      }
+      );
   }
 
 

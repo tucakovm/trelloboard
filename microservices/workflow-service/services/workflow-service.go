@@ -45,6 +45,8 @@ func (s *workflowService) CreateWorkflow(workflow models.Workflow) error {
 // AddTask adds a new task to an existing workflow
 func (s *workflowService) AddTask(projectID string, task models.TaskNode) error {
 	ctx := context.Background()
+	log.Printf("Service for task %s", task.TaskID)
+
 	// Ensure proper error handling when calling the repository method
 	if err := s.repo.AddTask(ctx, projectID, task); err != nil {
 		return fmt.Errorf("failed to add task: %w", err)

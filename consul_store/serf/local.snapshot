@@ -150,3 +150,13 @@ alive: server-1 172.18.0.6:8301
 event-clock: 15
 alive: server-1 172.18.0.5:8301
 event-clock: 16
+alive: server-1 172.18.0.8:8301
+event-clock: 17
+alive: server-1 172.18.0.7:8301
+event-clock: 18
+alive: server-1 172.18.0.7:8301
+event-clock: 19
+alive: server-1 172.18.0.7:8301
+event-clock: 20
+alive: server-1 172.18.0.3:8301
+event-clock: 21

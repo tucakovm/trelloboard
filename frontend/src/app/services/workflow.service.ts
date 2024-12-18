@@ -1,15 +1,16 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import {HttpClient, HttpHeaders} from '@angular/common/http';
 import { Observable } from 'rxjs';
 import {catchError, tap} from "rxjs/operators";
+import {AuthService} from "./auth.service";
 
 @Injectable({
   providedIn: 'root'
 })
 export class WorkflowService {
-  private baseUrl = 'https://localhost:8080/api/workflows';
+  private baseUrl = 'https://localhost:8000/api/workflows';
 
-  constructor(private http: HttpClient) {}
+  constructor(private http: HttpClient, private authService: AuthService) {}
 
   getWorkflowByProjectId(projectId: string): Observable<any> {
     console.log('Fetching workflow for project ID:', projectId); // Log pred slanje zahteva
@@ -34,4 +35,36 @@ export class WorkflowService {
     );
   }
 
+  addTaskToWorkflow(projectId: string, task: any): Observable<any> {
+    return this.http.post<any>(`${this.baseUrl}/addtask`, task,  {
+      headers: new HttpHeaders({
+        'Content-Type': 'application/json',
+        Authorization: 'Bearer ' + this.authService.getToken(),
+      }),
+    });
+  }
+
+  addTask(projectId: string, task: TaskFW): Observable<void> {
+    return this.http.post<void>(`${this.baseUrl}/addtask`, {
+      project_id: projectId,
+      task: task,
+    },  {
+      headers: new HttpHeaders({
+        'Content-Type': 'application/json',
+        Authorization: 'Bearer ' + this.authService.getToken(),
+      }),
+    });
+  }
+
+
+
+}
+
+
+interface TaskFW {
+  id: string;
+  name: string;
+  description: string;
+  dependencies: string[];
+  blocked: boolean;
 }

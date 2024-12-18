@@ -54,6 +54,8 @@ func (r *WorkflowRepository) AddTask(ctx context.Context, projectID string, task
 
 	_, err := session.ExecuteWrite(ctx, func(tx neo4j.ManagedTransaction) (interface{}, error) {
 		// Add the task to the project
+		log.Printf("Executing AddTask query for projectID: %s, taskID: %s", projectID, task.TaskID)
+
 		taskQuery := `MATCH (p:Project {id: $projectID}) CREATE (t:Task {id: $taskID, name: $taskName, blocked: false}) CREATE (p)-[:HAS_TASK]->(t)`
 		_, err := tx.Run(ctx, taskQuery, map[string]interface{}{
 			"projectID": projectID,
@@ -63,6 +65,7 @@ func (r *WorkflowRepository) AddTask(ctx context.Context, projectID string, task
 		if err != nil {
 			return nil, err
 		}
+		log.Printf("Dependencies for task %s: %v", task.TaskID, task.Dependencies)
 
 		// Create task dependencies
 		for _, depID := range task.Dependencies {
@@ -77,9 +80,16 @@ func (r *WorkflowRepository) AddTask(ctx context.Context, projectID string, task
 		}
 		return nil, nil
 	})
+	/*if err != nil {
+		return fmt.Errorf("failed to add task: %w", err)
+	}*/
 	if err != nil {
+		log.Printf("Error while adding task: %v", err)
 		return fmt.Errorf("failed to add task: %w", err)
 	}
+
+	log.Printf("Executing AddTask query for projectID: %s, taskID: %s", projectID, task.TaskID)
+
 	return nil
 }
 

@@ -56,8 +56,21 @@
         <div class="col-md-12 text-center">
           <ng-container *ngIf="workflow; else createWorkflowBlock">
             <h4 class="text-success">Workflow Details</h4>
-            <p><strong>ID:</strong> {{ workflow.id }}</p>
-            <p><strong>Name:</strong> {{ workflow.name }}</p>
+            <p><strong>ID:</strong> {{ workflow.projectId }}</p>
+            <p><strong>Name:</strong> {{ workflow.projectName }}</p>
+
+            <div class="row mt-3">
+              <div class="col-md-12 text-center">
+                <button
+                  *ngIf="isManager()"
+                  class="btn btn-success w-100 shadow-sm"
+                  (click)="openTaskModal()"
+                >
+                  Add Task with Dependencies
+                </button>
+              </div>
+            </div>
+
           </ng-container>
 
           <ng-template #createWorkflowBlock>
@@ -69,6 +82,46 @@
               Create Workflow
             </button>
           </ng-template>
+
+          <div *ngIf="showTaskModal">
+            <!-- add-task.component.html -->
+            <div>
+              <h2>Add Main Task</h2>
+              <input
+                placeholder="Main Task ID"
+                [(ngModel)]="mainTask.id"
+                type="text"
+              />
+              <input
+                placeholder="Main Task Name"
+                [(ngModel)]="mainTask.name"
+                type="text"
+              />
+              <textarea
+                placeholder="Main Task Description"
+                [(ngModel)]="mainTask.description"
+              ></textarea>
+
+              <h2>Add Dependent Task</h2>
+              <input
+                placeholder="Dependent Task ID"
+                [(ngModel)]="dependentTask.id"
+                type="text"
+              />
+              <input
+                placeholder="Dependent Task Name"
+                [(ngModel)]="dependentTask.name"
+                type="text"
+              />
+              <textarea
+                placeholder="Dependent Task Description"
+                [(ngModel)]="dependentTask.description"
+              ></textarea>
+
+              <button (click)="addTasks()">Add Tasks</button>
+            </div>
+
+          </div>
         </div>
       </div>
 
