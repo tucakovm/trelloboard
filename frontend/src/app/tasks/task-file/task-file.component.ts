@@ -10,13 +10,14 @@ import { TaskService } from '../../services/task.service';
 export class TaskFileComponent implements OnInit {
   taskId: string | null = null;
   selectedFile: File | null = null;
-  files: any[] = [];
+  files: string[] = [];
 
   constructor(
     private activatedRoute: ActivatedRoute,
     private taskService: TaskService,
     private router: Router
-  ) {}
+  ) {
+  }
 
   ngOnInit(): void {
     this.taskId = this.activatedRoute.snapshot.paramMap.get('id');
@@ -66,8 +67,16 @@ export class TaskFileComponent implements OnInit {
   getFiles(): void {
     if (this.taskId) {
       this.taskService.getFiles(this.taskId).subscribe(
-        (files) => {
-          this.files = files;
+        (response: any) => {
+          console.log('API Response:', response);
+
+          if (response?.fileNames && Array.isArray(response.fileNames)) {
+            this.files = response.fileNames;
+            console.log(this.files)
+          } else {
+            console.warn('Unexpected API response format:', response);
+            this.files = [];
+          }
         },
         (error) => {
           console.error('Error fetching files:', error);
@@ -77,21 +86,26 @@ export class TaskFileComponent implements OnInit {
     }
   }
 
-  downloadFile(fileId: string): void {
-    this.taskService.downloadFile(fileId).subscribe(
-      (response) => {
-        const blob = response.body as Blob; // Access the Blob body
-        const fileName = response.headers.get('filename') || 'file'; // Get the filename from headers
+  downloadFile(fileName: string): void {
+    if (this.taskId) {
+      this.taskService.downloadFile(this.taskId, fileName).subscribe(
+        (response) => {
+          const blob = response.body as Blob; // Ensure the response is treated as a Blob
+          const fileName = response.headers.get('filename') || 'downloaded_file'; // Extract filename from headers, with a fallback
 
-        const link = document.createElement('a');
-        link.href = URL.createObjectURL(blob);
-        link.download = fileName;
-        link.click();
-      },
-      (error) => {
-        console.error('Error downloading file:', error);
-        alert('Failed to download file.');
-      }
-    );
+          // Create a link to trigger the file download
+          const link = document.createElement('a');
+          link.href = URL.createObjectURL(blob);
+          link.download = fileName;
+          link.click();
+        },
+        (error) => {
+          console.error('Error downloading file:', error);
+          alert('Failed to download file.');
+        }
+      );
+    } else {
+      console.error('Task ID is not available.');
+    }
   }
 }

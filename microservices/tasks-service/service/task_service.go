@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"encoding/base64"
+	"fmt"
 	otelCodes "go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/trace"
 	"google.golang.org/grpc/codes"
@@ -17,11 +18,11 @@ import (
 type TaskService struct {
 	repo     repository.TaskRepo
 	Tracer   trace.Tracer
-	hdfsRepo repository.HDFSRepository
+	hdfsRepo *repository.HDFSRepository
 }
 
-func NewTaskService(repo repository.TaskRepo, tracer trace.Tracer) *TaskService {
-	return &TaskService{repo: repo, Tracer: tracer}
+func NewTaskService(repo repository.TaskRepo, tracer trace.Tracer, hdfsRepo *repository.HDFSRepository) *TaskService {
+	return &TaskService{repo: repo, Tracer: tracer, hdfsRepo: hdfsRepo}
 }
 
 func (s *TaskService) Create(taskReq *proto.Task, ctx context.Context) error {
@@ -199,6 +200,7 @@ func (s *TaskService) UploadFile(taskID string, fileName string, fileContent []b
 }
 
 func (s *TaskService) DownloadFile(taskID string, fileName string) ([]byte, error) {
+	log.Println("service download File")
 	return s.hdfsRepo.DownloadFile(taskID, fileName)
 }
 
@@ -210,8 +212,24 @@ func (s *TaskService) DeleteFile(taskID string, fileName string) error {
 
 	return err
 }
-func (s *TaskService) GetTaskFiles(taskID string) ([]string, error) {
+func (s *TaskService) GetAllFiles(taskID string) ([]string, error) {
 	log.Printf("Service: Fetching file names for task_id: %s", taskID)
+
+	// Check if service is initialized
+	if s == nil {
+		log.Println("TaskService instance is nil")
+		return nil, fmt.Errorf("service is not initialized")
+	}
+
+	if s.hdfsRepo == nil {
+		log.Println("hdfsRepo is nil in TaskService")
+		return nil, fmt.Errorf("repository is not initialized")
+	}
+
+	if taskID == "" {
+		log.Println("Invalid taskID: empty string")
+		return nil, fmt.Errorf("invalid taskID: empty string")
+	}
 
 	// Call repository to get the file names for the task
 	files, err := s.hdfsRepo.GetFileNamesForTask(taskID)

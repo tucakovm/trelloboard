@@ -133,7 +133,7 @@ var rolePermissions = map[string]map[string][]string{
 	},
 	"Manager": {
 		"GET": {"/api/projects/{username}", "/api/project/{id}", "/api/tasks/{id}", "/api/task/{id}",
-			"/api/users/{username}", "/api/notifications/{userId}", "/api/tasks/{taskId}/files/{fileId}"},
+			"/api/users/{username}", "/api/notifications/{userId}", "/api/tasks/{taskId}/files/{fileId}", "/api/tasks/{taskId}/files"},
 		"POST": {"/api/project", "/api/task", "/api/tasks/files"},
 		"DELETE": {"/api/project/{id}", "/api/task/{id}", "/api/users/{username}", "/api/task/{projectId}/members/{userId}",
 			"/api/projects/{projectId}/members/{userId}", "/api/tasks/{taskId}/files/{fileId}"},
@@ -148,7 +148,6 @@ var publicRoutes = []string{
 	"/api/users/magic-link",
 	"/api/users/recovery",
 	"/api/users/recover-password",
-	"/api/tasks/{taskId}/files/{fileId}",
 }
 
 func matchesRoute(path string, template string) bool {

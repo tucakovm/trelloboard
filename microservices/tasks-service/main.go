@@ -101,7 +101,7 @@ func main() {
 	log.Println("created hdfs repo")
 	//checkHDFSConnection(repo)
 
-	serviceProject := service.NewTaskService(*repoTask, tracer)
+	serviceProject := service.NewTaskService(*repoTask, tracer, repo)
 	handleErr(err)
 
 	handlerProject := h.NewTaskHandler(serviceProject, projectClient, natsConn, tracer)

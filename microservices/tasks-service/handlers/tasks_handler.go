@@ -402,10 +402,11 @@ func (h *TaskHandler) UploadFile(ctx context.Context, req *proto.UploadFileReque
 }
 
 func (h *TaskHandler) DownloadFile(ctx context.Context, req *proto.DownloadFileRequest) (*proto.DownloadFileResponse, error) {
+	log.Println("handler Download file")
 	_, span := h.Tracer.Start(ctx, "Publisher.DownloadFile")
 	defer span.End()
 
-	fileContent, err := h.service.DownloadFile(req.TaskId, req.FileName)
+	fileContent, err := h.service.DownloadFile(req.TaskId, req.FileId)
 	if err != nil {
 		span.SetStatus(otelCodes.Error, err.Error())
 		return nil, status.Error(codes.Internal, "Failed to download file")
@@ -431,15 +432,16 @@ func (h *TaskHandler) DeleteFile(ctx context.Context, req *proto.DeleteFileReque
 	return &proto.EmptyResponse{}, nil
 }
 
-func (h *TaskHandler) GetTaskFiles(ctx context.Context, req *proto.GetTaskFilesRequest) (*proto.GetTaskFilesResponse, error) {
+func (h *TaskHandler) GetAllFiles(ctx context.Context, req *proto.GetTaskFilesRequest) (*proto.GetTaskFilesResponse, error) {
 	log.Printf("Received request for task_id: %s", req.TaskId)
 
 	_, span := h.Tracer.Start(ctx, "Handler.GetTaskFiles")
 	defer span.End()
 
 	// Call service layer to fetch the file names
-	fileNames, err := h.service.GetTaskFiles(req.TaskId)
+	fileNames, err := h.service.GetAllFiles(req.TaskId)
 	if err != nil {
+
 		span.SetStatus(otelCodes.Error, err.Error())
 		return nil, status.Error(codes.Internal, "Failed to fetch files")
 	}

@@ -136,7 +136,7 @@ service TaskService {
     };
   }
 
-  rpc GetFile(GetFileRequest) returns (FileResponse) {
+  rpc DownloadFile(DownloadFileRequest) returns (FileResponse) {
     option (google.api.http) = {
       get: "/api/tasks/{taskId}/files/{fileId}"
     };
@@ -370,7 +370,7 @@ message UploadFileRequest {
   string fileName = 3;
 }
 
-message GetFileRequest {
+message DownloadFileRequest {
   string taskId = 1;
   string fileId = 2;
 }
@@ -387,9 +387,9 @@ message DeleteFileRequest {
   string fileId = 2;
 }
 message GetTaskFilesRequest {
-  string task_id = 1;
+  string taskId = 1;
 }
 
 message GetTaskFilesResponse {
-  repeated string file_names = 1;
+  repeated string fileNames = 1;
 }

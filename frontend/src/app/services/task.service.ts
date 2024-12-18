@@ -89,10 +89,12 @@ export class TaskService {
     return this.http.get<any[]>(`${this.apiUrl}/tasks/${taskId}/files`);
   }
 
-  downloadFile(fileId: string): Observable<HttpResponse<Blob>> {
-    return this.http.get(`${this.apiUrl}/tasks/files/download/${fileId}`, {
-      responseType: 'blob',
-      observe: 'response', // Observe the full response, including headers
+  downloadFile(taskId: string, fileName: string) {
+    const url = `https://localhost:8000/api/tasks/${taskId}/files/${fileName}`;
+    return this.http.get(url, {
+      responseType: 'blob', // Expect a Blob response for file downloads
+      observe: 'response', // Include headers in the response
     });
   }
+
 }

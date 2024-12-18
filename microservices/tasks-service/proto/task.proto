@@ -14,7 +14,7 @@ service TaskService {
   rpc UploadFile(UploadFileRequest) returns (EmptyResponse);
   rpc DownloadFile(DownloadFileRequest) returns (DownloadFileResponse);
   rpc DeleteFile(DeleteFileRequest) returns (EmptyResponse);
-  rpc GetTaskFiles (GetTaskFilesRequest) returns (GetTaskFilesResponse);
+  rpc GetAllFiles (GetTaskFilesRequest) returns (GetTaskFilesResponse);
 }
 message DoneTasksByProjectReq {
   string proj_id = 1;
@@ -93,23 +93,23 @@ message UploadFileRequest {
 }
 
 message DownloadFileRequest {
-  string task_id = 1;
-  string file_name = 2;
+  string taskId = 1;
+  string fileId = 2;
 }
 
 message DownloadFileResponse {
-  bytes file_content = 1;
+  bytes fileContent = 1;
 }
 
 message DeleteFileRequest {
-  string task_id = 1;
-  string file_name = 2;
+  string taskId = 1;
+  string fileName = 2;
 }
 message GetTaskFilesRequest {
-  string task_id = 1;
+  string taskId = 1;
 }
 
 message GetTaskFilesResponse {
-  repeated string file_names = 1;
+  repeated string fileNames = 1;
 }
 

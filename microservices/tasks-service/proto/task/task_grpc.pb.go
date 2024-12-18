@@ -30,7 +30,7 @@ const (
 	TaskService_UploadFile_FullMethodName         = "/TaskService/UploadFile"
 	TaskService_DownloadFile_FullMethodName       = "/TaskService/DownloadFile"
 	TaskService_DeleteFile_FullMethodName         = "/TaskService/DeleteFile"
-	TaskService_GetTaskFiles_FullMethodName       = "/TaskService/GetTaskFiles"
+	TaskService_GetAllFiles_FullMethodName        = "/TaskService/GetAllFiles"
 )
 
 // TaskServiceClient is the client API for TaskService service.
@@ -48,7 +48,7 @@ type TaskServiceClient interface {
 	UploadFile(ctx context.Context, in *UploadFileRequest, opts ...grpc.CallOption) (*EmptyResponse, error)
 	DownloadFile(ctx context.Context, in *DownloadFileRequest, opts ...grpc.CallOption) (*DownloadFileResponse, error)
 	DeleteFile(ctx context.Context, in *DeleteFileRequest, opts ...grpc.CallOption) (*EmptyResponse, error)
-	GetTaskFiles(ctx context.Context, in *GetTaskFilesRequest, opts ...grpc.CallOption) (*GetTaskFilesResponse, error)
+	GetAllFiles(ctx context.Context, in *GetTaskFilesRequest, opts ...grpc.CallOption) (*GetTaskFilesResponse, error)
 }
 
 type taskServiceClient struct {
@@ -169,10 +169,10 @@ func (c *taskServiceClient) DeleteFile(ctx context.Context, in *DeleteFileReques
 	return out, nil
 }
 
-func (c *taskServiceClient) GetTaskFiles(ctx context.Context, in *GetTaskFilesRequest, opts ...grpc.CallOption) (*GetTaskFilesResponse, error) {
+func (c *taskServiceClient) GetAllFiles(ctx context.Context, in *GetTaskFilesRequest, opts ...grpc.CallOption) (*GetTaskFilesResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(GetTaskFilesResponse)
-	err := c.cc.Invoke(ctx, TaskService_GetTaskFiles_FullMethodName, in, out, cOpts...)
+	err := c.cc.Invoke(ctx, TaskService_GetAllFiles_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -194,7 +194,7 @@ type TaskServiceServer interface {
 	UploadFile(context.Context, *UploadFileRequest) (*EmptyResponse, error)
 	DownloadFile(context.Context, *DownloadFileRequest) (*DownloadFileResponse, error)
 	DeleteFile(context.Context, *DeleteFileRequest) (*EmptyResponse, error)
-	GetTaskFiles(context.Context, *GetTaskFilesRequest) (*GetTaskFilesResponse, error)
+	GetAllFiles(context.Context, *GetTaskFilesRequest) (*GetTaskFilesResponse, error)
 	mustEmbedUnimplementedTaskServiceServer()
 }
 
@@ -238,8 +238,8 @@ func (UnimplementedTaskServiceServer) DownloadFile(context.Context, *DownloadFil
 func (UnimplementedTaskServiceServer) DeleteFile(context.Context, *DeleteFileRequest) (*EmptyResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method DeleteFile not implemented")
 }
-func (UnimplementedTaskServiceServer) GetTaskFiles(context.Context, *GetTaskFilesRequest) (*GetTaskFilesResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetTaskFiles not implemented")
+func (UnimplementedTaskServiceServer) GetAllFiles(context.Context, *GetTaskFilesRequest) (*GetTaskFilesResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetAllFiles not implemented")
 }
 func (UnimplementedTaskServiceServer) mustEmbedUnimplementedTaskServiceServer() {}
 func (UnimplementedTaskServiceServer) testEmbeddedByValue()                     {}
@@ -460,20 +460,20 @@ func _TaskService_DeleteFile_Handler(srv interface{}, ctx context.Context, dec f
 	return interceptor(ctx, in, info, handler)
 }
 
-func _TaskService_GetTaskFiles_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _TaskService_GetAllFiles_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(GetTaskFilesRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(TaskServiceServer).GetTaskFiles(ctx, in)
+		return srv.(TaskServiceServer).GetAllFiles(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: TaskService_GetTaskFiles_FullMethodName,
+		FullMethod: TaskService_GetAllFiles_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(TaskServiceServer).GetTaskFiles(ctx, req.(*GetTaskFilesRequest))
+		return srv.(TaskServiceServer).GetAllFiles(ctx, req.(*GetTaskFilesRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -530,8 +530,8 @@ var TaskService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _TaskService_DeleteFile_Handler,
 		},
 		{
-			MethodName: "GetTaskFiles",
-			Handler:    _TaskService_GetTaskFiles_Handler,
+			MethodName: "GetAllFiles",
+			Handler:    _TaskService_GetAllFiles_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
