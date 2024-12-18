@@ -3,11 +3,10 @@ package handlers
 import (
 	"context"
 	"encoding/json"
-	nats_helper "tasks-service/nats_helper"
-
 	"github.com/nats-io/nats.go"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	nats_helper "tasks-service/nats_helper"
 
 	otelCodes "go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/trace"
@@ -175,7 +174,7 @@ func (h *TaskHandler) AddMemberTask(ctx context.Context, req *proto.AddMemberTas
 	default:
 
 	}
-	//time.Sleep(5 * time.Second) // test : Request timeout
+
 	projServiceResponse, err := h.projectService.UserOnOneProject(ctx, userOnProjectReq)
 	if err != nil {
 
@@ -187,6 +186,8 @@ func (h *TaskHandler) AddMemberTask(ctx context.Context, req *proto.AddMemberTas
 
 	if projServiceResponse.IsOnProj {
 		taskId := req.TaskId
+
+		//time.Sleep(5 * time.Second) // test : Request timeout
 
 		// Provera timeout-a pre dodavanja člana
 		select {

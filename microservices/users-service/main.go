@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"github.com/sony/gobreaker"
 	"log"
 	"net"
 	"os"
@@ -112,12 +113,32 @@ func main() {
 	}
 	log.Println("Blacklist Service initialized successfully.")
 
+	userServiceCB := gobreaker.NewCircuitBreaker(gobreaker.Settings{
+		Name:        "User Service Circuit Breaker",
+		MaxRequests: 1,
+		Timeout:     10 * time.Second,
+		Interval:    0,
+		ReadyToTrip: func(counts gobreaker.Counts) bool {
+			return counts.ConsecutiveFailures > 0
+		},
+		OnStateChange: func(name string, from gobreaker.State, to gobreaker.State) {
+			log.Printf("Circuit Breaker '%s' changed from '%s' to, %s'\n", name, from, to)
+		},
+		IsSuccessful: func(err error) bool {
+			if err == nil {
+				return true
+			}
+			errResp, ok := err.(config.ErrResp)
+			return ok && errResp.StatusCode >= 400 && errResp.StatusCode < 500
+		},
+	})
+
 	serviceUser, err := services.NewUserService(*repoUser, blacklistRepo, tracer)
 
 	if err != nil {
 		log.Fatal("Failed to initialize User Service: ", err)
 	}
-	handlerUser, err := h.NewUserHandler(serviceUser, projectClient, tracer)
+	handlerUser, err := h.NewUserHandler(serviceUser, projectClient, tracer, userServiceCB)
 	if err != nil {
 		log.Fatal("Failed to initialize User Handler: ", err)
 	}

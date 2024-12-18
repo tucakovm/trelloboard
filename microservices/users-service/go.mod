@@ -8,12 +8,13 @@ require (
 	github.com/golang-jwt/jwt/v4 v4.5.1
 	github.com/hashicorp/consul/api v1.30.0
 	github.com/redis/go-redis/v9 v9.7.0
+	github.com/sony/gobreaker v1.0.0
 	go.mongodb.org/mongo-driver v1.17.1
 	google.golang.org/grpc v1.68.0
 	google.golang.org/protobuf v1.35.2
 )
 
-require go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.57.0 // indirect
+require go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.57.0
 
 require (
 	github.com/armon/go-metrics v0.4.1 // indirect

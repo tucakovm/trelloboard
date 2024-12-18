@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"github.com/golang-jwt/jwt/v4"
 	"github.com/redis/go-redis/v9"
+	"github.com/sony/gobreaker"
 	otelCodes "go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/trace"
 	"golang.org/x/crypto/bcrypt"
@@ -34,13 +35,15 @@ type UserHandler struct {
 	projectService proto.ProjectServiceClient
 	proto.UnimplementedUsersServiceServer
 	Tracer trace.Tracer
+	Cb     *gobreaker.CircuitBreaker
 }
 
-func NewUserHandler(service services.UserService, projectService proto.ProjectServiceClient, tracer trace.Tracer) (UserHandler, error) {
+func NewUserHandler(service services.UserService, projectService proto.ProjectServiceClient, tracer trace.Tracer, cb *gobreaker.CircuitBreaker) (UserHandler, error) {
 	return UserHandler{
 		service:        service,
 		projectService: projectService,
 		Tracer:         tracer,
+		Cb:             cb,
 	}, nil
 }
 
@@ -75,53 +78,71 @@ func (h UserHandler) RegisterHandler(ctx context.Context, req *proto.RegisterReq
 }
 
 func (h UserHandler) LoginUserHandler(ctx context.Context, req *proto.LoginReq) (*proto.LoginRes, error) {
-	ctx, span := h.Tracer.Start(ctx, "h.login")
+	// Set a timeout for the operation
+	timeoutCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+
+	ctx, span := h.Tracer.Start(timeoutCtx, "h.login")
 	defer span.End()
-	// Pokušaj dohvatanja korisnika
 
-	log.Println("Usao u handler login")
+	// Use circuit breaker to control access to the logic
+	result, err := h.Cb.Execute(func() (interface{}, error) {
 
-	captchaValid, err := h.verifyCaptcha(req.LoginUser.Key)
-	if err != nil || !captchaValid {
-		err := errors.New("bad request ...")
-		span.SetStatus(otelCodes.Error, err.Error())
-		return nil, status.Error(codes.InvalidArgument, "Invalid or failed CAPTCHA verification")
-	}
+		//time.Sleep(7 * time.Second) Circuit breaker test timeout
 
-	user, err := h.service.GetUserByUsername(req.LoginUser.Username, ctx)
+		// Verify CAPTCHA
+		captchaValid, err := h.verifyCaptcha(req.LoginUser.Key)
+		if err != nil || !captchaValid {
+			span.SetStatus(otelCodes.Error, "Invalid or failed CAPTCHA verification")
+			return nil, status.Error(codes.InvalidArgument, "Invalid or failed CAPTCHA verification")
+		}
+
+		user, err := h.service.GetUserByUsername(req.LoginUser.Username, ctx) // Pass ctx for tracing
+		if err != nil {
+			span.SetStatus(otelCodes.Error, "User not found")
+			return nil, status.Error(codes.InvalidArgument, "User not found ...")
+		}
+
+		// Check password
+		if !CheckPassword(user.Password, req.LoginUser.Password) {
+			err := errors.New("bad request ...")
+			span.SetStatus(otelCodes.Error, err.Error())
+			return nil, status.Error(codes.Unauthenticated, "Invalid username or password ...")
+		}
+
+		// Check if user is active
+		if !user.IsActive {
+			err := errors.New("bad request ...")
+			span.SetStatus(otelCodes.Error, err.Error())
+			return nil, status.Error(codes.PermissionDenied, "User is not active ...")
+		}
+
+		// Generate JWT token
+		token, err := GenerateJWT(user)
+		if err != nil {
+			err := errors.New("bad request ...")
+			span.SetStatus(otelCodes.Error, err.Error())
+			return nil, status.Error(codes.Internal, "Error generating token ...")
+		}
+
+		// Return the successful response
+		return &proto.LoginRes{
+			Message: "Login successful",
+			Token:   token,
+		}, nil
+	})
+
+	// If there's an error from the circuit breaker, log and return an appropriate message
 	if err != nil {
-		err := errors.New("bad request ...")
-		span.SetStatus(otelCodes.Error, err.Error())
-		return nil, status.Error(codes.InvalidArgument, "User not found ...")
+		span.SetStatus(otelCodes.Error, "Circuit breaker opened or error during execution")
+		return nil, status.Error(codes.Internal, "Service unavailable, please try again later")
 	}
 
-	// Provera lozinke
-	if !CheckPassword(user.Password, req.LoginUser.Password) {
-		err := errors.New("bad request ...")
-		span.SetStatus(otelCodes.Error, err.Error())
-		return nil, status.Error(codes.Unauthenticated, "Invalid username or password ...")
-	}
+	// Cast the result from the circuit breaker execution
+	loginRes := result.(*proto.LoginRes)
 
-	// Provera da li je korisnik aktivan
-	if !user.IsActive {
-		err := errors.New("bad request ...")
-		span.SetStatus(otelCodes.Error, err.Error())
-		return nil, status.Error(codes.PermissionDenied, "User is not active ...")
-	}
-
-	// Generisanje JWT tokena
-	token, err := GenerateJWT(user)
-	if err != nil {
-		err := errors.New("bad request ...")
-		span.SetStatus(otelCodes.Error, err.Error())
-		return nil, status.Error(codes.Internal, "Error generating token ...")
-	}
-
-	// Vraćanje odgovora sa tokenom
-	return &proto.LoginRes{
-		Message: "Login successful",
-		Token:   token,
-	}, nil
+	// Return the successful response
+	return loginRes, nil
 }
 
 func (h UserHandler) VerifyHandler(ctx context.Context, req *proto.VerifyReq) (*proto.EmptyResponse, error) {
