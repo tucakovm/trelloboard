@@ -89,15 +89,20 @@ export class TaskFileComponent implements OnInit {
   downloadFile(fileName: string): void {
     if (this.taskId) {
       this.taskService.downloadFile(this.taskId, fileName).subscribe(
-        (response) => {
-          const blob = response.body as Blob; // Ensure the response is treated as a Blob
-          const fileName = response.headers.get('filename') || 'downloaded_file'; // Extract filename from headers, with a fallback
+        (response: any) => {
+          const fileContent = response.fileId;
+          if (fileContent) {
+            // Create a Blob with the file content
+            const blob = new Blob([fileContent], { type: 'text/plain' });
 
-          // Create a link to trigger the file download
-          const link = document.createElement('a');
-          link.href = URL.createObjectURL(blob);
-          link.download = fileName;
-          link.click();
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = this.taskId + fileName || 'download.txt';
+            link.click();
+          } else {
+            console.error('Invalid response structure or missing fileId');
+            alert('Failed to download file.');
+          }
         },
         (error) => {
           console.error('Error downloading file:', error);
@@ -108,4 +113,19 @@ export class TaskFileComponent implements OnInit {
       console.error('Task ID is not available.');
     }
   }
+
+  deleteFile(fileName: String): void{
+    console.log("delete bttn")
+    if (this.taskId){
+      console.log("what")
+      this.taskService.deleteFile(this.taskId, fileName).subscribe(
+        (response: any)=>{
+          console.log(response)
+          this.getFiles()
+        }
+      )
+    }
+  }
+
+
 }

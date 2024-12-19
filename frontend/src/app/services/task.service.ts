@@ -89,12 +89,17 @@ export class TaskService {
     return this.http.get<any[]>(`${this.apiUrl}/tasks/${taskId}/files`);
   }
 
-  downloadFile(taskId: string, fileName: string) {
+  downloadFile(taskId: string, fileName: string, options?: any): Observable<any> {
     const url = `https://localhost:8000/api/tasks/${taskId}/files/${fileName}`;
-    return this.http.get(url, {
-      responseType: 'blob', // Expect a Blob response for file downloads
-      observe: 'response', // Include headers in the response
-    });
+    return this.http.get(url, { responseType: 'json', ...options });
+  }
+
+  deleteFile(taskId: String, fileName: String){
+    console.log("foo")
+    const url = `https://localhost:8000/api/tasks/${taskId}/files/${fileName}`;
+    console.log("the")
+    console.log(url)
+    return this.http.delete<any>(url, {responseType: 'json'})
   }
 
 }
