@@ -97,7 +97,7 @@ export class TaskFileComponent implements OnInit {
 
             const link = document.createElement('a');
             link.href = URL.createObjectURL(blob);
-            link.download = this.taskId + fileName || 'download.txt';
+            link.download = "(" + this.taskId + ")" +  fileName  || 'download.txt';
             link.click();
           } else {
             console.error('Invalid response structure or missing fileId');
