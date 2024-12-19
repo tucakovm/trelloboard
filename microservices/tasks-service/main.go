@@ -93,7 +93,7 @@ func main() {
 	defer repoTask.Disconnect(timeoutContext)
 	handleErr(err)
 
-	repo, err := repository.NewHDFSRepository(storeLogger, "namenode:8020")
+	repo, err := repository.NewHDFSRepository(storeLogger, cfg.NamenodeUrl, tracer)
 	if err != nil {
 		log.Fatalf("Failed to initialize HDFS client: %v", err)
 	}
@@ -175,7 +175,7 @@ func newTraceProvider(exp sdktrace.SpanExporter) *sdktrace.TracerProvider {
 	)
 }
 
-func checkHDFSConnection(repo *repository.HDFSRepository) {
+func checkHDFSConnection(ctx context.Context, repo *repository.HDFSRepository) {
 	// Create a test directory in HDFS
 	err := repo.Client.MkdirAll("/tasks/test-dir", 0755)
 	if err != nil {
@@ -193,7 +193,7 @@ func checkHDFSConnection(repo *repository.HDFSRepository) {
 	encodedContent := base64.StdEncoding.EncodeToString([]byte(testFileContent)) // Base64 encode content
 
 	// Upload the test file to HDFS
-	err = repo.UploadFile("test-task-id", name, encodedContent)
+	err = repo.UploadFile(ctx, "test-task-id", name, encodedContent)
 	if err != nil {
 		log.Fatalf("Error uploading test file to HDFS: %v", err)
 	} else {
@@ -201,7 +201,7 @@ func checkHDFSConnection(repo *repository.HDFSRepository) {
 	}
 
 	// Attempt to download the test file from HDFS
-	file, err := repo.DownloadFile("test-task-id", name)
+	file, err := repo.DownloadFile(ctx, "test-task-id", name)
 	if err != nil {
 		log.Println("Error downloading test file from HDFS:", err)
 	} else {
@@ -215,7 +215,7 @@ func checkHDFSConnection(repo *repository.HDFSRepository) {
 	}
 
 	// Delete the test file from HDFS
-	err = repo.DeleteFile("test-task-id", name)
+	err = repo.DeleteFile(ctx, "test-task-id", name)
 	if err != nil {
 		log.Println("Error deleting test file from HDFS:", err)
 	} else {

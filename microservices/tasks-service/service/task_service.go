@@ -186,12 +186,13 @@ func (s *TaskService) UpdateTask(taskReq *proto.Task, ctx context.Context) error
 
 	return nil
 }
-func (s *TaskService) UploadFile(taskID string, fileName string, fileContent []byte) error {
-	log.Printf("service upload file")
+func (s *TaskService) UploadFile(ctx context.Context, taskID string, fileName string, fileContent []byte) error {
+	ctx, span := s.Tracer.Start(ctx, "s.uploadFile")
+	defer span.End()
 
 	fileContentBase64 := base64.StdEncoding.EncodeToString(fileContent)
 
-	err := s.hdfsRepo.UploadFile(taskID, fileName, fileContentBase64)
+	err := s.hdfsRepo.UploadFile(ctx, taskID, fileName, fileContentBase64)
 	if err != nil {
 		return err
 	}
@@ -199,23 +200,26 @@ func (s *TaskService) UploadFile(taskID string, fileName string, fileContent []b
 	return nil
 }
 
-func (s *TaskService) DownloadFile(taskID string, fileName string) ([]byte, error) {
-	log.Println("service download File")
-	return s.hdfsRepo.DownloadFile(taskID, fileName)
+func (s *TaskService) DownloadFile(ctx context.Context, taskID string, fileName string) ([]byte, error) {
+	ctx, span := s.Tracer.Start(ctx, "s.downloadFile")
+	defer span.End()
+	return s.hdfsRepo.DownloadFile(ctx, taskID, fileName)
 }
 
-func (s *TaskService) DeleteFile(taskID string, fileName string) error {
-	err := s.hdfsRepo.DeleteFile(taskID, fileName)
+func (s *TaskService) DeleteFile(ctx context.Context, taskID string, fileName string) error {
+	ctx, span := s.Tracer.Start(ctx, "s.deleteFile")
+	defer span.End()
+	err := s.hdfsRepo.DeleteFile(ctx, taskID, fileName)
 	if err != nil {
 		return err
 	}
 
 	return err
 }
-func (s *TaskService) GetAllFiles(taskID string) ([]string, error) {
-	log.Printf("Service: Fetching file names for task_id: %s", taskID)
+func (s *TaskService) GetAllFiles(ctx context.Context, taskID string) ([]string, error) {
+	ctx, span := s.Tracer.Start(ctx, "s.getAllFiles")
+	defer span.End()
 
-	// Check if service is initialized
 	if s == nil {
 		log.Println("TaskService instance is nil")
 		return nil, fmt.Errorf("service is not initialized")
@@ -232,7 +236,7 @@ func (s *TaskService) GetAllFiles(taskID string) ([]string, error) {
 	}
 
 	// Call repository to get the file names for the task
-	files, err := s.hdfsRepo.GetFileNamesForTask(taskID)
+	files, err := s.hdfsRepo.GetFileNamesForTask(ctx, taskID)
 	if err != nil {
 		log.Printf("Error fetching files for task_id %s: %v", taskID, err)
 		return nil, err

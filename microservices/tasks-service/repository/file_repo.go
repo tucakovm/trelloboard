@@ -1,19 +1,23 @@
 package repository
 
 import (
+	"context"
 	"encoding/base64"
 	"fmt"
 	"github.com/colinmarc/hdfs/v2"
+	"go.opentelemetry.io/otel/trace"
 	"log"
 	"os"
+	"tasks-service/config"
 )
 
 type HDFSRepository struct {
 	Client *hdfs.Client
 	logger *log.Logger
+	Tracer trace.Tracer
 }
 
-func NewHDFSRepository(logger *log.Logger, namenodeURL string) (*HDFSRepository, error) {
+func NewHDFSRepository(logger *log.Logger, namenodeURL string, tracer trace.Tracer) (*HDFSRepository, error) {
 	client, err := hdfs.New(namenodeURL)
 	if err != nil {
 		return nil, fmt.Errorf("error creating HDFS client: %v", err)
@@ -21,6 +25,7 @@ func NewHDFSRepository(logger *log.Logger, namenodeURL string) (*HDFSRepository,
 	return &HDFSRepository{
 		Client: client,
 		logger: logger,
+		Tracer: tracer,
 	}, nil
 }
 func (repo *HDFSRepository) Close() {
@@ -29,19 +34,14 @@ func (repo *HDFSRepository) Close() {
 	}
 }
 
-func (repo *HDFSRepository) UploadFile(taskID, fileName string, content string) error {
-	log.Println("Started upload")
-	log.Println("Task ID:", taskID)
-	log.Println("File name:", fileName)
-	log.Println("End of file name")
-	log.Println("Start file content")
-	log.Println("File content:", content)
-	log.Println("End of file content")
+func (repo *HDFSRepository) UploadFile(ctx context.Context, taskID, fileName string, content string) error {
+	ctx, span := repo.Tracer.Start(ctx, "r.uploadFile")
+	defer span.End()
 
 	// Ensure HDFS client is initialized
 	if repo.Client == nil {
 		log.Println("HDFS client is not initialized. Initializing...")
-		client, err := hdfs.New("namenode:8020")
+		client, err := hdfs.New(config.GetConfig().NamenodeUrl)
 		if err != nil {
 			log.Printf("Failed to initialize HDFS client: %v", err)
 			return fmt.Errorf("failed to initialize HDFS client: %v", err)
@@ -97,13 +97,14 @@ func (repo *HDFSRepository) UploadFile(taskID, fileName string, content string) 
 	return nil
 }
 
-func (repo *HDFSRepository) DownloadFile(taskID string, fileName string) ([]byte, error) {
-	log.Println("repo download file")
+func (repo *HDFSRepository) DownloadFile(ctx context.Context, taskID string, fileName string) ([]byte, error) {
+	ctx, span := repo.Tracer.Start(ctx, "r.downloadFile")
+	defer span.End()
 
 	// Check if repo.client is nil
 	if repo.Client == nil {
 		log.Println("HDFS client is not initialized. Initializing...")
-		client, err := hdfs.New("namenode:8020")
+		client, err := hdfs.New(config.GetConfig().NamenodeUrl)
 		if err != nil {
 			log.Printf("Failed to initialize HDFS client: %v", err)
 			return nil, nil
@@ -132,11 +133,13 @@ func (repo *HDFSRepository) DownloadFile(taskID string, fileName string) ([]byte
 	return buffer[:n], nil
 }
 
-func (repo *HDFSRepository) DeleteFile(taskID string, fileName string) error {
+func (repo *HDFSRepository) DeleteFile(ctx context.Context, taskID string, fileName string) error {
+	ctx, span := repo.Tracer.Start(ctx, "r.deleteFile")
+	defer span.End()
 	// Check if repo.client is nil
 	if repo.Client == nil {
 		log.Println("HDFS client is not initialized. Initializing...")
-		client, err := hdfs.New("namenode:8020")
+		client, err := hdfs.New(config.GetConfig().NamenodeUrl)
 		if err != nil {
 			log.Printf("Failed to initialize HDFS client: %v", err)
 			return nil
@@ -155,13 +158,15 @@ func (repo *HDFSRepository) DeleteFile(taskID string, fileName string) error {
 
 	return nil
 }
-func (repo *HDFSRepository) GetFileNamesForTask(taskID string) ([]string, error) {
+func (repo *HDFSRepository) GetFileNamesForTask(ctx context.Context, taskID string) ([]string, error) {
+	ctx, span := repo.Tracer.Start(ctx, "r.getAllFiles")
+	defer span.End()
 	repo.logger.Printf("Started fetching file names for task_id: %s", taskID)
 
 	// Ensure HDFS client is initialized
 	if repo.Client == nil {
 		log.Println("HDFS client is not initialized. Initializing...")
-		client, err := hdfs.New("namenode:8020")
+		client, err := hdfs.New(config.GetConfig().NamenodeUrl)
 		if err != nil {
 			log.Printf("Failed to initialize HDFS client: %v", err)
 			return nil, err

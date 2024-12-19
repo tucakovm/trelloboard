@@ -378,7 +378,7 @@ func (h *TaskHandler) UpdateTask(ctx context.Context, req *proto.UpdateTaskReq) 
 func (h *TaskHandler) UploadFile(ctx context.Context, req *proto.UploadFileRequest) (*proto.EmptyResponse, error) {
 	log.Printf("Received task_id: %s, file_name: %s, file_content length: %d", req.TaskId, req.FileName, len(req.FileContent))
 
-	_, span := h.Tracer.Start(ctx, "Publisher.UploadFile")
+	ctx, span := h.Tracer.Start(ctx, "h.uploadFile")
 	defer span.End()
 
 	log.Printf("handler upload file")
@@ -390,7 +390,7 @@ func (h *TaskHandler) UploadFile(ctx context.Context, req *proto.UploadFileReque
 	headers.Set(nats_helper.SPAN_ID, span.SpanContext().SpanID().String())
 
 	// Pass the task ID, file name, and raw file content to the service
-	err := h.service.UploadFile(req.TaskId, string(req.FileContent), []byte(req.FileName))
+	err := h.service.UploadFile(ctx, req.TaskId, string(req.FileContent), []byte(req.FileName))
 	if err != nil {
 		span.SetStatus(otelCodes.Error, err.Error())
 		return nil, status.Error(codes.Internal, "Failed to upload file")
@@ -403,10 +403,10 @@ func (h *TaskHandler) UploadFile(ctx context.Context, req *proto.UploadFileReque
 
 func (h *TaskHandler) DownloadFile(ctx context.Context, req *proto.DownloadFileRequest) (*proto.DownloadFileResponse, error) {
 	log.Println("handler Download file")
-	_, span := h.Tracer.Start(ctx, "Publisher.DownloadFile")
+	ctx, span := h.Tracer.Start(ctx, "h.downloadFile")
 	defer span.End()
 
-	fileContent, err := h.service.DownloadFile(req.TaskId, req.FileId)
+	fileContent, err := h.service.DownloadFile(ctx, req.TaskId, req.FileId)
 	if err != nil {
 		span.SetStatus(otelCodes.Error, err.Error())
 		return nil, status.Error(codes.Internal, "Failed to download file")
@@ -418,10 +418,10 @@ func (h *TaskHandler) DownloadFile(ctx context.Context, req *proto.DownloadFileR
 }
 
 func (h *TaskHandler) DeleteFile(ctx context.Context, req *proto.DeleteFileRequest) (*proto.EmptyResponse, error) {
-	_, span := h.Tracer.Start(ctx, "Publisher.DeleteFile")
+	ctx, span := h.Tracer.Start(ctx, "h.deleteFile")
 	defer span.End()
 
-	err := h.service.DeleteFile(req.TaskId, req.FileName)
+	err := h.service.DeleteFile(ctx, req.TaskId, req.FileName)
 	if err != nil {
 		span.SetStatus(otelCodes.Error, err.Error())
 		return nil, status.Error(codes.Internal, "Failed to delete file")
@@ -435,11 +435,11 @@ func (h *TaskHandler) DeleteFile(ctx context.Context, req *proto.DeleteFileReque
 func (h *TaskHandler) GetAllFiles(ctx context.Context, req *proto.GetTaskFilesRequest) (*proto.GetTaskFilesResponse, error) {
 	log.Printf("Received request for task_id: %s", req.TaskId)
 
-	_, span := h.Tracer.Start(ctx, "Handler.GetTaskFiles")
+	ctx, span := h.Tracer.Start(ctx, "h.getAllFiles")
 	defer span.End()
 
 	// Call service layer to fetch the file names
-	fileNames, err := h.service.GetAllFiles(req.TaskId)
+	fileNames, err := h.service.GetAllFiles(ctx, req.TaskId)
 	if err != nil {
 
 		span.SetStatus(otelCodes.Error, err.Error())
