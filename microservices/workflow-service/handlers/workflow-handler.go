@@ -39,6 +39,7 @@ func (h *WorkflowHandler) CreateWorkflow(ctx context.Context, req *proto.CreateW
 
 // Implement the gRPC method for AddTask
 func (h *WorkflowHandler) AddTask(ctx context.Context, req *proto.AddTaskReq) (*proto.VoidResponse, error) {
+	log.Printf("AddTaskReq: %+v", req)
 
 	projectID := req.ProjectId
 	task := models.TaskNode{

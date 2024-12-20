@@ -148,7 +148,12 @@ export class ProjectDetailsComponent implements OnInit{
         next: () => {
           console.log('Main task successfully added');
           // Nakon uspešnog dodavanja glavnog taska, dodajemo zavisni task
-          this.dependentTask.dependencies = [this.mainTask.id]; // Povezujemo zavisni task s glavnim
+          this.dependentTask.dependencies = [this.mainTask.id];
+          console.log('Payload za dependent task:', {
+            project_id: this.project.id,
+            task: this.dependentTask
+          });
+// Povezujemo zavisni task s glavnim
           this.workflowService.addTask(this.project.id, this.dependentTask).subscribe({
             next: () => console.log('Dependent task successfully added'),
             error: (err) => console.error('Failed to add dependent task', err),

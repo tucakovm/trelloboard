@@ -55,6 +55,7 @@ func (r *WorkflowRepository) AddTask(ctx context.Context, projectID string, task
 	_, err := session.ExecuteWrite(ctx, func(tx neo4j.ManagedTransaction) (interface{}, error) {
 		// Add the task to the project
 		log.Printf("Executing AddTask query for projectID: %s, taskID: %s", projectID, task.TaskID)
+		log.Printf("Executing taskQuery with projectID=%s, taskID=%s", projectID, task.TaskID)
 
 		taskQuery := `MATCH (p:Project {id: $projectID}) CREATE (t:Task {id: $taskID, name: $taskName, blocked: false}) CREATE (p)-[:HAS_TASK]->(t)`
 		_, err := tx.Run(ctx, taskQuery, map[string]interface{}{
