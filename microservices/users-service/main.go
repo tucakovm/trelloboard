@@ -119,10 +119,17 @@ func main() {
 		Timeout:     10 * time.Second,
 		Interval:    0,
 		ReadyToTrip: func(counts gobreaker.Counts) bool {
-			return counts.ConsecutiveFailures > 0
+			return counts.ConsecutiveFailures > 5
 		},
 		OnStateChange: func(name string, from gobreaker.State, to gobreaker.State) {
-			log.Printf("Circuit Breaker '%s' changed from '%s' to, %s'\n", name, from, to)
+			log.Printf("[Circuit Breaker] '%s' transitioned from '%s' to '%s'\n", name, from, to)
+			if to == gobreaker.StateOpen {
+				log.Printf("[Circuit Breaker] '%s' is now OPEN due to failures. Requests will be blocked temporarily.\n", name)
+			} else if to == gobreaker.StateHalfOpen {
+				log.Printf("[Circuit Breaker] '%s' is now HALF-OPEN. Testing the service.\n", name)
+			} else if to == gobreaker.StateClosed {
+				log.Printf("[Circuit Breaker] '%s' is now CLOSED. Normal operation resumed.\n", name)
+			}
 		},
 		IsSuccessful: func(err error) bool {
 			if err == nil {
@@ -135,9 +142,6 @@ func main() {
 
 	serviceUser, err := services.NewUserService(*repoUser, blacklistRepo, tracer)
 
-	if err != nil {
-		log.Fatal("Failed to initialize User Service: ", err)
-	}
 	handlerUser, err := h.NewUserHandler(serviceUser, projectClient, tracer, userServiceCB)
 	if err != nil {
 		log.Fatal("Failed to initialize User Handler: ", err)

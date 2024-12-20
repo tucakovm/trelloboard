@@ -33,13 +33,12 @@ func (repo *HDFSRepository) UploadFile(taskID, fileName string, content string) 
 	log.Println("Started upload")
 	log.Println("Task ID:", taskID)
 	log.Println("File name:", fileName)
-	log.Println("end of file name")
-	log.Println("start file content")
+	log.Println("End of file name")
+	log.Println("Start file content")
 	log.Println("File content:", content)
-	log.Println("end of file content")
+	log.Println("End of file content")
+
 	// Ensure HDFS client is initialized
-	// For some reason it is nil otherwise
-	// FIX THIS
 	if repo.Client == nil {
 		log.Println("HDFS client is not initialized. Initializing...")
 		client, err := hdfs.New("namenode:8020")
@@ -59,33 +58,42 @@ func (repo *HDFSRepository) UploadFile(taskID, fileName string, content string) 
 	}
 	log.Printf("Base64 content decoded, size: %d bytes", len(decodedContent))
 
-	hdfsPath := fmt.Sprintf("/tasks/%s/%s", taskID, fileName)
-
-	if repo.Client == nil {
-		log.Println("HDFS client is not initialized.")
-	}
-	file, err := repo.Client.Create(hdfsPath)
+	// Ensure the directory exists
+	hdfsDirPath := fmt.Sprintf("/tasks/%s", taskID)
+	err = repo.Client.MkdirAll(hdfsDirPath, 0755)
 	if err != nil {
-		return fmt.Errorf("failed to create file on HDFS at %s: %v", hdfsPath, err)
+		log.Println("Failed to create directory on HDFS at %s: %v", hdfsDirPath)
+		return fmt.Errorf("failed to create directory on HDFS at %s: %v", hdfsDirPath, err)
+	}
+	log.Printf("Directory ensured on HDFS: %s", hdfsDirPath)
+
+	// Create the file on HDFS
+	hdfsFilePath := fmt.Sprintf("%s/%s", hdfsDirPath, fileName)
+	file, err := repo.Client.Create(hdfsFilePath)
+	if err != nil {
+		log.Println("repo client create")
+		return fmt.Errorf("failed to create file on HDFS at %s: %v", hdfsFilePath, err)
 	}
 	defer file.Close()
+	log.Printf("File created on HDFS: %s", hdfsFilePath)
 
+	// Write the decoded content to the file
 	_, err = file.Write(decodedContent)
 	if err != nil {
-		log.Println("failed to write to HDFS at %s: %v", hdfsPath, err)
-		log.Println("file content", decodedContent)
-		return fmt.Errorf("failed to write content to file on HDFS at %s: %v", hdfsPath, err)
+		repo.logger.Printf("Failed to write to HDFS at %s: %v", hdfsFilePath, err)
+		return fmt.Errorf("failed to write content to file on HDFS at %s: %v", hdfsFilePath, err)
 	}
 	log.Println("File written to HDFS")
 
 	// Flush the file to ensure all data is written
 	err = file.Flush()
 	if err != nil {
-		return fmt.Errorf("failed to flush file to HDFS at %s: %v", hdfsPath, err)
+		repo.logger.Printf("Failed to flush file to HDFS at %s: %v", hdfsFilePath, err)
+		return fmt.Errorf("failed to flush file to HDFS at %s: %v", hdfsFilePath, err)
 	}
 	log.Println("File flushed successfully")
 
-	log.Printf("Successfully uploaded file %s to HDFS at %s\n", fileName, hdfsPath)
+	log.Printf("Successfully uploaded file %s to HDFS at %s\n", fileName, hdfsFilePath)
 	return nil
 }
 

@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/eapache/go-resiliency/retrier"
 	"github.com/golang-jwt/jwt/v4"
 	"github.com/redis/go-redis/v9"
 	"github.com/sony/gobreaker"
@@ -13,7 +14,6 @@ import (
 	"go.opentelemetry.io/otel/trace"
 	"golang.org/x/crypto/bcrypt"
 	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 	"io"
 	"io/ioutil"
@@ -21,7 +21,6 @@ import (
 	"net/http"
 	"net/url"
 	"os"
-	"strings"
 	"time"
 	"users_module/models"
 	proto "users_module/proto/users"
@@ -78,71 +77,48 @@ func (h UserHandler) RegisterHandler(ctx context.Context, req *proto.RegisterReq
 }
 
 func (h UserHandler) LoginUserHandler(ctx context.Context, req *proto.LoginReq) (*proto.LoginRes, error) {
-	// Set a timeout for the operation
-	timeoutCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
-	defer cancel()
+	ctx, span := h.Tracer.Start(ctx, "h.login")
 
-	ctx, span := h.Tracer.Start(timeoutCtx, "h.login")
-	defer span.End()
-
-	// Use circuit breaker to control access to the logic
-	result, err := h.Cb.Execute(func() (interface{}, error) {
-
-		//time.Sleep(7 * time.Second) Circuit breaker test timeout
-
-		// Verify CAPTCHA
-		captchaValid, err := h.verifyCaptcha(req.LoginUser.Key)
-		if err != nil || !captchaValid {
-			span.SetStatus(otelCodes.Error, "Invalid or failed CAPTCHA verification")
-			return nil, status.Error(codes.InvalidArgument, "Invalid or failed CAPTCHA verification")
-		}
-
-		user, err := h.service.GetUserByUsername(req.LoginUser.Username, ctx) // Pass ctx for tracing
-		if err != nil {
-			span.SetStatus(otelCodes.Error, "User not found")
-			return nil, status.Error(codes.InvalidArgument, "User not found ...")
-		}
-
-		// Check password
-		if !CheckPassword(user.Password, req.LoginUser.Password) {
-			err := errors.New("bad request ...")
-			span.SetStatus(otelCodes.Error, err.Error())
-			return nil, status.Error(codes.Unauthenticated, "Invalid username or password ...")
-		}
-
-		// Check if user is active
-		if !user.IsActive {
-			err := errors.New("bad request ...")
-			span.SetStatus(otelCodes.Error, err.Error())
-			return nil, status.Error(codes.PermissionDenied, "User is not active ...")
-		}
-
-		// Generate JWT token
-		token, err := GenerateJWT(user)
-		if err != nil {
-			err := errors.New("bad request ...")
-			span.SetStatus(otelCodes.Error, err.Error())
-			return nil, status.Error(codes.Internal, "Error generating token ...")
-		}
-
-		// Return the successful response
-		return &proto.LoginRes{
-			Message: "Login successful",
-			Token:   token,
-		}, nil
-	})
-
-	// If there's an error from the circuit breaker, log and return an appropriate message
-	if err != nil {
-		span.SetStatus(otelCodes.Error, "Circuit breaker opened or error during execution")
-		return nil, status.Error(codes.Internal, "Service unavailable, please try again later")
+	// Verify CAPTCHA
+	captchaValid, err := h.verifyCaptcha(req.LoginUser.Key)
+	if err != nil || !captchaValid {
+		span.SetStatus(otelCodes.Error, "Invalid or failed CAPTCHA verification")
+		return nil, status.Error(codes.InvalidArgument, "Invalid or failed CAPTCHA verification")
 	}
 
-	// Cast the result from the circuit breaker execution
-	loginRes := result.(*proto.LoginRes)
+	user, err := h.service.GetUserByUsername(req.LoginUser.Username, ctx) // Pass ctx for tracing
+	if err != nil {
+		span.SetStatus(otelCodes.Error, "User not found")
+		return nil, status.Error(codes.InvalidArgument, "User not found ...")
+	}
+
+	// Check password
+	if !CheckPassword(user.Password, req.LoginUser.Password) {
+		err := errors.New("bad request ...")
+		span.SetStatus(otelCodes.Error, err.Error())
+		return nil, status.Error(codes.Unauthenticated, "Invalid username or password ...")
+	}
+
+	// Check if user is active
+	if !user.IsActive {
+		err := errors.New("bad request ...")
+		span.SetStatus(otelCodes.Error, err.Error())
+		return nil, status.Error(codes.PermissionDenied, "User is not active ...")
+	}
+
+	// Generate JWT token
+	token, err := GenerateJWT(user)
+	if err != nil {
+		err := errors.New("bad request ...")
+		span.SetStatus(otelCodes.Error, err.Error())
+		return nil, status.Error(codes.Internal, "Error generating token ...")
+	}
 
 	// Return the successful response
-	return loginRes, nil
+	return &proto.LoginRes{
+		Message: "Login successful",
+		Token:   token,
+	}, nil
 }
 
 func (h UserHandler) VerifyHandler(ctx context.Context, req *proto.VerifyReq) (*proto.EmptyResponse, error) {
@@ -185,50 +161,95 @@ func (h UserHandler) GetUserByUsername(ctx context.Context, req *proto.GetUserBy
 func (h UserHandler) DeleteUserByUsername(ctx context.Context, req *proto.GetUserByUsernameReq) (*proto.EmptyResponse, error) {
 	ctx, span := h.Tracer.Start(ctx, "h.DeleteUserByUsername")
 	defer span.End()
-	md, ok := metadata.FromIncomingContext(ctx)
-	if !ok {
-		return nil, status.Error(codes.Unauthenticated, "missing metadata")
-	}
-	authHeader := md.Get("authorization")
-	if len(authHeader) == 0 {
-		return nil, status.Error(codes.Unauthenticated, "missing authorization header")
-	}
-	tokenString := strings.TrimPrefix(authHeader[0], "Bearer ")
-	if tokenString == "" {
-		return nil, status.Error(codes.Unauthenticated, "invalid token format")
-	}
-	claims, err := parseJWT(tokenString)
+
+	classifier := retrier.WhitelistClassifier{models.ErrRespTmp{}}
+	r := retrier.New(retrier.ConstantBackoff(4, 4000*time.Millisecond), classifier)
+
+	var result *proto.EmptyResponse
+	err := r.RunCtx(ctx, func(ctx context.Context) error {
+		res, err := h.Cb.Execute(func() (interface{}, error) {
+			log.Println("Log usera.req.Username : >>>")
+			log.Println(req.Username)
+			user, _ := h.service.GetUserByUsername(req.Username, ctx)
+			log.Println("Log usera : >>>")
+			log.Println(user)
+
+			userOnProjectReq := &proto.UserOnProjectReq{
+				Id:   req.Username,
+				Role: user.Role,
+			}
+			projServiceResponse, err := h.projectService.UserOnProject(ctx, userOnProjectReq)
+			if err != nil {
+				log.Printf("Error checking project: %v", err)
+				return nil, status.Error(codes.Internal, "Error checking project")
+			}
+			if projServiceResponse == nil {
+				log.Println("Project service response is nil")
+				return nil, status.Error(codes.Internal, "Unexpected project service response")
+			}
+			if projServiceResponse.OnProject {
+				err := errors.New("user is assigned to a project")
+				span.SetStatus(otelCodes.Error, err.Error())
+				return nil, status.Error(codes.Internal, "User is assigned to a project.")
+			}
+
+			err = h.service.DeleteUserById(req.Username, ctx)
+			if err != nil {
+				err := errors.New("bad request")
+				span.SetStatus(otelCodes.Error, err.Error())
+				return nil, status.Error(codes.InvalidArgument, "Bad request.")
+			}
+
+			return &proto.EmptyResponse{}, nil
+		})
+
+		if err != nil {
+			return err
+		}
+
+		// Make sure the result is not nil and is of the expected type
+		if res == nil {
+			return errors.New("unexpected response, result is nil")
+		}
+
+		cbResp, ok := res.(*http.Response)
+		if !ok {
+			return errors.New("unexpected result type, expected *http.Response")
+		}
+
+		// Handle the response status codes
+		if cbResp.StatusCode == http.StatusGatewayTimeout || cbResp.StatusCode == http.StatusServiceUnavailable {
+			return models.ErrRespTmp{
+				URL:        cbResp.Request.URL.String(),
+				Method:     cbResp.Request.Method,
+				StatusCode: cbResp.StatusCode,
+			}
+		}
+		if cbResp.StatusCode != http.StatusOK {
+			return models.ErrResp{
+				URL:        cbResp.Request.URL.String(),
+				Method:     cbResp.Request.Method,
+				StatusCode: cbResp.StatusCode,
+			}
+		}
+
+		// Process successful result
+		var okResp bool
+		result, okResp = res.(*proto.EmptyResponse)
+		if !okResp {
+			return errors.New("unexpected result type")
+		}
+
+		return nil
+	})
+
 	if err != nil {
-		return nil, status.Error(codes.Unauthenticated, "invalid or expired token")
-	}
-	role, ok := claims["user_role"].(string)
-	if !ok || role == "" {
-		return nil, status.Error(codes.Unauthenticated, "role not found in token")
+		span.SetStatus(otelCodes.Error, "Retrying failed")
+		return nil, status.Error(codes.Internal, "Service unavailable, please try again later")
 	}
 
-	userOnProjectReq := &proto.UserOnProjectReq{
-		Id:   req.Username,
-		Role: role,
-	}
-	projServiceResponse, err := h.projectService.UserOnProject(ctx, userOnProjectReq)
-	if err != nil {
-		err := errors.New("Error checking project")
-		span.SetStatus(otelCodes.Error, err.Error())
-		return nil, status.Error(codes.Internal, "Error checking project")
-	}
-	if projServiceResponse.OnProject {
-
-		err := errors.New("User is assigned to a project.")
-		span.SetStatus(otelCodes.Error, err.Error())
-		return nil, status.Error(codes.Internal, "User is assigned to a project.")
-	}
-	err = h.service.DeleteUserById(req.Username, ctx)
-	if err != nil {
-		err := errors.New("Bad request.")
-		span.SetStatus(otelCodes.Error, err.Error())
-		return nil, status.Error(codes.InvalidArgument, "Bad request.")
-	}
-	return nil, nil
+	// Uspešan odgovor
+	return result, nil
 }
 
 func GenerateJWT(user *models.User) (string, error) {

@@ -36,10 +36,10 @@ func NewConnectionHandler(service services.ProjectService, taskService proto.Tas
 func (h ProjectHandler) Create(ctx context.Context, req *proto.CreateProjectReq) (*proto.EmptyResponse, error) {
 
 	// TESTIRANJE ZA GLOBALNI TIMEOUT
-	// time.Sleep(6 * time.Second)
-	// if ctx.Err() == context.DeadlineExceeded {
-	// 	return nil, status.Error(codes.DeadlineExceeded, "Project creation timed out")
-	// }
+	//time.Sleep(6 * time.Second)
+	//if ctx.Err() == context.DeadlineExceeded {
+	//	return nil, status.Error(codes.DeadlineExceeded, "Project creation timed out")
+	//}
 
 	log.Printf("Received Create Project request: %v", req.Project)
 	ctx, span := h.Tracer.Start(ctx, "h.createProject")
@@ -204,6 +204,7 @@ func (h ProjectHandler) RemoveMember(ctx context.Context, req *proto.RemoveMembe
 }
 
 func (h ProjectHandler) UserOnProject(ctx context.Context, req *proto.UserOnProjectReq) (*proto.UserOnProjectRes, error) {
+	time.Sleep(10 * time.Second) // circuit breaker test
 	ctx, span := h.Tracer.Start(ctx, "h.userOnProjects")
 	defer span.End()
 	if req.Role == "Manager" {
