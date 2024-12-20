@@ -74,6 +74,11 @@ func (s *workflowService) GetWorkflow(projectID string) (*models.Workflow, error
 	return workflow, nil
 }
 
+// Provera da li zadati ID postoji među svim taskovima
+func (s *workflowService) TaskExists(ctx context.Context, taskID string) (bool, error) {
+	return s.repo.TaskExistsInAllWorkflows(ctx, taskID)
+}
+
 // DeleteWorkflowByProjectID deletes a workflow for a given project ID
 func (s *workflowService) DeleteWorkflowByProjectID(projectID string) error {
 	ctx := context.Background()

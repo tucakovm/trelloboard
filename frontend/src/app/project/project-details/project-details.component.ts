@@ -5,6 +5,8 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { TaskService } from '../../services/task.service';
 import { AuthService } from '../../services/auth.service';
 import {WorkflowService} from "../../services/workflow.service";
+import * as d3 from 'd3';
+
 
 @Component({
   selector: 'app-project-details',
@@ -48,6 +50,9 @@ export class ProjectDetailsComponent implements OnInit{
     blocked: false,
   };
 
+  tasks: any[] = [];
+  edges: any[] = [];
+
   workflow: any | null = null;
   maxLengthAchieved:boolean = false;
   constructor(private projectService:ProjectService, private workflowService: WorkflowService,private route: ActivatedRoute,private tasksService:TaskService, private router:Router, private authService:AuthService){}
@@ -87,6 +92,35 @@ export class ProjectDetailsComponent implements OnInit{
         next: (workflow) => {
           this.workflow = workflow;
           console.log('Workflow:', this.workflow);
+
+
+          // Generisanje taskova sa pozicijama
+          this.tasks = this.workflow.tasks.map((task: any, index: number) => ({
+            ...task,
+            top: 100 + index * 100, // Y pozicija
+            left: 200 + (index % 4) * 150, // X pozicija
+          }));
+
+          // Generisanje linija zavisnosti
+          this.edges = [];
+          this.workflow.tasks.forEach((task: any) => {
+            task.dependencies.forEach((dep: string) => {
+              const fromTask = this.tasks.find((t) => t.id === task.id);
+              const toTask = this.tasks.find((t) => t.id === dep);
+              if (fromTask && toTask) {
+                this.edges.push({
+                  x1: fromTask.left + 50,
+                  y1: fromTask.top + 25,
+                  x2: toTask.left + 50,
+                  y2: toTask.top + 25,
+                });
+              }
+            });
+          });
+
+          // Renderovanje grafikona
+          this.renderGraph();
+
         },
         error: (error) => {
           console.error('Error fetching workflow:', error);
@@ -164,6 +198,48 @@ export class ProjectDetailsComponent implements OnInit{
     }
   }
 
+
+
+
+  renderGraph(): void {
+    const svg = d3.select('#workflow-graph');
+    svg.selectAll('*').remove(); // Brisanje prethodnih elemenata
+
+    // Crtanje linija (edges)
+    svg.selectAll('line')
+      .data(this.edges)
+      .enter()
+      .append('line')
+      .attr('x1', (d: any) => d.x1)
+      .attr('y1', (d: any) => d.y1)
+      .attr('x2', (d: any) => d.x2)
+      .attr('y2', (d: any) => d.y2)
+      .attr('stroke', 'black')
+      .attr('stroke-width', 2);
+
+    // Crtanje čvorova (taskova)
+    const node = svg.selectAll('g.node')
+      .data(this.tasks)
+      .enter()
+      .append('g')
+      .attr('class', 'node')
+      .attr('transform', (d: any) => `translate(${d.left},${d.top})`);
+
+    node.append('rect')
+      .attr('width', 100)
+      .attr('height', 50)
+      .attr('fill', '#0074D9')
+      .attr('rx', 5)
+      .attr('ry', 5);
+
+    node.append('text')
+      .attr('x', 50)
+      .attr('y', 25)
+      .attr('dy', '.35em')
+      .attr('text-anchor', 'middle')
+      .attr('fill', 'white')
+      .text((d: any) => d.name);
+  }
 
 
   showTaskModal = false;

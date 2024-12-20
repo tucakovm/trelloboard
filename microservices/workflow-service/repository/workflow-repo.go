@@ -240,3 +240,62 @@ func checkWorkflowsExist(ctx context.Context, session neo4j.Session) (bool, erro
 
 	return false, result.Err()
 }
+
+// Funkcija za dobavljanje svih taskova iz svih workflow-ova
+func (r *WorkflowRepository) GetAllTasksFromAllWorkflows(ctx context.Context) ([]models.TaskNode, error) {
+	// Otvaranje sesije
+	session := r.Driver.NewSession(ctx, neo4j.SessionConfig{})
+	defer session.Close(ctx)
+
+	// Cypher upit za dobijanje svih taskova
+	query := `
+		MATCH (:Workflow)-[:HAS_TASK]->(t:Task)
+		RETURN t.id AS id, t.name AS name, t.description AS description, t.dependencies AS dependencies, t.blocked AS blocked
+	`
+
+	tasks := []models.TaskNode{}
+
+	// Izvršavanje upita
+	_, err := session.ExecuteRead(ctx, func(tx neo4j.ManagedTransaction) (interface{}, error) {
+		records, err := tx.Run(ctx, query, nil)
+		if err != nil {
+			return nil, err
+		}
+
+		for records.Next(ctx) {
+			record := records.Record()
+			task := models.TaskNode{
+				TaskID:          record.Values[0].(string),
+				TaskName:        record.Values[1].(string),
+				TaskDescription: record.Values[2].(string),
+				Dependencies:    record.Values[3].([]string),
+				Blocked:         record.Values[4].(bool),
+			}
+			tasks = append(tasks, task)
+		}
+
+		return nil, records.Err()
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	return tasks, nil
+}
+
+// Provera da li zadati ID postoji među svim taskovima
+func (r *WorkflowRepository) TaskExistsInAllWorkflows(ctx context.Context, taskID string) (bool, error) {
+	tasks, err := r.GetAllTasksFromAllWorkflows(ctx)
+	if err != nil {
+		return false, fmt.Errorf("failed to get tasks: %w", err)
+	}
+
+	// Iteracija kroz taskove radi provere ID-a
+	for _, task := range tasks {
+		if task.TaskID == taskID {
+			return true, nil
+		}
+	}
+	return false, nil
+}
