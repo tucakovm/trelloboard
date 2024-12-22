@@ -6,15 +6,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/eapache/go-resiliency/retrier"
-	"github.com/golang-jwt/jwt/v4"
-	"github.com/redis/go-redis/v9"
-	"github.com/sony/gobreaker"
-	otelCodes "go.opentelemetry.io/otel/codes"
-	"go.opentelemetry.io/otel/trace"
-	"golang.org/x/crypto/bcrypt"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 	"io"
 	"io/ioutil"
 	"log"
@@ -27,6 +18,15 @@ import (
 	"users_module/repositories"
 	"users_module/services"
 	"users_module/utils"
+
+	"github.com/golang-jwt/jwt/v4"
+	"github.com/redis/go-redis/v9"
+	"github.com/sony/gobreaker"
+	otelCodes "go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/otel/trace"
+	"golang.org/x/crypto/bcrypt"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 type UserHandler struct {
@@ -162,37 +162,43 @@ func (h UserHandler) DeleteUserByUsername(ctx context.Context, req *proto.GetUse
 	ctx, span := h.Tracer.Start(ctx, "h.DeleteUserByUsername")
 	defer span.End()
 
-	classifier := retrier.WhitelistClassifier{models.ErrRespTmp{}}
-	r := retrier.New(retrier.ConstantBackoff(4, 4000*time.Millisecond), classifier)
-
 	var result *proto.EmptyResponse
-	err := r.RunCtx(ctx, func(ctx context.Context) error {
-		res, err := h.Cb.Execute(func() (interface{}, error) {
-			log.Println("Log usera.req.Username : >>>")
-			log.Println(req.Username)
-			user, _ := h.service.GetUserByUsername(req.Username, ctx)
-			log.Println("Log usera : >>>")
-			log.Println(user)
+	var err error
 
+	maxRetries := 6
+	retryInterval := 4 * time.Second
+
+	for attempt := 1; attempt <= maxRetries; attempt++ {
+		// Korišćenje circuit breaker-a za poziv koji može biti podložan greškama
+		res, cbErr := h.Cb.Execute(func() (interface{}, error) {
+			log.Println("Processing request for user: ", req.Username)
+
+			log.Printf("Setting count in request: %d", attempt)
+			// Proveravamo da li je korisnik dodeljen na neki projekat
 			userOnProjectReq := &proto.UserOnProjectReq{
-				Id:   req.Username,
-				Role: user.Role,
+				Id:    req.Username,
+				Role:  "user-role",
+				Count: int64(attempt),
 			}
+
 			projServiceResponse, err := h.projectService.UserOnProject(ctx, userOnProjectReq)
 			if err != nil {
-				log.Printf("Error checking project: %v", err)
-				return nil, status.Error(codes.Internal, "Error checking project")
+				log.Printf("Error in UserOnProject: %v", err)
+				return nil, err // Circuit Breaker obrađuje ovu grešku
 			}
+
 			if projServiceResponse == nil {
 				log.Println("Project service response is nil")
 				return nil, status.Error(codes.Internal, "Unexpected project service response")
 			}
+
 			if projServiceResponse.OnProject {
 				err := errors.New("user is assigned to a project")
 				span.SetStatus(otelCodes.Error, err.Error())
-				return nil, status.Error(codes.Internal, "User is assigned to a project.")
+				return nil, status.Error(codes.InvalidArgument, "User is assigned to a project.")
 			}
 
+			// Brišemo korisnika
 			err = h.service.DeleteUserById(req.Username, ctx)
 			if err != nil {
 				err := errors.New("bad request")
@@ -203,46 +209,33 @@ func (h UserHandler) DeleteUserByUsername(ctx context.Context, req *proto.GetUse
 			return &proto.EmptyResponse{}, nil
 		})
 
-		if err != nil {
-			return err
+		if cbErr != nil {
+			log.Printf("Circuit breaker execution error: %v", cbErr)
+
+			// Ako je greška DeadlineExceeded, pokušavamo ponovo
+			if h.Cb.State() == gobreaker.StateOpen || status.Code(cbErr) == codes.DeadlineExceeded {
+				log.Printf("Attempt %d/%d failed due to DeadlineExceeded. Retrying in %v...", attempt, maxRetries, retryInterval)
+				time.Sleep(retryInterval)
+				continue
+			}
+
+			// Ako nije retry greška, prekinuti dalju obradu
+			err = cbErr
+			break
 		}
 
-		// Make sure the result is not nil and is of the expected type
-		if res == nil {
-			return errors.New("unexpected response, result is nil")
-		}
-
-		cbResp, ok := res.(*http.Response)
+		// Proveravamo da li je rezultat validan
+		response, ok := res.(*proto.EmptyResponse)
 		if !ok {
-			return errors.New("unexpected result type, expected *http.Response")
+			err = errors.New("unexpected response type")
+			break
 		}
+		result = response
+		err = nil
+		break
+	}
 
-		// Handle the response status codes
-		if cbResp.StatusCode == http.StatusGatewayTimeout || cbResp.StatusCode == http.StatusServiceUnavailable {
-			return models.ErrRespTmp{
-				URL:        cbResp.Request.URL.String(),
-				Method:     cbResp.Request.Method,
-				StatusCode: cbResp.StatusCode,
-			}
-		}
-		if cbResp.StatusCode != http.StatusOK {
-			return models.ErrResp{
-				URL:        cbResp.Request.URL.String(),
-				Method:     cbResp.Request.Method,
-				StatusCode: cbResp.StatusCode,
-			}
-		}
-
-		// Process successful result
-		var okResp bool
-		result, okResp = res.(*proto.EmptyResponse)
-		if !okResp {
-			return errors.New("unexpected result type")
-		}
-
-		return nil
-	})
-
+	// Ako je došlo do greške, postavljamo status u opservabilnom sistemu i vraćamo grešku
 	if err != nil {
 		span.SetStatus(otelCodes.Error, "Retrying failed")
 		return nil, status.Error(codes.Internal, "Service unavailable, please try again later")

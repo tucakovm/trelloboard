@@ -84,6 +84,7 @@ service ProjectService {
 message UserOnProjectReq{
   string id = 1;
   string role = 2;
+  int64  count = 3;
 }
 
 message UserOnProjectRes{

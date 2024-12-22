@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"github.com/sony/gobreaker"
 	"log"
 	"net"
 	"os"
@@ -14,6 +13,8 @@ import (
 	users "users_module/proto/users"
 	"users_module/repositories"
 	"users_module/services"
+
+	"github.com/sony/gobreaker"
 
 	"github.com/redis/go-redis/v9"
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
@@ -117,26 +118,21 @@ func main() {
 		Name:        "User Service Circuit Breaker",
 		MaxRequests: 1,
 		Timeout:     10 * time.Second,
-		Interval:    0,
 		ReadyToTrip: func(counts gobreaker.Counts) bool {
-			return counts.ConsecutiveFailures > 5
+			return counts.ConsecutiveFailures > 2
 		},
 		OnStateChange: func(name string, from gobreaker.State, to gobreaker.State) {
 			log.Printf("[Circuit Breaker] '%s' transitioned from '%s' to '%s'\n", name, from, to)
-			if to == gobreaker.StateOpen {
-				log.Printf("[Circuit Breaker] '%s' is now OPEN due to failures. Requests will be blocked temporarily.\n", name)
-			} else if to == gobreaker.StateHalfOpen {
-				log.Printf("[Circuit Breaker] '%s' is now HALF-OPEN. Testing the service.\n", name)
-			} else if to == gobreaker.StateClosed {
-				log.Printf("[Circuit Breaker] '%s' is now CLOSED. Normal operation resumed.\n", name)
-			}
 		},
 		IsSuccessful: func(err error) bool {
 			if err == nil {
 				return true
 			}
-			errResp, ok := err.(config.ErrResp)
-			return ok && errResp.StatusCode >= 400 && errResp.StatusCode < 500
+			grpcErr, ok := status.FromError(err)
+			if ok && grpcErr.Code() == codes.DeadlineExceeded {
+				return false // Označi kao neuspeh za circuit breaker
+			}
+			return true // Sve ostale greške tretiraj kao uspeh za circuit breaker
 		},
 	})
 

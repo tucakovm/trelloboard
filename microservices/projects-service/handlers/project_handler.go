@@ -204,9 +204,17 @@ func (h ProjectHandler) RemoveMember(ctx context.Context, req *proto.RemoveMembe
 }
 
 func (h ProjectHandler) UserOnProject(ctx context.Context, req *proto.UserOnProjectReq) (*proto.UserOnProjectRes, error) {
-	time.Sleep(10 * time.Second) // circuit breaker test
+
+	count := req.Count
+	log.Printf("UserOnProject called with count: %d", count)
+
+	if count < 3 {
+		time.Sleep(10 * time.Second) // circuit breaker test
+	}
+
 	ctx, span := h.Tracer.Start(ctx, "h.userOnProjects")
 	defer span.End()
+
 	if req.Role == "Manager" {
 		res, err := h.service.UserOnProject(req.Username, ctx)
 		if err != nil {
@@ -215,6 +223,7 @@ func (h ProjectHandler) UserOnProject(ctx context.Context, req *proto.UserOnProj
 
 		return &proto.UserOnProjectRes{OnProject: res}, err
 	}
+
 	res, err := h.service.UserOnProjectUser(req.Username, ctx)
 	if err != nil {
 		span.SetStatus(otelCodes.Error, err.Error())

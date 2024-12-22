@@ -2,6 +2,7 @@ package models
 
 import (
 	"fmt"
+
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
@@ -36,4 +37,12 @@ type ErrResp struct {
 
 func (e ErrResp) Error() string {
 	return fmt.Sprintf("error [status code %d] for request: HTTP %s\t%s", e.StatusCode, e.Method, e.URL)
+}
+
+type ErrCircuitBreakerOpen struct {
+	Message string
+}
+
+func (e ErrCircuitBreakerOpen) Error() string {
+	return e.Message
 }
