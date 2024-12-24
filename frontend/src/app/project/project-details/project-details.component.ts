@@ -135,8 +135,14 @@ export class ProjectDetailsComponent implements OnInit{
       next:(response)=>{
         console.log("Tasks deleted sucessfuly")
       },
-      error:(error)=>{
-        console.error("Error deleting tasks:"+ error)
+      error: (error) => {
+        if (error.status === 412) {  // Ako je status greške 412, znači da je task deo workflow-a
+          console.error("Task cannot be deleted because it is part of a workflow.");
+          alert("Task cannot be deleted because it is part of a workflow.");
+        } else {
+          console.error("Error deleting task:", error);
+          alert("An error occurred while deleting the task.");
+        }
       }
     })
   }
@@ -165,6 +171,7 @@ export class ProjectDetailsComponent implements OnInit{
         {
           next: (workflowResponse) => {
             console.log('Workflow created:', workflowResponse);
+            this.getWorkflow();
           },
           error: (error) => {
             console.error('Error creating workflow:', error);

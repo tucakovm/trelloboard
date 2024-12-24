@@ -17,6 +17,10 @@ service WorkflowService {
 
   // Check task dependencies
   rpc CheckTaskDependencies(CheckTaskDependenciesReq) returns (TaskDependenciesStatus) {}
+
+  rpc TaskExists(TaskExistsRequest) returns (TaskExistsResponse) {}
+
+
 }
 
 // Messages for Workflow Service
@@ -61,4 +65,11 @@ message CheckTaskDependenciesReq {
 
 message TaskDependenciesStatus {
   bool allDependenciesMet = 1;
+}
+message TaskExistsRequest {
+  string task_id = 1;
+}
+
+message TaskExistsResponse {
+  bool exists = 1;
 }

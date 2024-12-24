@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"workflow-service/models"
+	proto "workflow-service/proto/workflows"
 	"workflow-service/repository"
 )
 
@@ -15,6 +16,7 @@ type WorkflowService interface {
 	GetWorkflow(projectID string) (*models.Workflow, error)
 	DeleteWorkflowByProjectID(projectID string) error
 	CheckTaskDependencies(projectID string, taskID string) (bool, error)
+	TaskExists(ctx context.Context, req *proto.TaskExistsRequest) (*proto.TaskExistsResponse, error)
 }
 
 type workflowService struct {
@@ -75,8 +77,21 @@ func (s *workflowService) GetWorkflow(projectID string) (*models.Workflow, error
 }
 
 // Provera da li zadati ID postoji među svim taskovima
-func (s *workflowService) TaskExists(ctx context.Context, taskID string) (bool, error) {
+/*func (s *workflowService) TaskExists(ctx context.Context, taskID string) (bool, error) {
 	return s.repo.TaskExistsInAllWorkflows(ctx, taskID)
+}*/
+func (s *workflowService) TaskExists(ctx context.Context, req *proto.TaskExistsRequest) (*proto.TaskExistsResponse, error) {
+	log.Printf("Request in TaskExistis in workflow service = %s", req.TaskId)
+
+	exists, err := s.repo.TaskExistsInAllWorkflows(ctx, req.TaskId)
+	if err != nil {
+		log.Printf("Task error in workflow", err)
+
+		return nil, err
+	}
+	log.Printf("Workflow exists function= %s", exists)
+
+	return &proto.TaskExistsResponse{Exists: exists}, nil
 }
 
 // DeleteWorkflowByProjectID deletes a workflow for a given project ID

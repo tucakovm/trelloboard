@@ -115,3 +115,26 @@ func (h *WorkflowHandler) CheckTaskDependencies(ctx context.Context, req *proto.
 
 	return &proto.TaskDependenciesStatus{AllDependenciesMet: allDependenciesMet}, nil
 }
+
+/*
+func (h *WorkflowHandler) TaskExists(ctx context.Context, req *proto.TaskExistsRequest) (*proto.TaskExistsResponse, error) {
+	exists, err := h.WorkflowService.(ctx, req.TaskId)
+	if err != nil {
+		return nil, err
+	}
+
+	return &proto.TaskExistsResponse{Exists: exists}, nil
+}*/
+/*
+func (h *WorkflowHandler) TaskExists(ctx context.Context, req *proto.TaskExistsRequest) (*proto.TaskExistsResponse, error) {
+	log.Printf("Checking if task exists with ID: %s", req.TaskId)
+
+	// Pozovi servis za proveru
+	exists, err := h.WorkflowService.TaskExists(ctx, req)
+	if err != nil {
+		log.Printf("Error checking task existence: %v", err)
+		return nil, err
+	}
+
+	return &proto.TaskExistsResponse{Exists: exists.Exists}, nil
+}*/

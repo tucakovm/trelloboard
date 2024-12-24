@@ -3,35 +3,36 @@ package handlers
 import (
 	"context"
 	"encoding/json"
-	nats_helper "tasks-service/nats_helper"
-
 	"github.com/nats-io/nats.go"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
-
 	otelCodes "go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/trace"
-
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	"log"
 	"strings"
+	nats_helper "tasks-service/nats_helper"
 	proto "tasks-service/proto/task"
+
 	"tasks-service/service"
 	//"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 type TaskHandler struct {
-	service        *service.TaskService // Use a pointer here
-	projectService proto.ProjectServiceClient
+	service         *service.TaskService // Use a pointer here
+	projectService  proto.ProjectServiceClient
+	workflowService proto.WokrflowServiceClient
 	proto.UnimplementedTaskServiceServer
 	natsConn *nats.Conn
 	Tracer   trace.Tracer
+	//workflowClient WorkflowServiceClient
 }
 
-func NewTaskHandler(service *service.TaskService, projectService proto.ProjectServiceClient, natsConn *nats.Conn, tracer trace.Tracer) *TaskHandler {
+func NewTaskHandler(service *service.TaskService, projectService proto.ProjectServiceClient, workflowService proto.WokrflowServiceClient, natsConn *nats.Conn, tracer trace.Tracer) *TaskHandler {
 	return &TaskHandler{service: service,
-		projectService: projectService,
-		natsConn:       natsConn,
-		Tracer:         tracer}
+		projectService:  projectService,
+		natsConn:        natsConn,
+		workflowService: workflowService,
+		Tracer:          tracer}
 }
 
 //func (h *TaskHandler) DoneTasksByProject(ctx context.Context, req *proto.DoneTasksByProjectReq) (*proto.DoneTasksByProjectRes, error) {
@@ -64,6 +65,26 @@ func (h *TaskHandler) DoneTasksByProject(ctx context.Context, req *proto.DoneTas
 func (h *TaskHandler) Delete(ctx context.Context, req *proto.DeleteTaskReq) (*proto.EmptyResponse, error) {
 	ctx, span := h.Tracer.Start(ctx, "h.deleteTask")
 	defer span.End()
+	log.Printf("sending grpc to workflow TaskID: req.id=%s", req.Id)
+
+	// Provera da li zadatak može biti obrisan
+	exists, erre := h.workflowService.TaskExists(ctx, &proto.TaskExistsRequest{TaskId: req.Id})
+	log.Printf("exists=%s", exists)
+
+	if erre != nil {
+		span.SetStatus(otelCodes.Error, erre.Error())
+		log.Printf("Error in workflow Service for task = %s", erre)
+
+		return nil, status.Error(codes.Internal, "failed to check task existence")
+	}
+
+	if exists.Exists {
+		span.SetStatus(otelCodes.Error, "task is part of a workflow and cannot be deleted")
+		log.Printf(" task is part of workflow = %s", erre)
+
+		return nil, status.Error(codes.FailedPrecondition, "task is part of a workflow and cannot be deleted")
+	}
+
 	err := h.service.DeleteTask(req.Id, ctx)
 	if err != nil {
 		span.SetStatus(otelCodes.Error, err.Error())

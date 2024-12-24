@@ -7,4 +7,4 @@ protoc \
   --go-grpc_opt=paths=source_relative \
   --grpc-gateway_out=./task \
   --grpc-gateway_opt=paths=source_relative \
-  ./task.proto
+  ./task.proto> protoc_output.log 2>&1

@@ -149,13 +149,24 @@ func (r *WorkflowRepository) GetWorkflow(ctx context.Context, projectID string) 
 			return &models.Workflow{
 				ProjectID:   record.Values[0].(string),
 				ProjectName: record.Values[1].(string),
+				Tasks:       nil,
 			}, nil
 		}
+		//Dodao polje Tasks ovde
 		if err := result.Err(); err != nil {
 			return nil, fmt.Errorf("failed to read results: %w", err)
 		}
 		return nil, nil
 	})
+	tasks, err := r.GetTasks(ctx, projectID)
+	if err != nil {
+		log.Printf("Workflow repo task getTask function= %s", err)
+
+		return nil, fmt.Errorf("failed to get tasks for workflow: %w", err)
+	}
+	workflow.(*models.Workflow).Tasks = tasks
+	log.Printf("Workflow exists function= %s", tasks)
+
 	if err != nil {
 		return nil, fmt.Errorf("failed to get workflow: %w", err)
 	}
@@ -287,12 +298,18 @@ func (r *WorkflowRepository) GetAllTasksFromAllWorkflows(ctx context.Context) ([
 // Provera da li zadati ID postoji među svim taskovima
 func (r *WorkflowRepository) TaskExistsInAllWorkflows(ctx context.Context, taskID string) (bool, error) {
 	tasks, err := r.GetAllTasksFromAllWorkflows(ctx)
+	log.Printf("tasks: %w", tasks)
+
 	if err != nil {
+		log.Printf("failed to get tasks: %w", err)
+
 		return false, fmt.Errorf("failed to get tasks: %w", err)
 	}
 
 	// Iteracija kroz taskove radi provere ID-a
 	for _, task := range tasks {
+		log.Printf("task: %w", task.TaskID)
+
 		if task.TaskID == taskID {
 			return true, nil
 		}

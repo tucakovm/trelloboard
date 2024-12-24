@@ -56,8 +56,8 @@
         <div class="col-md-12 text-center">
           <ng-container *ngIf="workflow; else createWorkflowBlock">
             <h4 class="text-success">Workflow Details</h4>
-            <p><strong>ID:</strong> {{ workflow.project_id }}</p>
-            <p><strong>Name:</strong> { workflow.project_name }</p>
+            <p><strong>ID:</strong>  <input [(ngModel)]="workflow?.projectId " readonly /></p>
+            <p><strong>Name:</strong> <input [(ngModel)]="workflow?.project_name" readonly /></p>
 
             <div class="row mt-3">
               <div class="col-md-12 text-center">
