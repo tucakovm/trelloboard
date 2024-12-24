@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"github.com/sony/gobreaker"
 	"log"
 	"net"
 	"os"
@@ -14,6 +13,8 @@ import (
 	users "users_module/proto/users"
 	"users_module/repositories"
 	"users_module/services"
+
+	"github.com/sony/gobreaker"
 
 	"github.com/redis/go-redis/v9"
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
@@ -117,34 +118,36 @@ func main() {
 		Name:        "User Service Circuit Breaker",
 		MaxRequests: 1,
 		Timeout:     10 * time.Second,
-		Interval:    0,
 		ReadyToTrip: func(counts gobreaker.Counts) bool {
-			return counts.ConsecutiveFailures > 0
+			return counts.ConsecutiveFailures > 2
 		},
 		OnStateChange: func(name string, from gobreaker.State, to gobreaker.State) {
-			log.Printf("Circuit Breaker '%s' changed from '%s' to, %s'\n", name, from, to)
+			log.Printf("[Circuit Breaker] '%s' transitioned from '%s' to '%s'\n", name, from, to)
 		},
 		IsSuccessful: func(err error) bool {
 			if err == nil {
 				return true
 			}
-			errResp, ok := err.(config.ErrResp)
-			return ok && errResp.StatusCode >= 400 && errResp.StatusCode < 500
+			grpcErr, ok := status.FromError(err)
+			if ok {
+				// Tretiraj `Unavailable` i `DeadlineExceeded` kao neuspeh za Circuit Breaker
+				if grpcErr.Code() == codes.Unavailable || grpcErr.Code() == codes.DeadlineExceeded {
+					return false
+				}
+			}
+			return true // Sve ostale greške tretiraj kao uspeh
 		},
 	})
 
 	serviceUser, err := services.NewUserService(*repoUser, blacklistRepo, tracer)
 
-	if err != nil {
-		log.Fatal("Failed to initialize User Service: ", err)
-	}
 	handlerUser, err := h.NewUserHandler(serviceUser, projectClient, tracer, userServiceCB)
 	if err != nil {
 		log.Fatal("Failed to initialize User Handler: ", err)
 	}
 
 	grpcServer := grpc.NewServer(
-		grpc.UnaryInterceptor(timeoutUnaryInterceptor(5 * time.Second)), // Timeout na 5 sekundi
+		//grpc.UnaryInterceptor(timeoutUnaryInterceptor(5 * time.Second)), // Timeout na 5 sekundi
 	)
 	reflection.Register(grpcServer)
 	users.RegisterUsersServiceServer(grpcServer, &handlerUser)
@@ -190,24 +193,34 @@ func newTraceProvider(exp sdktrace.SpanExporter) *sdktrace.TracerProvider {
 	)
 }
 
-func timeoutUnaryInterceptor(timeout time.Duration) grpc.UnaryServerInterceptor {
-	return func(
-		ctx context.Context,
-		req interface{},
-		info *grpc.UnaryServerInfo,
-		handler grpc.UnaryHandler,
-	) (interface{}, error) {
-		// Kreiraj novi kontekst sa timeout-om
-		ctx, cancel := context.WithTimeout(ctx, timeout)
-		defer cancel()
+// GLOBALNI TIMEOUT INTERCEPTOR
 
-		// Obradi zahtev sa novim kontekstom
-		resp, err := handler(ctx, req)
-
-		// Ako je kontekst istekao, vrati odgovarajući status
-		if ctx.Err() == context.DeadlineExceeded {
-			return nil, status.Error(codes.DeadlineExceeded, "Request timed out")
-		}
-		return resp, err
-	}
-}
+//func timeoutUnaryInterceptor(timeout time.Duration) grpc.UnaryServerInterceptor {
+//	return func(
+//		ctx context.Context,
+//		req interface{},
+//		info *grpc.UnaryServerInfo,
+//		handler grpc.UnaryHandler,
+//	) (interface{}, error) {
+//		// Kreiraj novi kontekst sa timeout-om
+//		ctx, cancel := context.WithTimeout(ctx, timeout)
+//		defer cancel()
+//
+//		//go func() {
+//		//	for remaining := timeout; remaining > 0; remaining -= time.Second {
+//		//		// Odbrojavanje sekundi
+//		//		fmt.Printf("Time remaining: %d seconds\n", remaining/time.Second)
+//		//		time.Sleep(time.Second)
+//		//	}
+//		//}()
+//
+//		// Obradi zahtev sa novim kontekstom
+//		resp, err := handler(ctx, req)
+//
+//		// Ako je kontekst istekao, vrati odgovarajući status
+//		if ctx.Err() == context.DeadlineExceeded {
+//			return nil, status.Error(codes.DeadlineExceeded, "Request timed out")
+//		}
+//		return resp, err
+//	}
+//}

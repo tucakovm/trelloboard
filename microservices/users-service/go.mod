@@ -16,6 +16,8 @@ require (
 
 require go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.57.0
 
+require github.com/eapache/go-resiliency v1.7.0 // indirect
+
 require (
 	github.com/armon/go-metrics v0.4.1 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect

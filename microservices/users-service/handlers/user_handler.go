@@ -6,6 +6,19 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
+	"io/ioutil"
+	"log"
+	"net/http"
+	"net/url"
+	"os"
+	"time"
+	"users_module/models"
+	proto "users_module/proto/users"
+	"users_module/repositories"
+	"users_module/services"
+	"users_module/utils"
+
 	"github.com/golang-jwt/jwt/v4"
 	"github.com/redis/go-redis/v9"
 	"github.com/sony/gobreaker"
@@ -13,21 +26,7 @@ import (
 	"go.opentelemetry.io/otel/trace"
 	"golang.org/x/crypto/bcrypt"
 	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
-	"io"
-	"io/ioutil"
-	"log"
-	"net/http"
-	"net/url"
-	"os"
-	"strings"
-	"time"
-	"users_module/models"
-	proto "users_module/proto/users"
-	"users_module/repositories"
-	"users_module/services"
-	"users_module/utils"
 )
 
 type UserHandler struct {
@@ -78,71 +77,48 @@ func (h UserHandler) RegisterHandler(ctx context.Context, req *proto.RegisterReq
 }
 
 func (h UserHandler) LoginUserHandler(ctx context.Context, req *proto.LoginReq) (*proto.LoginRes, error) {
-	// Set a timeout for the operation
-	timeoutCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
-	defer cancel()
+	ctx, span := h.Tracer.Start(ctx, "h.login")
 
-	ctx, span := h.Tracer.Start(timeoutCtx, "h.login")
-	defer span.End()
-
-	// Use circuit breaker to control access to the logic
-	result, err := h.Cb.Execute(func() (interface{}, error) {
-
-		//time.Sleep(7 * time.Second) Circuit breaker test timeout
-
-		// Verify CAPTCHA
-		captchaValid, err := h.verifyCaptcha(req.LoginUser.Key)
-		if err != nil || !captchaValid {
-			span.SetStatus(otelCodes.Error, "Invalid or failed CAPTCHA verification")
-			return nil, status.Error(codes.InvalidArgument, "Invalid or failed CAPTCHA verification")
-		}
-
-		user, err := h.service.GetUserByUsername(req.LoginUser.Username, ctx) // Pass ctx for tracing
-		if err != nil {
-			span.SetStatus(otelCodes.Error, "User not found")
-			return nil, status.Error(codes.InvalidArgument, "User not found ...")
-		}
-
-		// Check password
-		if !CheckPassword(user.Password, req.LoginUser.Password) {
-			err := errors.New("bad request ...")
-			span.SetStatus(otelCodes.Error, err.Error())
-			return nil, status.Error(codes.Unauthenticated, "Invalid username or password ...")
-		}
-
-		// Check if user is active
-		if !user.IsActive {
-			err := errors.New("bad request ...")
-			span.SetStatus(otelCodes.Error, err.Error())
-			return nil, status.Error(codes.PermissionDenied, "User is not active ...")
-		}
-
-		// Generate JWT token
-		token, err := GenerateJWT(user)
-		if err != nil {
-			err := errors.New("bad request ...")
-			span.SetStatus(otelCodes.Error, err.Error())
-			return nil, status.Error(codes.Internal, "Error generating token ...")
-		}
-
-		// Return the successful response
-		return &proto.LoginRes{
-			Message: "Login successful",
-			Token:   token,
-		}, nil
-	})
-
-	// If there's an error from the circuit breaker, log and return an appropriate message
-	if err != nil {
-		span.SetStatus(otelCodes.Error, "Circuit breaker opened or error during execution")
-		return nil, status.Error(codes.Internal, "Service unavailable, please try again later")
+	// Verify CAPTCHA
+	captchaValid, err := h.verifyCaptcha(req.LoginUser.Key)
+	if err != nil || !captchaValid {
+		span.SetStatus(otelCodes.Error, "Invalid or failed CAPTCHA verification")
+		return nil, status.Error(codes.InvalidArgument, "Invalid or failed CAPTCHA verification")
 	}
 
-	// Cast the result from the circuit breaker execution
-	loginRes := result.(*proto.LoginRes)
+	user, err := h.service.GetUserByUsername(req.LoginUser.Username, ctx) // Pass ctx for tracing
+	if err != nil {
+		span.SetStatus(otelCodes.Error, "User not found")
+		return nil, status.Error(codes.InvalidArgument, "User not found ...")
+	}
+
+	// Check password
+	if !CheckPassword(user.Password, req.LoginUser.Password) {
+		err := errors.New("bad request ...")
+		span.SetStatus(otelCodes.Error, err.Error())
+		return nil, status.Error(codes.Unauthenticated, "Invalid username or password ...")
+	}
+
+	// Check if user is active
+	if !user.IsActive {
+		err := errors.New("bad request ...")
+		span.SetStatus(otelCodes.Error, err.Error())
+		return nil, status.Error(codes.PermissionDenied, "User is not active ...")
+	}
+
+	// Generate JWT token
+	token, err := GenerateJWT(user)
+	if err != nil {
+		err := errors.New("bad request ...")
+		span.SetStatus(otelCodes.Error, err.Error())
+		return nil, status.Error(codes.Internal, "Error generating token ...")
+	}
 
 	// Return the successful response
-	return loginRes, nil
+	return &proto.LoginRes{
+		Message: "Login successful",
+		Token:   token,
+	}, nil
 }
 
 func (h UserHandler) VerifyHandler(ctx context.Context, req *proto.VerifyReq) (*proto.EmptyResponse, error) {
@@ -185,50 +161,102 @@ func (h UserHandler) GetUserByUsername(ctx context.Context, req *proto.GetUserBy
 func (h UserHandler) DeleteUserByUsername(ctx context.Context, req *proto.GetUserByUsernameReq) (*proto.EmptyResponse, error) {
 	ctx, span := h.Tracer.Start(ctx, "h.DeleteUserByUsername")
 	defer span.End()
-	md, ok := metadata.FromIncomingContext(ctx)
-	if !ok {
-		return nil, status.Error(codes.Unauthenticated, "missing metadata")
-	}
-	authHeader := md.Get("authorization")
-	if len(authHeader) == 0 {
-		return nil, status.Error(codes.Unauthenticated, "missing authorization header")
-	}
-	tokenString := strings.TrimPrefix(authHeader[0], "Bearer ")
-	if tokenString == "" {
-		return nil, status.Error(codes.Unauthenticated, "invalid token format")
-	}
-	claims, err := parseJWT(tokenString)
-	if err != nil {
-		return nil, status.Error(codes.Unauthenticated, "invalid or expired token")
-	}
-	role, ok := claims["user_role"].(string)
-	if !ok || role == "" {
-		return nil, status.Error(codes.Unauthenticated, "role not found in token")
+
+	var result *proto.EmptyResponse
+	var err error
+
+	maxRetries := 10
+	retryInterval := 4 * time.Second
+
+	for attempt := 1; attempt <= maxRetries; attempt++ {
+		// Korišćenje circuit breaker-a za poziv koji može biti podložan greškama
+		res, cbErr := h.Cb.Execute(func() (interface{}, error) {
+			log.Println("Processing request for user: ", req.Username)
+
+			//log.Printf("Setting count in request: %d", attempt)
+			// Proveravamo da li je korisnik dodeljen na neki projekat
+			userOnProjectReq := &proto.UserOnProjectReq{
+				Id:    req.Username,
+				Role:  "user-role",
+				Count: int64(attempt),
+			}
+
+			if h.projectService == nil {
+				log.Println("Project service is not initialized")
+				return nil, status.Error(codes.Unavailable, "projectService is not initialized")
+			}
+
+			projServiceResponse, err := h.projectService.UserOnProject(ctx, userOnProjectReq)
+			if err != nil {
+				log.Printf("Error in UserOnProject: %v", err)
+				return nil, err // Circuit Breaker obrađuje ovu grešku
+			}
+
+			if projServiceResponse == nil {
+				log.Println("Project service response is nil")
+				return nil, status.Error(codes.Internal, "Unexpected project service response")
+			}
+
+			if projServiceResponse.OnProject {
+				err := errors.New("user is assigned to a project")
+				span.SetStatus(otelCodes.Error, err.Error())
+				return nil, status.Error(codes.InvalidArgument, "User is assigned to a project.")
+			}
+
+			// Brišemo korisnika
+			err = h.service.DeleteUserById(req.Username, ctx)
+			if err != nil {
+				err := errors.New("bad request")
+				span.SetStatus(otelCodes.Error, err.Error())
+				return nil, status.Error(codes.InvalidArgument, "Bad request.")
+			}
+
+			return &proto.EmptyResponse{}, nil
+		})
+
+		if cbErr != nil {
+			log.Printf("Circuit breaker execution error: %v", cbErr)
+
+			if status.Code(cbErr) == codes.Unavailable {
+				log.Printf("Attempt %d/%d failed due to service being UNAVAIVABLE. Retrying in %v...", attempt, maxRetries, retryInterval)
+				time.Sleep(retryInterval)
+				continue
+			}
+			if status.Code(cbErr) == codes.DeadlineExceeded {
+				log.Printf("Attempt %d/%d failed due to DeadlineExceeded. Retrying in %v...", attempt, maxRetries, retryInterval)
+				time.Sleep(retryInterval)
+				continue
+			}
+			if h.Cb.State() == gobreaker.StateOpen {
+				log.Printf("Attempt %d/%d failed due to Circuit breaker being OPEN. Retrying in %v...", attempt, maxRetries, retryInterval)
+				time.Sleep(retryInterval)
+				continue
+			}
+
+			// Ako nije retry greška, prekinuti dalju obradu
+			err = cbErr
+			break
+		}
+
+		// Proveravamo da li je rezultat validan
+		response, ok := res.(*proto.EmptyResponse)
+		if !ok {
+			err = errors.New("unexpected response type")
+			break
+		}
+		result = response
+		err = nil
+		break
 	}
 
-	userOnProjectReq := &proto.UserOnProjectReq{
-		Id:   req.Username,
-		Role: role,
-	}
-	projServiceResponse, err := h.projectService.UserOnProject(ctx, userOnProjectReq)
+	// Ako je došlo do greške, postavljamo status u opservabilnom sistemu i vraćamo grešku
 	if err != nil {
-		err := errors.New("Error checking project")
-		span.SetStatus(otelCodes.Error, err.Error())
-		return nil, status.Error(codes.Internal, "Error checking project")
+		span.SetStatus(otelCodes.Error, "Retrying failed")
+		return nil, status.Error(codes.Internal, "Service unavailable, please try again later")
 	}
-	if projServiceResponse.OnProject {
 
-		err := errors.New("User is assigned to a project.")
-		span.SetStatus(otelCodes.Error, err.Error())
-		return nil, status.Error(codes.Internal, "User is assigned to a project.")
-	}
-	err = h.service.DeleteUserById(req.Username, ctx)
-	if err != nil {
-		err := errors.New("Bad request.")
-		span.SetStatus(otelCodes.Error, err.Error())
-		return nil, status.Error(codes.InvalidArgument, "Bad request.")
-	}
-	return nil, nil
+	// Uspešan odgovor
+	return result, nil
 }
 
 func GenerateJWT(user *models.User) (string, error) {

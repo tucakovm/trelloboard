@@ -80,7 +80,9 @@ func (repo *HDFSRepository) UploadFile(ctx context.Context, taskID, fileName str
 	// Write the decoded content to the file
 	_, err = file.Write(decodedContent)
 	if err != nil {
+
 		log.Printf("Failed to write to HDFS at %s: %v", hdfsFilePath, err)
+
 		return fmt.Errorf("failed to write content to file on HDFS at %s: %v", hdfsFilePath, err)
 	}
 	log.Println("File written to HDFS")

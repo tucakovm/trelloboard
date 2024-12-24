@@ -195,7 +195,6 @@ func (h *TaskHandler) AddMemberTask(ctx context.Context, req *proto.AddMemberTas
 			log.Printf("Context timeout before adding member: %v", ctx.Err())
 			return nil, status.Error(codes.DeadlineExceeded, "Request timed out or was canceled")
 		default:
-			// Nastavlja sa dodavanjem člana
 		}
 		subject := "add-to-task"
 

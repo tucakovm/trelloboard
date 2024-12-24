@@ -55,12 +55,12 @@ func insertInitialUsers(client *mongo.Client) error {
 	collection := client.Database("mongoDemo").Collection("users")
 	count, err := collection.CountDocuments(context.Background(), bson.M{})
 	if err != nil {
-		log.Println("Error checking task count:", err)
+		log.Println("Error checking user count:", err)
 		return err
 	}
 
 	if count > 0 {
-		log.Println("Tasks already exist in the database")
+		log.Println("Users already exist in the database")
 		return nil
 	}
 
@@ -72,6 +72,26 @@ func insertInitialUsers(client *mongo.Client) error {
 	bobId, err := primitive.ObjectIDFromHex("6749ac3cfc079b8c923bb9d5")
 	if err != nil {
 		fmt.Println("Error converting to ObjectID:", err)
+		return nil
+	}
+	daveId, err := primitive.ObjectIDFromHex("676b0c5dee23d6f7b4ff6789")
+	if err != nil {
+		fmt.Println("Error converting to ObjectID for Dave:", err)
+		return nil
+	}
+	janeId, err := primitive.ObjectIDFromHex("6771ac3cfc079b8c923bb9d5")
+	if err != nil {
+		fmt.Println("Error converting to ObjectID for Jane:", err)
+		return nil
+	}
+	lilyId, err := primitive.ObjectIDFromHex("6791ac3cfc079b8c923bb9d5")
+	if err != nil {
+		fmt.Println("Error converting to ObjectID for Lily:", err)
+		return nil
+	}
+	markId, err := primitive.ObjectIDFromHex("6781ac3cfc079b8c923bb9d5")
+	if err != nil {
+		fmt.Println("Error converting to ObjectID for Mark:", err)
 		return nil
 	}
 
@@ -98,16 +118,60 @@ func insertInitialUsers(client *mongo.Client) error {
 			Code:      "B456",
 			Role:      "User",
 		},
+		models.User{
+			Id:        daveId,
+			FirstName: "Dave",
+			LastName:  "White",
+			Username:  "davew",
+			Email:     "dave.white@example.com",
+			Password:  "$2a$12$sH1miPk3Yk1umoZKoJGnDOGofZZzher2JFa1AUceFKTlx6Glcd64O",
+			IsActive:  true,
+			Code:      "D012",
+			Role:      "User",
+		},
+		models.User{
+			Id:        janeId,
+			FirstName: "Jane",
+			LastName:  "Doe",
+			Username:  "janedoe",
+			Email:     "jane.doe@example.com",
+			Password:  "$2a$12$sH1miPk3Yk1umoZKoJGnDOGofZZzher2JFa1AUceFKTlx6Glcd64O",
+			IsActive:  true,
+			Code:      "J999",
+			Role:      "Manager",
+		},
+		models.User{
+			Id:        lilyId,
+			FirstName: "Lily",
+			LastName:  "Evans",
+			Username:  "lilyevans",
+			Email:     "lily.evans@example.com",
+			Password:  "$2a$12$sH1miPk3Yk1umoZKoJGnDOGofZZzher2JFa1AUceFKTlx6Glcd64O",
+			IsActive:  true,
+			Code:      "L555",
+			Role:      "User",
+		},
+		models.User{
+			Id:        markId,
+			FirstName: "Mark",
+			LastName:  "Taylor",
+			Username:  "marktaylor",
+			Email:     "mark.taylor@example.com",
+			Password:  "$2a$12$sH1miPk3Yk1umoZKoJGnDOGofZZzher2JFa1AUceFKTlx6Glcd64O",
+			IsActive:  true,
+			Code:      "M123",
+			Role:      "User",
+		},
 	}
 
-	// Insert initial tasks
+	// Insert initial users
 	_, err = collection.InsertMany(context.Background(), users)
 	if err != nil {
-		log.Println("Error inserting initial tasks:", err)
+		log.Println("Error inserting initial users:", err)
 		return err
 	}
 
-	log.Println("Initial tasks inserted successfully")
+	log.Println("Initial users inserted successfully")
 	return nil
 }
 

@@ -36,10 +36,10 @@ func NewConnectionHandler(service services.ProjectService, taskService proto.Tas
 func (h ProjectHandler) Create(ctx context.Context, req *proto.CreateProjectReq) (*proto.EmptyResponse, error) {
 
 	// TESTIRANJE ZA GLOBALNI TIMEOUT
-	// time.Sleep(6 * time.Second)
-	// if ctx.Err() == context.DeadlineExceeded {
-	// 	return nil, status.Error(codes.DeadlineExceeded, "Project creation timed out")
-	// }
+	//time.Sleep(6 * time.Second)
+	//if ctx.Err() == context.DeadlineExceeded {
+	//	return nil, status.Error(codes.DeadlineExceeded, "Project creation timed out")
+	//}
 
 	log.Printf("Received Create Project request: %v", req.Project)
 	ctx, span := h.Tracer.Start(ctx, "h.createProject")
@@ -204,8 +204,19 @@ func (h ProjectHandler) RemoveMember(ctx context.Context, req *proto.RemoveMembe
 }
 
 func (h ProjectHandler) UserOnProject(ctx context.Context, req *proto.UserOnProjectReq) (*proto.UserOnProjectRes, error) {
-	ctx, span := h.Tracer.Start(ctx, "h.userOnProjects")
+
+	count := req.Count
+	log.Printf("UserOnProject called with count: %d", count)
+
+	//api gateway test
+	//time.Sleep(10 * time.Second)
+
+	retryCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
+	defer cancel()
+
+	ctx, span := h.Tracer.Start(retryCtx, "h.userOnProjects")
 	defer span.End()
+
 	if req.Role == "Manager" {
 		res, err := h.service.UserOnProject(req.Username, ctx)
 		if err != nil {
@@ -214,6 +225,7 @@ func (h ProjectHandler) UserOnProject(ctx context.Context, req *proto.UserOnProj
 
 		return &proto.UserOnProjectRes{OnProject: res}, err
 	}
+
 	res, err := h.service.UserOnProjectUser(req.Username, ctx)
 	if err != nil {
 		span.SetStatus(otelCodes.Error, err.Error())
