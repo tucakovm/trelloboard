@@ -165,7 +165,7 @@ func (h UserHandler) DeleteUserByUsername(ctx context.Context, req *proto.GetUse
 	var result *proto.EmptyResponse
 	var err error
 
-	maxRetries := 6
+	maxRetries := 10
 	retryInterval := 4 * time.Second
 
 	for attempt := 1; attempt <= maxRetries; attempt++ {
@@ -173,12 +173,17 @@ func (h UserHandler) DeleteUserByUsername(ctx context.Context, req *proto.GetUse
 		res, cbErr := h.Cb.Execute(func() (interface{}, error) {
 			log.Println("Processing request for user: ", req.Username)
 
-			log.Printf("Setting count in request: %d", attempt)
+			//log.Printf("Setting count in request: %d", attempt)
 			// Proveravamo da li je korisnik dodeljen na neki projekat
 			userOnProjectReq := &proto.UserOnProjectReq{
 				Id:    req.Username,
 				Role:  "user-role",
 				Count: int64(attempt),
+			}
+
+			if h.projectService == nil {
+				log.Println("Project service is not initialized")
+				return nil, status.Error(codes.Unavailable, "projectService is not initialized")
 			}
 
 			projServiceResponse, err := h.projectService.UserOnProject(ctx, userOnProjectReq)
@@ -212,9 +217,18 @@ func (h UserHandler) DeleteUserByUsername(ctx context.Context, req *proto.GetUse
 		if cbErr != nil {
 			log.Printf("Circuit breaker execution error: %v", cbErr)
 
-			// Ako je greška DeadlineExceeded, pokušavamo ponovo
-			if h.Cb.State() == gobreaker.StateOpen || status.Code(cbErr) == codes.DeadlineExceeded {
+			if status.Code(cbErr) == codes.Unavailable {
+				log.Printf("Attempt %d/%d failed due to service being UNAVAIVABLE. Retrying in %v...", attempt, maxRetries, retryInterval)
+				time.Sleep(retryInterval)
+				continue
+			}
+			if status.Code(cbErr) == codes.DeadlineExceeded {
 				log.Printf("Attempt %d/%d failed due to DeadlineExceeded. Retrying in %v...", attempt, maxRetries, retryInterval)
+				time.Sleep(retryInterval)
+				continue
+			}
+			if h.Cb.State() == gobreaker.StateOpen {
+				log.Printf("Attempt %d/%d failed due to Circuit breaker being OPEN. Retrying in %v...", attempt, maxRetries, retryInterval)
 				time.Sleep(retryInterval)
 				continue
 			}

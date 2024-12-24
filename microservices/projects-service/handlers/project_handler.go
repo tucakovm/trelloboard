@@ -208,11 +208,13 @@ func (h ProjectHandler) UserOnProject(ctx context.Context, req *proto.UserOnProj
 	count := req.Count
 	log.Printf("UserOnProject called with count: %d", count)
 
-	if count < 3 {
-		time.Sleep(10 * time.Second) // circuit breaker test
-	}
+	//api gateway test
+	//time.Sleep(10 * time.Second)
 
-	ctx, span := h.Tracer.Start(ctx, "h.userOnProjects")
+	retryCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
+	defer cancel()
+
+	ctx, span := h.Tracer.Start(retryCtx, "h.userOnProjects")
 	defer span.End()
 
 	if req.Role == "Manager" {

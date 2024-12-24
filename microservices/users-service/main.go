@@ -129,10 +129,13 @@ func main() {
 				return true
 			}
 			grpcErr, ok := status.FromError(err)
-			if ok && grpcErr.Code() == codes.DeadlineExceeded {
-				return false // Označi kao neuspeh za circuit breaker
+			if ok {
+				// Tretiraj `Unavailable` i `DeadlineExceeded` kao neuspeh za Circuit Breaker
+				if grpcErr.Code() == codes.Unavailable || grpcErr.Code() == codes.DeadlineExceeded {
+					return false
+				}
 			}
-			return true // Sve ostale greške tretiraj kao uspeh za circuit breaker
+			return true // Sve ostale greške tretiraj kao uspeh
 		},
 	})
 
@@ -144,7 +147,7 @@ func main() {
 	}
 
 	grpcServer := grpc.NewServer(
-		grpc.UnaryInterceptor(timeoutUnaryInterceptor(5 * time.Second)), // Timeout na 5 sekundi
+		//grpc.UnaryInterceptor(timeoutUnaryInterceptor(5 * time.Second)), // Timeout na 5 sekundi
 	)
 	reflection.Register(grpcServer)
 	users.RegisterUsersServiceServer(grpcServer, &handlerUser)
@@ -190,24 +193,34 @@ func newTraceProvider(exp sdktrace.SpanExporter) *sdktrace.TracerProvider {
 	)
 }
 
-func timeoutUnaryInterceptor(timeout time.Duration) grpc.UnaryServerInterceptor {
-	return func(
-		ctx context.Context,
-		req interface{},
-		info *grpc.UnaryServerInfo,
-		handler grpc.UnaryHandler,
-	) (interface{}, error) {
-		// Kreiraj novi kontekst sa timeout-om
-		ctx, cancel := context.WithTimeout(ctx, timeout)
-		defer cancel()
+// GLOBALNI TIMEOUT INTERCEPTOR
 
-		// Obradi zahtev sa novim kontekstom
-		resp, err := handler(ctx, req)
-
-		// Ako je kontekst istekao, vrati odgovarajući status
-		if ctx.Err() == context.DeadlineExceeded {
-			return nil, status.Error(codes.DeadlineExceeded, "Request timed out")
-		}
-		return resp, err
-	}
-}
+//func timeoutUnaryInterceptor(timeout time.Duration) grpc.UnaryServerInterceptor {
+//	return func(
+//		ctx context.Context,
+//		req interface{},
+//		info *grpc.UnaryServerInfo,
+//		handler grpc.UnaryHandler,
+//	) (interface{}, error) {
+//		// Kreiraj novi kontekst sa timeout-om
+//		ctx, cancel := context.WithTimeout(ctx, timeout)
+//		defer cancel()
+//
+//		//go func() {
+//		//	for remaining := timeout; remaining > 0; remaining -= time.Second {
+//		//		// Odbrojavanje sekundi
+//		//		fmt.Printf("Time remaining: %d seconds\n", remaining/time.Second)
+//		//		time.Sleep(time.Second)
+//		//	}
+//		//}()
+//
+//		// Obradi zahtev sa novim kontekstom
+//		resp, err := handler(ctx, req)
+//
+//		// Ako je kontekst istekao, vrati odgovarajući status
+//		if ctx.Err() == context.DeadlineExceeded {
+//			return nil, status.Error(codes.DeadlineExceeded, "Request timed out")
+//		}
+//		return resp, err
+//	}
+//}
