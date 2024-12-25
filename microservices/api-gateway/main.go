@@ -96,6 +96,27 @@ func main() {
 		log.Fatal("Notification service client is nil")
 	}
 
+	//analytics
+
+	analConn, err := grpc.DialContext(
+		ctx,
+		cfg.FullAnalServiceAddress(),
+		grpc.WithBlock(),
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
+	)
+	if err != nil {
+		log.Fatalf("Failed to dial NotificationService: %v", err)
+	}
+	analClient := gateway.NewNotificationServiceClient(analConn)
+	if err := gateway.RegisterNotificationServiceHandlerClient(ctx, gwmux, notClient); err != nil {
+		log.Fatalln("Failed to register NotService gateway:", err)
+	}
+	log.Println("NotService Gateway registered successfully.")
+	log.Println(cfg.FullNotServiceAddress())
+	if analClient == nil {
+		log.Fatal("Notification service client is nil")
+	}
+
 	// Start the HTTP server
 	gwServer := &http.Server{
 		Addr:    cfg.Address,
@@ -133,7 +154,7 @@ var rolePermissions = map[string]map[string][]string{
 	},
 	"Manager": {
 		"GET": {"/api/projects/{username}", "/api/project/{id}", "/api/tasks/{id}", "/api/task/{id}",
-			"/api/users/{username}", "/api/notifications/{userId}", "/api/tasks/{taskId}/files/{fileId}", "/api/tasks/{taskId}/files"},
+			"/api/users/{username}", "/api/notifications/{userId}", "/api/tasks/{taskId}/files/{fileId}", "/api/tasks/{taskId}/files", "/api/analytics/{id}"},
 		"POST": {"/api/project", "/api/task", "/api/tasks/files"},
 		"DELETE": {"/api/project/{id}", "/api/task/{id}", "/api/users/{username}", "/api/task/{projectId}/members/{userId}",
 			"/api/projects/{projectId}/members/{userId}", "/api/tasks/{taskId}/files/{fileId}"},

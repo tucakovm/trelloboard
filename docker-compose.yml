@@ -114,6 +114,21 @@ services:
       cassandra:
         condition: service_healthy
 
+
+  analytics-server:
+    image: analytics_server
+    build:
+      context: microservices/analytics-service
+      dockerfile: Dockerfile
+    restart: always
+    container_name: analytics-service
+    hostname: "analytics-server"
+    ports:
+      - "8005:8005"
+    env_file:
+      .env
+    depends_on:
+      - tasks_server
   mongo:
     image: mongo
     restart: always
@@ -243,8 +258,5 @@ volumes:
   mongo_express_data:
   cass_store:
   redis-data:
-
-  #namenode_data:
-  #datanode_data:
   hadoop_namenode:
   hadoop_datanode1:

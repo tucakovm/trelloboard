@@ -37,6 +37,7 @@ export class ProjectDetailsComponent implements OnInit{
   ngOnInit(): void {
     this.getProject();
     console.log(this.project)
+    this.getAnalytics();
   }
 
   getProject() {
@@ -121,4 +122,17 @@ export class ProjectDetailsComponent implements OnInit{
     return this.authService.isManager();
   }
 
+  getAnalytics() {
+    if (this.id) {
+      this.projectService.getAnalyticsByProjectId(this.id).subscribe(
+        (analyticsData) => {
+          console.log('Analytics Data:', analyticsData);
+        },
+        (error) => {
+          console.error('Error fetching analytics:', error);
+        }
+      );
+    }
+  }
 }
+

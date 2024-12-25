@@ -114,7 +114,11 @@ export class ProjectService {
       `${this.apiUrl}/projects/${id}/members/${member.id}`
     );
   }
+  getAnalyticsByProjectId(projectId: string): Observable<any> {
+    return this.http.get<any>(`${this.apiUrl}/analytics/${projectId}`);
+  }
 }
+
 
 interface User {
   id: string;
