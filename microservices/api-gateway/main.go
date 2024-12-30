@@ -103,19 +103,29 @@ func main() {
 		cfg.FullAnalServiceAddress(),
 		grpc.WithBlock(),
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
+		grpc.WithTimeout(20*time.Second),
 	)
 	if err != nil {
-		log.Fatalf("Failed to dial NotificationService: %v", err)
+		log.Fatalf("Failed to dial AnalyticsService: %v", err)
 	}
-	analClient := gateway.NewNotificationServiceClient(analConn)
-	if err := gateway.RegisterNotificationServiceHandlerClient(ctx, gwmux, notClient); err != nil {
-		log.Fatalln("Failed to register NotService gateway:", err)
+	if analConn == nil {
+		log.Fatal("gRPC connection is nil")
 	}
-	log.Println("NotService Gateway registered successfully.")
-	log.Println(cfg.FullNotServiceAddress())
+	defer analConn.Close()
+
+	analClient := gateway.NewAnalyticsServiceClient(analConn)
 	if analClient == nil {
-		log.Fatal("Notification service client is nil")
+		log.Fatal("Analytics service client is nil")
 	}
+
+	log.Println("AnalyticsService client created successfully.")
+
+	if err := gateway.RegisterAnalyticsServiceHandler(ctx, gwmux, analConn); err != nil {
+		log.Fatalf("Failed to register Analytics gateway: %v", err)
+	}
+
+	log.Println("Analytics Gateway registered successfully.")
+	log.Println("Service Address:", cfg.FullAnalServiceAddress())
 
 	// Start the HTTP server
 	gwServer := &http.Server{

@@ -129,6 +129,8 @@ services:
       .env
     depends_on:
       - tasks_server
+      - projects_server
+      - cassandra
   mongo:
     image: mongo
     restart: always

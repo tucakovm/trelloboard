@@ -18,7 +18,7 @@ type Config struct {
 func GetConfig() Config {
 
 	return Config{
-		Address:               fmt.Sprintf(":%s", os.Getenv("TASKS_SERVICE_PORT")),
+		Address:               fmt.Sprintf(":%s", os.Getenv("ANALYTICS_SERVICE_PORT")),
 		UserServicePort:       fmt.Sprintf(":%s", os.Getenv("USER_SERVICE_PORT")),
 		UserServiceAddress:    os.Getenv("USER_SERVICE_ADDRESS"),
 		ProjectServicePort:    fmt.Sprintf(":%s", os.Getenv("PROJECTS_SERVICE_PORT")),

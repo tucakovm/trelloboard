@@ -65,16 +65,16 @@ func (ar *AnalyticsRepo) CloseSession() {
 func (ar *AnalyticsRepo) CreateTables(ctx context.Context) {
 	ctx, span := ar.Tracer.Start(ctx, "r.createTables")
 	defer span.End()
-
+	// needed to change thsi so it stores frozen lists
 	err := ar.session.Query(
 		`CREATE TABLE IF NOT EXISTS analytics (
-			project_id TEXT PRIMARY KEY,
-			total_tasks INT,
-			status_counts MAP<TEXT, INT>,
-			task_status_durations MAP<TEXT, LIST<FROZEN<TaskStatusDuration>>>,
-			member_tasks MAP<TEXT, LIST<TEXT>>,
-			finished_early BOOLEAN
-		)`).Exec()
+		project_id TEXT PRIMARY KEY,
+		total_tasks INT,
+		status_counts MAP<TEXT, INT>,
+		task_status_durations MAP<TEXT, LIST<FROZEN<TaskStatusDuration>>>,
+		member_tasks MAP<TEXT, LIST<FROZEN<TEXT>>>,
+		finished_early BOOLEAN
+	)`).Exec()
 
 	if err != nil {
 		ar.logger.Println(err)
@@ -180,4 +180,33 @@ func convertCassandraMemberTasksToModel(cassandraTasks map[string][]string) map[
 		}
 	}
 	return result
+}
+
+func (ar *AnalyticsRepo) UpdateAnalytics(ctx context.Context, projectID string, analytics *models.Analytic) error {
+	ctx, span := ar.Tracer.Start(ctx, "r.updateAnalytics")
+	defer span.End()
+
+	// Construct the query to update the analytics table
+	err := ar.session.Query(
+		`UPDATE analytics 
+		SET total_tasks = ?, 
+		    status_counts = ?, 
+		    task_status_durations = ?, 
+		    member_tasks = ?, 
+		    finished_early = ? 
+		WHERE project_id = ?`,
+		analytics.TotalTasks,
+		analytics.StatusCounts,
+		convertTaskStatusDurationsToCassandra(analytics.TaskStatusDurations),
+		convertMemberTasksToCassandra(analytics.MemberTasks),
+		analytics.FinishedEarly,
+		projectID,
+	).Exec()
+
+	if err != nil {
+		ar.logger.Println(err)
+		return err
+	}
+
+	return nil
 }

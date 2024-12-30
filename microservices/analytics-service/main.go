@@ -2,6 +2,7 @@ package main
 
 import (
 	"analytics-service/config"
+	proto "analytics-service/proto/analytics"
 	"analytics-service/repositories"
 	"analytics-service/services"
 	"context"
@@ -35,12 +36,11 @@ func main() {
 
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
-
-	// Set up Jaeger exporter for OpenTelemetry
 	exp, err := newExporter(cfg.JaegerEndpoint)
 	if err != nil {
 		log.Fatalf("failed to initialize exporter: %v", err)
 	}
+
 	tp := newTraceProvider(exp)
 	defer func() { _ = tp.Shutdown(ctx) }()
 	otel.SetTracerProvider(tp)
@@ -62,10 +62,10 @@ func main() {
 	store.CreateTables(ctx)
 
 	// Create service
-	serviceAnalytics := service.NewAnalyticsService(*store, tp.Tracer("analytics-service"))
+	//serviceAnalytics := service.NewAnalyticsService(*store, tp.Tracer("analytics-service"))
 
 	// Set up NATS subscribers for task-related events
-	setupTaskEventSubscribers(ctx, natsConn, serviceAnalytics, tp.Tracer("analytics-service"))
+	setupTaskEventSubscribers(ctx, natsConn, service.AnalyticsService{}, tp.Tracer("analytics-service"))
 
 	// Set up gRPC server
 	listener, err := net.Listen("tcp", cfg.Address)
@@ -77,7 +77,7 @@ func main() {
 	grpcServer := grpc.NewServer(grpc.UnaryInterceptor(timeoutUnaryInterceptor(5 * time.Second)))
 	reflection.Register(grpcServer)
 
-	// Register gRPC service handlers (if necessary for other calls)
+	// Register gRPC service handlers
 	// handlerAnalytics, err := h.NewConnectionHandler(*serviceAnalytics, tp.Tracer("analytics-service"))
 	// if err != nil {
 	// 	log.Fatalf("Failed to create handler: %v", err)
@@ -91,6 +91,8 @@ func main() {
 		}
 	}()
 	log.Println("Analytics Service listening on port:", cfg.Address)
+
+	test()
 
 	// Graceful shutdown handling
 	stopCh := make(chan os.Signal, 1)
@@ -121,6 +123,28 @@ func timeoutUnaryInterceptor(timeout time.Duration) grpc.UnaryServerInterceptor 
 		}
 		return resp, err
 	}
+}
+func getNATSParentSpanContext(msg *nats.Msg) (trace.SpanContext, error) {
+	traceID := msg.Header.Get("trace_id")
+	spanID := msg.Header.Get("span_id")
+
+	// Validate the IDs
+	tID, err := trace.TraceIDFromHex(traceID)
+	if err != nil {
+		return trace.SpanContext{}, fmt.Errorf("invalid trace_id: %v", err)
+	}
+	sID, err := trace.SpanIDFromHex(spanID)
+	if err != nil {
+		return trace.SpanContext{}, fmt.Errorf("invalid span_id: %v", err)
+	}
+
+	// Construct the SpanContext
+	return trace.NewSpanContext(trace.SpanContextConfig{
+		TraceID:    tID,
+		SpanID:     sID,
+		TraceFlags: trace.FlagsSampled, // Adjust flags as needed
+		Remote:     true,
+	}), nil
 }
 
 // Setup NATS subscribers for task-related events
@@ -154,18 +178,19 @@ func subscribeToNATS(ctx context.Context, natsConn *nats.Conn, serviceAnalytics 
 			return
 		}
 
-		// Get parent context from NATS headers
-		remoteCtx, err := getNATSParentContext(msg)
+		// Extract SpanContext from NATS headers
+		spanCtx, err := getNATSParentSpanContext(msg)
 		if err != nil {
-			log.Fatal(err)
+			log.Printf("Error extracting SpanContext from headers: %v", err)
+			return
 		}
 
 		// Start a new span for the subscriber's work
-		_, span := tracer.Start(trace.ContextWithRemoteSpanContext(ctx, remoteCtx), "Subscriber."+subject)
+		newCtx, span := tracer.Start(trace.ContextWithRemoteSpanContext(ctx, spanCtx), "Subscriber."+subject)
 		defer span.End()
 
 		// Handle the different types of messages based on the subject
-		handleTaskEvent(ctx, message, serviceAnalytics)
+		handleTaskEvent(newCtx, message, serviceAnalytics)
 	})
 	if err != nil {
 		log.Printf("Failed to subscribe to NATS subject %s: %v", subject, err)
@@ -177,30 +202,30 @@ func handleTaskEvent(ctx context.Context, message map[string]interface{}, servic
 	projectID, _ := message["projectId"].(string)
 
 	switch message["event"] {
-	case "task-created":
+	case "create-task":
 		// Task has been created
-		taskID, _ := message["taskId"].(string)
+		taskID, _ := message["TaskId"].(string)
 		serviceAnalytics.UpdateTaskCount(ctx, projectID, 1) // Increase task count
 		log.Printf("Task created: %s for Project: %s", taskID, projectID)
 
 	case "task-status-changed":
 		// Task status has changed
-		taskID, _ := message["taskId"].(string)
+		taskID, _ := message["TaskId"].(string)
 		newStatus, _ := message["newStatus"].(string)
 		serviceAnalytics.UpdateTaskStatus(ctx, projectID, taskID, newStatus)
 		log.Printf("Task status changed: %s to %s for Project: %s", taskID, newStatus, projectID)
 
-	case "task-member-added":
+	case "add-to-task":
 		// A member has been added to a task
-		taskID, _ := message["taskId"].(string)
-		memberID, _ := message["memberId"].(string)
+		taskID, _ := message["TaskId"].(string)
+		memberID, _ := message["UserId"].(string)
 		serviceAnalytics.AddMemberToTask(ctx, projectID, taskID, memberID)
 		log.Printf("Member added: %s to Task: %s for Project: %s", memberID, taskID, projectID)
 
-	case "task-member-removed":
+	case "remove-from-task":
 		// A member has been removed from a task
-		taskID, _ := message["taskId"].(string)
-		memberID, _ := message["memberId"].(string)
+		taskID, _ := message["TaskId"].(string)
+		memberID, _ := message["UserId"].(string)
 		serviceAnalytics.RemoveMemberFromTask(ctx, projectID, taskID, memberID)
 		log.Printf("Member removed: %s from Task: %s for Project: %s", memberID, taskID, projectID)
 
@@ -228,14 +253,10 @@ func NatsConn() *nats.Conn {
 	return conn
 }
 
-// OpenTelemetry exporter setup
-func newExporter(jaegerEndpoint string) (*jaeger.Exporter, error) {
-	// Set up Jaeger exporter for OpenTelemetry
-	// Example: Use Jaeger collector endpoint to export traces
-	// (You can replace this with another exporter if needed)
-	exp, err := jaeger.New(jaeger.WithCollectorEndpoint(jaegerEndpoint))
+func newExporter(address string) (*jaeger.Exporter, error) {
+	exp, err := jaeger.New(jaeger.WithCollectorEndpoint(jaeger.WithEndpoint(address)))
 	if err != nil {
-		return nil, fmt.Errorf("failed to create exporter: %v", err)
+		return nil, err
 	}
 	return exp, nil
 }
@@ -248,9 +269,98 @@ func newTraceProvider(exp *jaeger.Exporter) *sdktrace.TracerProvider {
 	)
 }
 
-// Get NATS context for tracing
-func getNATSParentContext(msg *nats.Msg) (context.Context, error) {
-	// Assuming you're extracting trace context from NATS message headers
-	// Implement trace context extraction here (depending on your tracing setup)
-	return context.Background(), nil
+////// test code bellow
+
+func test() {
+	// Initialize mock repository and tracer (in a real application, use actual implementations)
+	mockRepo := repositories.AnalyticsRepo{}
+	mockTracer := trace.NewNoopTracerProvider().Tracer("")
+
+	// Create the AnalyticsService instance
+	analyticsService := service.NewAnalyticsService(mockRepo, mockTracer)
+
+	// Example data to use in service functions
+	analytic := &proto.Analytic{
+		ProjectId:    "project-1",
+		TotalTasks:   5,
+		StatusCounts: map[string]int32{"in-progress": 3, "completed": 2},
+	}
+
+	// Call Create and check if it was successful
+	if err := createAnalytics(analyticsService, analytic); err != nil {
+		log.Printf("Create failed: %v", err)
+	} else {
+		fmt.Println("Create successful")
+	}
+
+	// Call GetAnalytics and check if it was successful
+	if err := getAnalytics(analyticsService, "project-1"); err != nil {
+		log.Printf("GetAnalytics failed: %v", err)
+	} else {
+		fmt.Println("GetAnalytics successful")
+	}
+
+	// Call UpdateTaskCount and check if it was successful
+	if err := updateTaskCount(analyticsService, "project-1", 5); err != nil {
+		log.Printf("UpdateTaskCount failed: %v", err)
+	} else {
+		fmt.Println("UpdateTaskCount successful")
+	}
+
+	// Call UpdateTaskStatus and check if it was successful
+	if err := updateTaskStatus(analyticsService, "project-1", "task-1", "completed"); err != nil {
+		log.Printf("UpdateTaskStatus failed: %v", err)
+	} else {
+		fmt.Println("UpdateTaskStatus successful")
+	}
+
+	// Call AddMemberToTask and check if it was successful
+	if err := addMemberToTask(analyticsService, "project-1", "task-1", "member-1"); err != nil {
+		log.Printf("AddMemberToTask failed: %v", err)
+	} else {
+		fmt.Println("AddMemberToTask successful")
+	}
+
+	// Call RemoveMemberFromTask and check if it was successful
+	if err := removeMemberFromTask(analyticsService, "project-1", "task-1", "member-1"); err != nil {
+		log.Printf("RemoveMemberFromTask failed: %v", err)
+	} else {
+		fmt.Println("RemoveMemberFromTask successful")
+	}
+}
+
+// createAnalytics calls the Create method of AnalyticsService
+func createAnalytics(service *service.AnalyticsService, analytic *proto.Analytic) error {
+	err := service.Create(context.Background(), analytic)
+	return err
+}
+
+// getAnalytics calls the GetAnalytics method of AnalyticsService
+func getAnalytics(service *service.AnalyticsService, projectID string) error {
+	_, err := service.GetAnalytics(context.Background(), projectID)
+	return err
+}
+
+// updateTaskCount calls the UpdateTaskCount method of AnalyticsService
+func updateTaskCount(service *service.AnalyticsService, projectID string, countDelta int) error {
+	err := service.UpdateTaskCount(context.Background(), projectID, countDelta)
+	return err
+}
+
+// updateTaskStatus calls the UpdateTaskStatus method of AnalyticsService
+func updateTaskStatus(service *service.AnalyticsService, projectID, taskID, newStatus string) error {
+	err := service.UpdateTaskStatus(context.Background(), projectID, taskID, newStatus)
+	return err
+}
+
+// addMemberToTask calls the AddMemberToTask method of AnalyticsService
+func addMemberToTask(service *service.AnalyticsService, projectID, taskID, memberID string) error {
+	err := service.AddMemberToTask(context.Background(), projectID, taskID, memberID)
+	return err
+}
+
+// removeMemberFromTask calls the RemoveMemberFromTask method of AnalyticsService
+func removeMemberFromTask(service *service.AnalyticsService, projectID, taskID, memberID string) error {
+	err := service.RemoveMemberFromTask(context.Background(), projectID, taskID, memberID)
+	return err
 }
