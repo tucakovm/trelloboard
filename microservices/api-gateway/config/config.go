@@ -30,8 +30,8 @@ func GetConfig() Config {
 		UserServiceAddress:      os.Getenv("USER_SERVICE_ADDRESS"),
 		NotServicePort:          fmt.Sprintf(":%s", os.Getenv("NOTIFICATIONS_SERVICE_PORT")),
 		NotServiceAddress:       os.Getenv("NOTIFICATIONS_SERVICE_ADDRESS"),
+		AnalyticsServicePort:    fmt.Sprintf(":%s", os.Getenv("ANALYTICS_SERVICE_PORT")),
 		AnalyticsServiceAddress: os.Getenv("ANALYTICS_SERVICE_ADDRESS"),
-		AnalyticsServicePort:    os.Getenv("ANALYTICS_SERVICE_PORT"),
 	}
 }
 

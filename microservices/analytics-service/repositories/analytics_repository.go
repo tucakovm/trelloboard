@@ -65,20 +65,37 @@ func (ar *AnalyticsRepo) CloseSession() {
 func (ar *AnalyticsRepo) CreateTables(ctx context.Context) {
 	ctx, span := ar.Tracer.Start(ctx, "r.createTables")
 	defer span.End()
-	// needed to change thsi so it stores frozen lists
-	err := ar.session.Query(
-		`CREATE TABLE IF NOT EXISTS analytics (
-		project_id TEXT PRIMARY KEY,
-		total_tasks INT,
-		status_counts MAP<TEXT, INT>,
-		task_status_durations MAP<TEXT, LIST<FROZEN<TaskStatusDuration>>>,
-		member_tasks MAP<TEXT, LIST<FROZEN<TEXT>>>,
-		finished_early BOOLEAN
-	)`).Exec()
+	log.Println("started create tables func")
 
+	// Define the UDT for TaskStatusDuration, CASSANDRA doesnt allow frozen for udts (user defined types) unless they are
+	// defined as frozen
+	err := ar.session.Query(
+		`CREATE TYPE IF NOT EXISTS TaskStatusDuration (
+			status TEXT,
+			duration BIGINT
+		)`).Exec()
 	if err != nil {
-		ar.logger.Println(err)
+		ar.logger.Printf("Failed to create UDT TaskStatusDuration: %v", err)
+		return
 	}
+
+	// Create the analytics table with the corrected schema
+	err = ar.session.Query(
+		`CREATE TABLE IF NOT EXISTS analytics (
+			project_id TEXT PRIMARY KEY,
+			total_tasks INT,
+			status_counts MAP<TEXT, INT>,
+			task_status_durations MAP<TEXT, FROZEN<LIST<FROZEN<TaskStatusDuration>>>>,
+			member_tasks MAP<TEXT, FROZEN<LIST<TEXT>>>,
+			finished_early BOOLEAN
+		)`).Exec()
+	if err != nil {
+		ar.logger.Printf("Failed to create table analytics: %v", err)
+		return
+	}
+	log.Println("Created table successfully")
+
+	ar.logger.Println("Successfully created/verified analytics table and UDT")
 }
 
 // InsertAnalytics inserts an analytic entry into Cassandra
@@ -93,8 +110,8 @@ func (ar *AnalyticsRepo) InsertAnalytics(ctx context.Context, analytic *models.A
 		analytic.ProjectID,
 		analytic.TotalTasks,
 		analytic.StatusCounts,
-		convertTaskStatusDurationsToCassandra(analytic.TaskStatusDurations), // Convert to appropriate format
-		convertMemberTasksToCassandra(analytic.MemberTasks),                 // Convert to appropriate format
+		convertTaskStatusDurationsToCassandra(analytic.TaskStatusDurations),
+		convertMemberTasksToCassandra(analytic.MemberTasks),
 		analytic.FinishedEarly,
 	).Exec()
 

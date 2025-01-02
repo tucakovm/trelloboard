@@ -98,6 +98,7 @@ func main() {
 
 	//analytics
 
+	log.Println("analytics service addres:", cfg.FullAnalServiceAddress())
 	analConn, err := grpc.DialContext(
 		ctx,
 		cfg.FullAnalServiceAddress(),
@@ -132,6 +133,7 @@ func main() {
 		Addr:    cfg.Address,
 		Handler: enableCORS(gwmux),
 	}
+	log.Println("http server started successfully")
 
 	go func() {
 		log.Printf("API Gateway listening on %s\n", cfg.Address)

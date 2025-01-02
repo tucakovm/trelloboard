@@ -2,6 +2,7 @@ package main
 
 import (
 	"analytics-service/config"
+	h "analytics-service/handlers"
 	proto "analytics-service/proto/analytics"
 	"analytics-service/repositories"
 	"analytics-service/services"
@@ -36,6 +37,7 @@ func main() {
 
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
+
 	exp, err := newExporter(cfg.JaegerEndpoint)
 	if err != nil {
 		log.Fatalf("failed to initialize exporter: %v", err)
@@ -62,43 +64,43 @@ func main() {
 	store.CreateTables(ctx)
 
 	// Create service
-	//serviceAnalytics := service.NewAnalyticsService(*store, tp.Tracer("analytics-service"))
+	serviceAnalytics := service.NewAnalyticsService(*store, tp.Tracer("analytics-service"))
 
-	// Set up NATS subscribers for task-related events
+	// Set up NATS subscribers
 	setupTaskEventSubscribers(ctx, natsConn, service.AnalyticsService{}, tp.Tracer("analytics-service"))
 
 	// Set up gRPC server
 	listener, err := net.Listen("tcp", cfg.Address)
 	if err != nil {
-		log.Fatalln(err)
+		log.Fatalf("Failed to listen on %s: %v", cfg.Address, err)
 	}
 	defer listener.Close()
 
 	grpcServer := grpc.NewServer(grpc.UnaryInterceptor(timeoutUnaryInterceptor(5 * time.Second)))
 	reflection.Register(grpcServer)
 
-	// Register gRPC service handlers
-	// handlerAnalytics, err := h.NewConnectionHandler(*serviceAnalytics, tp.Tracer("analytics-service"))
-	// if err != nil {
-	// 	log.Fatalf("Failed to create handler: %v", err)
-	// }
-	// analytics.RegisterAnalyticsServiceServer(grpcServer, handlerAnalytics)
+	// Register gRPC handlers
+	handlerAnalytics, err := h.NewAnalyticsHandler(*serviceAnalytics, tp.Tracer("analytics-service"))
+	if err != nil {
+		log.Fatalf("Failed to create handler: %v", err)
+	}
+	proto.RegisterAnalyticsServiceServer(grpcServer, handlerAnalytics)
 
 	// Start gRPC server in a goroutine
 	go func() {
+		log.Println("Analytics Service listening on port:", cfg.Address)
 		if err := grpcServer.Serve(listener); err != nil {
-			log.Fatal("server error: ", err)
+			log.Fatalf("server error: %v", err)
 		}
 	}()
-	log.Println("Analytics Service listening on port:", cfg.Address)
 
 	test()
 
-	// Graceful shutdown handling
+	// Graceful shutdown
 	stopCh := make(chan os.Signal, 1)
-	signal.Notify(stopCh, syscall.SIGTERM)
+	signal.Notify(stopCh, syscall.SIGTERM, syscall.SIGINT)
 	<-stopCh
-	grpcServer.Stop()
+	grpcServer.GracefulStop()
 	log.Println("Analytics Service stopped")
 }
 
@@ -142,7 +144,7 @@ func getNATSParentSpanContext(msg *nats.Msg) (trace.SpanContext, error) {
 	return trace.NewSpanContext(trace.SpanContextConfig{
 		TraceID:    tID,
 		SpanID:     sID,
-		TraceFlags: trace.FlagsSampled, // Adjust flags as needed
+		TraceFlags: trace.FlagsSampled,
 		Remote:     true,
 	}), nil
 }
@@ -152,9 +154,9 @@ func setupTaskEventSubscribers(ctx context.Context, natsConn *nats.Conn, service
 	// List of subjects and subscription handlers
 	subjects := []string{
 		"task-status-changed",
-		"task-created",
-		"task-member-added",
-		"task-member-removed",
+		"create-task",
+		"add-to-task",
+		"remove-from-task",
 	}
 
 	// Loop over each subject and set up a corresponding subscriber
@@ -297,36 +299,40 @@ func test() {
 	if err := getAnalytics(analyticsService, "project-1"); err != nil {
 		log.Printf("GetAnalytics failed: %v", err)
 	} else {
-		fmt.Println("GetAnalytics successful")
+		log.Println("GetAnalytics successful")
 	}
 
 	// Call UpdateTaskCount and check if it was successful
 	if err := updateTaskCount(analyticsService, "project-1", 5); err != nil {
 		log.Printf("UpdateTaskCount failed: %v", err)
 	} else {
-		fmt.Println("UpdateTaskCount successful")
+		log.Println("UpdateTaskCount successful")
 	}
 
 	// Call UpdateTaskStatus and check if it was successful
 	if err := updateTaskStatus(analyticsService, "project-1", "task-1", "completed"); err != nil {
 		log.Printf("UpdateTaskStatus failed: %v", err)
 	} else {
-		fmt.Println("UpdateTaskStatus successful")
+		log.Println("UpdateTaskStatus successful")
 	}
 
 	// Call AddMemberToTask and check if it was successful
 	if err := addMemberToTask(analyticsService, "project-1", "task-1", "member-1"); err != nil {
 		log.Printf("AddMemberToTask failed: %v", err)
 	} else {
-		fmt.Println("AddMemberToTask successful")
+		log.Println("AddMemberToTask successful")
 	}
 
 	// Call RemoveMemberFromTask and check if it was successful
 	if err := removeMemberFromTask(analyticsService, "project-1", "task-1", "member-1"); err != nil {
 		log.Printf("RemoveMemberFromTask failed: %v", err)
 	} else {
-		fmt.Println("RemoveMemberFromTask successful")
+		log.Println("RemoveMemberFromTask successful")
 	}
+
+	anal := getAnalytics(analyticsService, "project-1")
+	log.Println(anal)
+
 }
 
 // createAnalytics calls the Create method of AnalyticsService
