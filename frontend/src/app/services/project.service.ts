@@ -4,7 +4,7 @@ import { map, Observable } from 'rxjs';
 import { Project } from '../model/project';
 import { UserFP } from '../model/userForProject';
 import { catchError } from 'rxjs/operators';
-import { of } from 'rxjs';
+import { of , timeout} from 'rxjs';
 import { AuthService } from './auth.service';
 
 @Injectable({
@@ -33,7 +33,7 @@ export class ProjectService {
     return new Date(); // Default to current date if invalid timestamp
   }
 
-  getAllProjects(username: string): Observable<Project[]> {
+  getAllProjects(username: string, userId: string): Observable<Project[]> {
     return this.http.get<any>(`${this.apiUrl}/projects/${username}`).pipe(
       map((response: any) => {
         console.log('API Response:', response); // Proveri strukturu odgovora
@@ -52,10 +52,10 @@ export class ProjectService {
               }),
               item.members && Array.isArray(item.members)
                 ? item.members.map((member: any) => ({
-                    id: member.id,
-                    username: member.username,
-                    role: member.role,
-                  }))
+                  id: member.id,
+                  username: member.username,
+                  role: member.role,
+                }))
                 : [] // Ako je null ili nije niz, vraća prazan niz
             )
         );
@@ -71,7 +71,7 @@ export class ProjectService {
     return this.http.delete<void>(`${this.apiUrl}/project/${id}`);
   }
 
-  getById(id: string): Observable<Project | null> {
+  getById(id: string, userId: string): Observable<Project | null> {
     return this.http.get<any>(`${this.apiUrl}/project/${id}`).pipe(
       map((response: any) => {
         console.log('API Response:', response);

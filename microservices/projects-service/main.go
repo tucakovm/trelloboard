@@ -68,7 +68,18 @@ func main() {
 		grpc.WithUnaryInterceptor(otelgrpc.UnaryClientInterceptor()),
 	)
 	taskClient := proj.NewTaskServiceClient(taskConn)
-	log.Println("TaskService Gateway registered successfully.")
+	log.Println("TaskService registered successfully.")
+
+	// UserService connection
+	userConn, err := grpc.DialContext(
+		ctx,
+		cfg.FullUserServiceAddress(),
+		grpc.WithBlock(),
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
+		grpc.WithUnaryInterceptor(otelgrpc.UnaryClientInterceptor()),
+	)
+	userClient := proj.NewUserServiceClient(userConn)
+	log.Println("UserService registered successfully.")
 
 	//Nats Conn
 	natsConn := NatsConn()
@@ -93,7 +104,7 @@ func main() {
 	serviceProject, err := services.NewProjectService(*repoProject, tracer)
 	handleErr(err)
 
-	handlerProject, err := h.NewConnectionHandler(serviceProject, taskClient, natsConn, tracer)
+	handlerProject, err := h.NewConnectionHandler(serviceProject, taskClient, userClient, natsConn, tracer)
 
 	handleErr(err)
 

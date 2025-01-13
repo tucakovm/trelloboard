@@ -3,6 +3,8 @@ package service
 import (
 	"context"
 	"encoding/base64"
+	"fmt"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	otelCodes "go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/trace"
 	"google.golang.org/grpc/codes"
@@ -24,8 +26,10 @@ func NewTaskService(repo repository.TaskRepo, tracer trace.Tracer) *TaskService 
 	return &TaskService{repo: repo, Tracer: tracer}
 }
 
-func (s *TaskService) Create(taskReq *proto.Task, ctx context.Context) error {
+func (s *TaskService) Create(taskID primitive.ObjectID, taskReq *proto.Task, ctx context.Context) error {
+
 	newTask := &domain.Task{
+		Id:          taskID,
 		Name:        taskReq.Name,
 		Description: taskReq.Description,
 		Status:      0,
@@ -221,4 +225,187 @@ func (s *TaskService) GetTaskFiles(taskID string) ([]string, error) {
 	}
 
 	return files, nil
+}
+
+func (s TaskService) GetByIdCache(taskID string, ctx context.Context) (*proto.Task, error) {
+	ctx, span := s.Tracer.Start(ctx, "s.GetByIdCache")
+	defer span.End()
+
+	task, err := s.repo.GetCache(taskID, ctx)
+
+	if err != nil {
+		span.SetStatus(otelCodes.Error, err.Error())
+		return nil, status.Error(codes.Internal, "DB exception.")
+	}
+
+	var protoMembers []*proto.User
+	for _, member := range task.Members {
+		protoMembers = append(protoMembers, &proto.User{
+			Id:       member.Id,
+			Username: member.Username,
+			Role:     member.Role,
+		})
+	}
+
+	protoTask := &proto.Task{
+		Id:          task.Id.Hex(),
+		Name:        task.Name,
+		Description: task.Description,
+		Status:      task.Status.String(),
+		ProjectId:   task.ProjectID,
+		Members:     protoMembers,
+	}
+	return protoTask, nil
+}
+
+func (s TaskService) PostTaskCache(t *proto.Task, ctx context.Context) error {
+	ctx, span := s.Tracer.Start(ctx, "s.PostAllTasksCache")
+	defer span.End()
+
+	taskID, err := primitive.ObjectIDFromHex(t.Id)
+	if err != nil {
+		return fmt.Errorf("invalid ObjectID: %v", err)
+	}
+
+	status, err := domain.ParseTaskStatus2(t.Status)
+	if err != nil {
+		return err
+	}
+
+	var members []domain.User
+
+	for _, m := range t.Members {
+		member := domain.User{
+			Id:       m.Id,
+			Username: m.Username,
+			Role:     m.Role,
+		}
+		members = append(members, member)
+	}
+
+	task := &domain.Task{
+		Id:          taskID,
+		Name:        t.Name,
+		Description: t.Description,
+		Status:      status,
+		ProjectID:   t.ProjectId,
+		Members:     members,
+	}
+
+	return s.repo.PostOne(task, ctx)
+}
+
+func (s TaskService) GetAllTasksCache(projectId string, ctx context.Context) ([]*proto.Task, error) {
+	log.Println("useo taskove kes")
+	if s.Tracer == nil {
+		log.Println("Tracer is nil")
+		return nil, status.Error(codes.Internal, "tracer is not initialized")
+	}
+	ctx, span := s.Tracer.Start(ctx, "s.GetAllTasksCache")
+	defer span.End()
+	tasks, err := s.repo.GetAllProjectsCache(projectId, ctx)
+	if err != nil {
+		return nil, status.Error(codes.Internal, "DB exception.")
+	}
+
+	var protoTasks []*proto.Task
+	for _, dp := range tasks {
+		var protoMembers []*proto.User
+		for _, member := range dp.Members {
+			protoMembers = append(protoMembers, &proto.User{
+				Id:       member.Id,
+				Username: member.Username,
+				Role:     member.Role,
+			})
+		}
+
+		protoTasks = append(protoTasks, &proto.Task{
+			Id:          dp.Id.Hex(),
+			Name:        dp.Name,
+			Description: dp.Description,
+			Status:      dp.Status.String(),
+			ProjectId:   dp.ProjectID,
+			Members:     protoMembers,
+		})
+	}
+	return protoTasks, nil
+}
+
+func (s TaskService) PostAllTasksCache(projectId string, projects []*proto.Task, ctx context.Context) error {
+	ctx, span := s.Tracer.Start(ctx, "s.PostAllTasksCache")
+	defer span.End()
+
+	var prjs domain.Tasks
+
+	for _, p := range projects {
+
+		prjId, err := primitive.ObjectIDFromHex(p.Id)
+		if err != nil {
+			return fmt.Errorf("invalid ObjectID: %v", err)
+		}
+
+		var members []domain.User
+
+		for _, m := range p.Members {
+			member := domain.User{
+				Id:       m.Id,
+				Username: m.Username,
+				Role:     m.Role,
+			}
+			members = append(members, member) // Correctly appending to the slice
+		}
+
+		status, err := domain.ParseTaskStatus2(p.Status)
+		if err != nil {
+			return err
+		}
+
+		prj := &domain.Task{
+			Id:          prjId,
+			Name:        p.Name,
+			Description: p.Description,
+			Status:      status,
+			ProjectID:   p.ProjectId,
+			Members:     members,
+		}
+		prjs = append(prjs, prj)
+	}
+
+	return s.repo.PostAll(projectId, prjs, ctx)
+}
+
+func (s TaskService) PostTaskCacheTTL(taskId primitive.ObjectID, t *proto.Task, ctx context.Context) error {
+	ctx, span := s.Tracer.Start(ctx, "s.PostAllTasksCacheTTL")
+	defer span.End()
+
+	statusTask, err := domain.ParseTaskStatus2(t.Status)
+	if err != nil {
+		return err
+	}
+
+	var members []domain.User
+
+	for _, m := range t.Members {
+		member := domain.User{
+			Id:       m.Id,
+			Username: m.Username,
+			Role:     m.Role,
+		}
+		members = append(members, member)
+	}
+
+	task := &domain.Task{
+		Id:          taskId,
+		Name:        t.Name,
+		Description: t.Description,
+		Status:      statusTask,
+		ProjectID:   t.ProjectId,
+		Members:     members,
+	}
+
+	return s.repo.Post(task, ctx)
+}
+
+func (s TaskService) DeleteFromCache(key string, projId string, ctx context.Context) error {
+	return s.repo.DeleteByKey(key, projId, ctx)
 }

@@ -11,6 +11,7 @@ type BlacklistConsul struct {
 }
 
 func NewBlacklistConsul(address string) (*BlacklistConsul, error) {
+	log.Printf("Connecting to Consul at address: %s", address)
 	client, err := api.NewClient(&api.Config{
 		Address: address,
 	})
@@ -19,12 +20,18 @@ func NewBlacklistConsul(address string) (*BlacklistConsul, error) {
 		return nil, err
 	}
 
+	_, err = client.Agent().Self()
+	if err != nil {
+		log.Printf("Failed to connect to Consul agent: %v", err)
+		return nil, err
+	}
+	log.Println("Successfully connected to Consul")
+
 	if err := initializeBlacklist(client); err != nil {
 		log.Printf("Failed to initialize blacklist: %v", err)
 		return nil, err
 	}
 
-	// Perform checks or setup as needed
 	return &BlacklistConsul{Client: client}, nil
 }
 

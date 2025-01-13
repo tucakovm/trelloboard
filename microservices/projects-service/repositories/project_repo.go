@@ -2,8 +2,10 @@ package repositories
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/go-redis/redis"
 	otelCodes "go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/trace"
 	"google.golang.org/grpc/codes"
@@ -23,6 +25,7 @@ import (
 type ProjectRepo struct {
 	cli    *mongo.Client
 	Tracer trace.Tracer
+	cache  *redis.Client
 }
 
 func (pr *ProjectRepo) Disconnect(ctx context.Context) error {
@@ -130,11 +133,18 @@ func insertInitialProjects(client *mongo.Client) error {
 func New(ctx context.Context, logger *log.Logger, tracer trace.Tracer) (*ProjectRepo, error) {
 
 	dburi := os.Getenv("MONGO_DB_URI")
+	redisHost := os.Getenv("REDIS_HOST")
+	redisPort := os.Getenv("REDIS_PORT")
+	redisAddress := fmt.Sprintf("%s:%s", redisHost, redisPort)
 
 	client, err := mongo.Connect(ctx, options.Client().ApplyURI(dburi))
 	if err != nil {
 		return nil, err
 	}
+
+	clientRedis := redis.NewClient(&redis.Options{
+		Addr: redisAddress,
+	})
 
 	// Optionally, check if the connection is valid by pinging the database
 	err = client.Ping(ctx, nil)
@@ -149,6 +159,7 @@ func New(ctx context.Context, logger *log.Logger, tracer trace.Tracer) (*Project
 	return &ProjectRepo{
 		cli:    client,
 		Tracer: tracer,
+		cache:  clientRedis,
 	}, nil
 }
 
@@ -417,3 +428,152 @@ func (pr *ProjectRepo) RemoveMember(projectId string, userId string, ctx context
 	log.Printf("User %s removed from project %s", userId, projectId)
 	return nil
 }
+
+//REDIS---------------
+
+func (pc *ProjectRepo) Post(project *domain.Project, ctx context.Context) error {
+	ctx, span := pc.Tracer.Start(ctx, "r.PostProjectCache")
+	defer span.End()
+
+	key := project.Manager.Username
+	value, err := json.Marshal(project)
+	if err != nil {
+		return err
+	}
+	tllKey := constructKeyProjects(key)
+	ttl, err := pc.cache.TTL(tllKey).Result()
+	if err != nil {
+		return err
+	}
+
+	err = pc.cache.Set(constructKeyProjects(key), value, ttl).Err()
+
+	return nil
+}
+
+func (pc *ProjectRepo) PostOne(project *domain.Project, ctx context.Context) error {
+	ctx, span := pc.Tracer.Start(ctx, "r.PostProjectCache")
+	defer span.End()
+
+	prjID := project.Id
+	value, err := json.Marshal(project)
+	if err != nil {
+		return err
+	}
+
+	err = pc.cache.Set(constructKeyOneProject(prjID.Hex()), value, 30*time.Second).Err()
+	log.Println("Cache hit [Post]")
+
+	return err
+}
+
+func (pc *ProjectRepo) PostAll(managerId string, products domain.Projects, ctx context.Context) error {
+	ctx, span := pc.Tracer.Start(ctx, "r.PostAllProjectsCache")
+	defer span.End()
+
+	value, err := json.Marshal(products)
+	if err != nil {
+		return err
+	}
+
+	err = pc.cache.Set(constructKeyProjects(managerId), value, 30*time.Second).Err()
+	log.Println("Cache hit [PostAll]")
+	return err
+}
+
+func (pc *ProjectRepo) Get(projectId string, ctx context.Context) (*domain.Project, error) {
+	ctx, span := pc.Tracer.Start(ctx, "r.GetByIdCache")
+	defer span.End()
+
+	value, err := pc.cache.Get(constructKeyOneProject(projectId)).Bytes()
+	if err != nil {
+		return nil, err
+	}
+
+	product := &domain.Project{}
+	err = json.Unmarshal(value, product)
+	if err != nil {
+		return nil, err
+	}
+
+	//pc.logger.Println("Cache hit")
+	//log.Printf("Cache hit[Get]")
+	return product, nil
+}
+
+func (pr *ProjectRepo) GetAllProjectsCache(managerId string, ctx context.Context) (domain.Projects, error) {
+	ctx, span := pr.Tracer.Start(ctx, "r.GetAllProjectsCache")
+	defer span.End()
+	values, err := pr.cache.Get(constructKeyProjects(managerId)).Bytes()
+	if err != nil {
+		return domain.Projects{}, err
+	}
+
+	products := &domain.Projects{}
+	err = json.Unmarshal(values, products)
+	if err != nil {
+		return domain.Projects{}, err
+	}
+
+	//pr.logger.Println("Cache hit")
+	//log.Printf("Cache hit[GetAll]")
+	return *products, nil
+}
+
+func (pc *ProjectRepo) DeleteByKey(key string, username string, ctx context.Context) error {
+	ctx, span := pc.Tracer.Start(ctx, "r.DeleteByKey")
+	defer span.End()
+
+	err := pc.cache.Del(key).Err()
+	if err != nil {
+		log.Printf("Failed to delete cache for key %s: %v", key, err)
+	}
+
+	values, err := pc.cache.Get(constructKeyProjects(username)).Bytes()
+	if err != nil {
+		return err
+	}
+
+	projects := &domain.Projects{}
+	err = json.Unmarshal(values, projects)
+	if err != nil {
+		return err
+	}
+
+	filteredProjects := domain.Projects{}
+
+	for _, prj := range *projects {
+		if prj.Id.Hex() != key {
+			filteredProjects = append(filteredProjects, prj)
+		}
+	}
+
+	err = pc.cache.Del(constructKeyProjects(username)).Err()
+	if err != nil {
+		log.Printf("Failed to delete cache projects for key %s: %v", key, err)
+	}
+
+	value, err := json.Marshal(filteredProjects)
+	if err != nil {
+		return err
+	}
+
+	err = pc.cache.Set(username, value, 30*time.Second).Err()
+	if err != nil {
+		log.Printf("Failed to set cache projects for key %s: %v", key, err)
+		return err
+	}
+
+	return nil
+}
+
+//func (pr *ProjectRepo) Exists(id string, managerId string) bool {
+//	cnt, err := pr.cache.Exists(constructKeyOneProject(id, managerId)).Result()
+//	if cnt == 1 {
+//		return true
+//	}
+//	if err != nil {
+//		return false
+//	}
+//	return false
+//}

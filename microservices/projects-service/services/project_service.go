@@ -2,6 +2,8 @@ package services
 
 import (
 	"context"
+	"fmt"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"log"
 	"projects_module/domain"
 	proto "projects_module/proto/project"
@@ -27,13 +29,14 @@ func NewProjectService(repo repositories.ProjectRepo, tracer trace.Tracer) (Proj
 	}, nil
 }
 
-func (s ProjectService) Create(req *proto.Project, ctx context.Context) error {
+func (s ProjectService) Create(projectID primitive.ObjectID, req *proto.Project, ctx context.Context) error {
 
 	ctx, span := s.Tracer.Start(ctx, "s.createProject")
 	defer span.End()
 	completionDate := req.CompletionDate.AsTime()
 
 	prj := &domain.Project{
+		Id:             projectID,
 		Name:           req.Name,
 		CompletionDate: completionDate.UTC(),
 		MinMembers:     req.MinMembers,
@@ -177,4 +180,195 @@ func (s ProjectService) AddMember(projectId string, protoUser *proto.User, ctx c
 
 func (s ProjectService) RemoveMember(projectId string, userId string, ctx context.Context) error {
 	return s.repo.RemoveMember(projectId, userId, ctx)
+}
+
+func (s ProjectService) GetByIdCache(prjId string, ctx context.Context) (*proto.Project, error) {
+	ctx, span := s.Tracer.Start(ctx, "s.GetByIdCache")
+	defer span.End()
+
+	prj, err := s.repo.Get(prjId, ctx)
+
+	if err != nil {
+		span.SetStatus(otelCodes.Error, err.Error())
+		return nil, status.Error(codes.Internal, "DB exception.")
+	}
+	var protoMembers []*proto.User
+	for _, member := range prj.Members {
+		protoMembers = append(protoMembers, &proto.User{
+			Id:       member.Id,
+			Username: member.Username,
+			Role:     member.Role,
+		})
+	}
+
+	protoProject := &proto.Project{
+		Id:             prj.Id.Hex(),
+		Name:           prj.Name,
+		CompletionDate: timestamppb.New(prj.CompletionDate),
+		MinMembers:     int32(prj.MinMembers),
+		MaxMembers:     int32(prj.MaxMembers),
+		Manager: &proto.User{
+			Id:       prj.Manager.Id,
+			Username: prj.Manager.Username,
+			Role:     prj.Manager.Role,
+		},
+		Members: protoMembers,
+	}
+	return protoProject, nil
+}
+
+func (s ProjectService) GetAllProjectsCache(managerId string, ctx context.Context) ([]*proto.Project, error) {
+	if s.Tracer == nil {
+		log.Println("Tracer is nil")
+		return nil, status.Error(codes.Internal, "tracer is not initialized")
+	}
+	ctx, span := s.Tracer.Start(ctx, "s.GetAllProjectsCache")
+	defer span.End()
+	projects, err := s.repo.GetAllProjectsCache(managerId, ctx)
+	if err != nil {
+		return nil, status.Error(codes.Internal, "DB exception.")
+	}
+
+	var protoProjects []*proto.Project
+	for _, dp := range projects {
+		var protoMembers []*proto.User
+		for _, member := range dp.Members {
+			protoMembers = append(protoMembers, &proto.User{
+				Id:       member.Id,
+				Username: member.Username,
+				Role:     member.Role,
+			})
+		}
+		protoProjects = append(protoProjects, &proto.Project{
+			Id:             dp.Id.Hex(),
+			Name:           dp.Name,
+			CompletionDate: timestamppb.New(dp.CompletionDate),
+			MinMembers:     int32(dp.MinMembers),
+			MaxMembers:     int32(dp.MaxMembers),
+			Manager: &proto.User{
+				Id:       dp.Manager.Id,
+				Username: dp.Manager.Username,
+				Role:     dp.Manager.Role,
+			},
+			Members: protoMembers,
+		})
+	}
+	return protoProjects, nil
+}
+
+func (s ProjectService) PostAllProjectsCache(managerId string, projects []*proto.Project, ctx context.Context) error {
+	ctx, span := s.Tracer.Start(ctx, "s.PostAllProjectsCache")
+	defer span.End()
+
+	var prjs domain.Projects
+
+	for _, p := range projects {
+		completionDate := p.CompletionDate.AsTime()
+		prjId, err := primitive.ObjectIDFromHex(p.Id)
+		if err != nil {
+			return fmt.Errorf("invalid ObjectID: %v", err)
+		}
+
+		var members []domain.User
+
+		for _, m := range p.Members {
+			member := domain.User{
+				Id:       m.Id,
+				Username: m.Username,
+				Role:     m.Role,
+			}
+			members = append(members, member) // Correctly appending to the slice
+		}
+
+		prj := &domain.Project{
+			Id:             prjId,
+			Name:           p.Name,
+			CompletionDate: completionDate.UTC(),
+			MinMembers:     p.MinMembers,
+			MaxMembers:     p.MaxMembers,
+			Manager: domain.User{
+				Id:       p.Manager.Id,
+				Username: p.Manager.Username,
+				Role:     p.Manager.Role,
+			},
+			Members: members,
+		}
+		prjs = append(prjs, prj)
+	}
+
+	return s.repo.PostAll(managerId, prjs, ctx)
+}
+
+func (s ProjectService) PostProjectCache(p *proto.Project, ctx context.Context) error {
+	ctx, span := s.Tracer.Start(ctx, "s.PostAllProjectsCache")
+	defer span.End()
+
+	completionDate := p.CompletionDate.AsTime()
+	prjId, err := primitive.ObjectIDFromHex(p.Id)
+	if err != nil {
+		return fmt.Errorf("invalid ObjectID: %v", err)
+	}
+
+	var members []domain.User
+
+	for _, m := range p.Members {
+		member := domain.User{
+			Id:       m.Id,
+			Username: m.Username,
+			Role:     m.Role,
+		}
+		members = append(members, member)
+	}
+
+	prj := &domain.Project{
+		Id:             prjId,
+		Name:           p.Name,
+		CompletionDate: completionDate.UTC(),
+		MinMembers:     p.MinMembers,
+		MaxMembers:     p.MaxMembers,
+		Manager: domain.User{
+			Id:       p.Manager.Id,
+			Username: p.Manager.Username,
+			Role:     p.Manager.Role,
+		}, Members: members,
+	}
+
+	return s.repo.PostOne(prj, ctx)
+}
+
+func (s ProjectService) PostProjectCacheTTL(projectId primitive.ObjectID, p *proto.Project, ctx context.Context) error {
+	ctx, span := s.Tracer.Start(ctx, "s.PostAllProjectsCache")
+	defer span.End()
+
+	completionDate := p.CompletionDate.AsTime()
+
+	var members []domain.User
+
+	for _, m := range p.Members {
+		member := domain.User{
+			Id:       m.Id,
+			Username: m.Username,
+			Role:     m.Role,
+		}
+		members = append(members, member)
+	}
+
+	prj := &domain.Project{
+		Id:             projectId,
+		Name:           p.Name,
+		CompletionDate: completionDate.UTC(),
+		MinMembers:     p.MinMembers,
+		MaxMembers:     p.MaxMembers,
+		Manager: domain.User{
+			Id:       p.Manager.Id,
+			Username: p.Manager.Username,
+			Role:     p.Manager.Role,
+		}, Members: members,
+	}
+
+	return s.repo.Post(prj, ctx)
+}
+
+func (s ProjectService) DeleteFromCache(key string, username string, ctx context.Context) error {
+	return s.repo.DeleteByKey(key, username, ctx)
 }

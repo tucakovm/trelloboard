@@ -46,7 +46,8 @@ export class AddMemberComponent implements OnInit {
         let user: UserFP = new UserFP(resp.user.id, resp.user.username, resp.user.role);
 
         if (this.id && user) {
-          this.projectService.getById(this.id).subscribe((resp) => {
+          let userId = this.authService.getUserId();
+          this.projectService.getById(this.id, userId).subscribe((resp) => {
             this.project = resp;
 
             this.userAlreadyExists = false; // Resetuje se pri svakom pokušaju dodavanja

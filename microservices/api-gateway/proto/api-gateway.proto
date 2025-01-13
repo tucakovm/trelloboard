@@ -7,6 +7,11 @@ import "google/api/annotations.proto";
 
 
 service ProjectService {
+//  rpc GetAllProjects(GetAllProjectsReq) returns (GetAllProjectsRes) {
+//    option (google.api.http) = {
+//      get: "/api/projects/{userId}/{username}"
+//    };
+//  }
   rpc GetAllProjects(GetAllProjectsReq) returns (GetAllProjectsRes) {
     option (google.api.http) = {
       get: "/api/projects/{username}"
@@ -73,6 +78,7 @@ message GetAllProjectsRes {
   repeated Project projects = 1;
 }
 message GetAllProjectsReq {
+//  string userId = 1;
   string username = 1;
 }
 message CreateProjectReq {

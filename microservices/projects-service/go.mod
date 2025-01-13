@@ -3,6 +3,7 @@ module projects_module
 go 1.22.9
 
 require (
+	github.com/go-redis/redis v6.15.9+incompatible
 	github.com/nats-io/nats.go v1.37.0
 	go.mongodb.org/mongo-driver v1.17.1
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.57.0
@@ -23,6 +24,8 @@ require (
 	github.com/montanaflynn/stats v0.7.1 // indirect
 	github.com/nats-io/nkeys v0.4.7 // indirect
 	github.com/nats-io/nuid v1.0.1 // indirect
+	github.com/onsi/ginkgo v1.16.5 // indirect
+	github.com/onsi/gomega v1.36.1 // indirect
 	github.com/xdg-go/pbkdf2 v1.0.0 // indirect
 	github.com/xdg-go/scram v1.1.2 // indirect
 	github.com/xdg-go/stringprep v1.0.4 // indirect

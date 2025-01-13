@@ -164,6 +164,8 @@ func (h UserHandler) GetUserByUsername(ctx context.Context, req *proto.GetUserBy
 	ctx, span := h.Tracer.Start(ctx, "h.getUserByUsername")
 	defer span.End()
 
+	log.Println("usao u get user by username")
+
 	user, err := h.service.GetUserByUsername(req.Username, ctx)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, "bad request ...")
@@ -212,7 +214,7 @@ func (h UserHandler) DeleteUserByUsername(ctx context.Context, req *proto.GetUse
 	}
 	projServiceResponse, err := h.projectService.UserOnProject(ctx, userOnProjectReq)
 	if err != nil {
-		err := errors.New("Error checking project")
+		err := errors.New("error checking project")
 		span.SetStatus(otelCodes.Error, err.Error())
 		return nil, status.Error(codes.Internal, "Error checking project")
 	}
@@ -430,11 +432,6 @@ func (h *UserHandler) RecoverPassword(ctx context.Context, req *proto.RecoveryPa
 		}
 		log.Println("Error fetching recovery code from Redis:", err)
 		return nil, status.Error(codes.Internal, "Failed to fetch recovery code")
-		log.Println("req.UserName")
-		log.Println(req.Username)
-		log.Println("req.NewPassword")
-		log.Println(req.NewPassword)
-		log.Println(req)
 
 	}
 	err = h.service.RecoverPassword(req.Username, req.NewPassword, ctx)

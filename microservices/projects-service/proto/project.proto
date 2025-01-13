@@ -45,7 +45,9 @@ message User {
 }
 
 message EmptyResponse {}
+
 message GetAllProjectsReq {
+//  string userId = 1;
   string username = 1;
 }
 message GetAllProjectsRes {
@@ -78,4 +80,16 @@ service TaskService {
   message DoneTasksByProjectRes {
     bool isDone = 1;
 }
+
+service UserService {
+  rpc GetUserByUsername(GetUserByUsernameReq) returns (GetUserByUsernameRes);
+    }
+
+  message GetUserByUsernameReq{
+  string username = 1;
+      }
+
+  message GetUserByUsernameRes{
+  User user = 1;
+      }
 

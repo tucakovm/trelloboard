@@ -2,7 +2,9 @@ package repositories
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"github.com/go-redis/redis"
 	"github.com/gocql/gocql"
 	"go.opentelemetry.io/otel/trace"
 	"log"
@@ -15,10 +17,15 @@ type NotRepo struct {
 	session *gocql.Session
 	logger  *log.Logger
 	Tracer  trace.Tracer
+	cache   *redis.Client
 }
 
 func New(logger *log.Logger, tracer trace.Tracer) (*NotRepo, error) {
 	db := os.Getenv("CASS_DB")
+	redisHost := os.Getenv("REDIS_HOST")
+	redisPort := os.Getenv("REDIS_PORT")
+	redisAddress := fmt.Sprintf("%s:%s", redisHost, redisPort)
+
 	// Connect to default keyspace
 	cluster := gocql.NewCluster(db)
 	cluster.Keyspace = "system"
@@ -48,10 +55,15 @@ func New(logger *log.Logger, tracer trace.Tracer) (*NotRepo, error) {
 		return nil, err
 	}
 
+	clientRedis := redis.NewClient(&redis.Options{
+		Addr: redisAddress,
+	})
+
 	repo := &NotRepo{
 		session: session,
 		logger:  logger,
 		Tracer:  tracer,
+		cache:   clientRedis,
 	}
 
 	return repo, nil
@@ -155,4 +167,39 @@ func (nr *NotRepo) InsertNotByUser(ctx context.Context, not *domain.Notification
 	log.Println("Inserted not :")
 	log.Println(not)
 	return nil
+}
+
+// REDIS -----------------------
+
+func (nr *NotRepo) PostAll(id string, nots domain.Notifications, ctx context.Context) error {
+	ctx, span := nr.Tracer.Start(ctx, "r.PostAllNotsCache")
+	defer span.End()
+
+	value, err := json.Marshal(nots)
+	if err != nil {
+		return err
+	}
+
+	err = nr.cache.Set(constructKeyProjects(id), value, 5*time.Second).Err()
+	log.Println("Cache hit [PostAll]")
+	return err
+}
+
+func (nr *NotRepo) GetAllNotsCache(username string, ctx context.Context) (domain.Notifications, error) {
+	ctx, span := nr.Tracer.Start(ctx, "r.GetAllNotsCache")
+	defer span.End()
+	values, err := nr.cache.Get(constructKeyProjects(username)).Bytes()
+	if err != nil {
+		return domain.Notifications{}, err
+	}
+
+	products := &domain.Notifications{}
+	err = json.Unmarshal(values, products)
+	if err != nil {
+		return domain.Notifications{}, err
+	}
+
+	//pr.logger.Println("Cache hit")
+	log.Printf("Cache hit[GetAll]")
+	return *products, nil
 }

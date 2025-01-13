@@ -12,6 +12,7 @@ import { AuthService } from '../../services/auth.service';
 })
 export class ProjectDetailsComponent implements OnInit{
   id: string | null = null;
+  userId: string | null = null;
   project:Project = {
     id: '',
     name: '',
@@ -42,9 +43,10 @@ export class ProjectDetailsComponent implements OnInit{
   getProject() {
     console.log("test1");
     this.id = this.route.snapshot.paramMap.get('id');
+    this.userId = this.authService.getUserId();
 
-    if (this.id) {
-      this.projectService.getById(this.id).subscribe(
+    if (this.id && this.userId) {
+      this.projectService.getById(this.id, this.userId).subscribe(
         (project: Project | null) => {
           if (project) {
             this.project = project;
@@ -77,9 +79,9 @@ export class ProjectDetailsComponent implements OnInit{
       this.projectService.deleteProjectById(this.id).subscribe({
         next:(response) => {
           console.log('Project deleted successfully:', response);
-          if(this.id){
-            this.deleteAllTasksByProjectId(this.id);
-          }
+          // if(this.id){
+          //   this.deleteAllTasksByProjectId(this.id);
+          // }
           this.router.navigate(['/all-projects'])
         },
         error: (error) => {
