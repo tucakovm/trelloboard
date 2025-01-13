@@ -20,7 +20,8 @@ export class ProjectAllComponent implements OnInit{
 
   getAllProjects(): void {
     let username = this.authService.getUserName()
-    this.projectService.getAllProjects(username).subscribe( {
+    let userId = this.authService.getUserId()
+    this.projectService.getAllProjects(username, userId).subscribe( {
       next:(data) =>{
         this.projects = data;
       },

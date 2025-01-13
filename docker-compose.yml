@@ -30,6 +30,7 @@ services:
       - cassandra
       - mongo
       - nats
+      - consul
     ports:
       - "${GATEWAY_PORT}:${GATEWAY_PORT}"
     volumes:
@@ -91,8 +92,8 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
-    volumes:
-      - ./users-data:/app/data
+      consul:
+        condition: service_healthy
 
 
 
@@ -142,6 +143,11 @@ services:
       .env
     volumes:
       - ./consul_store:/consul/data
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8500/v1/status/leader" ]
+      interval: 30s
+      timeout: 5s
+      retries: 3
 
   mongo-express:
     image: mongo-express

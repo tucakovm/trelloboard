@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	otelCodes "go.opentelemetry.io/otel/codes"
@@ -11,6 +12,7 @@ import (
 	"tasks-service/domain"
 	"time"
 
+	"github.com/go-redis/redis"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -19,6 +21,7 @@ import (
 type TaskRepo struct {
 	Cli    *mongo.Client
 	Tracer trace.Tracer
+	cache  *redis.Client
 }
 
 func NewTaskRepo(ctx context.Context, logger *log.Logger, tracer trace.Tracer) (*TaskRepo, error) {
@@ -26,12 +29,19 @@ func NewTaskRepo(ctx context.Context, logger *log.Logger, tracer trace.Tracer) (
 	if dburi == "" {
 		return nil, fmt.Errorf("MONGO_DB_URI is not set")
 	}
+	redisHost := os.Getenv("REDIS_HOST")
+	redisPort := os.Getenv("REDIS_PORT")
+	redisAddress := fmt.Sprintf("%s:%s", redisHost, redisPort)
 
 	client, err := mongo.Connect(ctx, options.Client().ApplyURI(dburi))
 	if err != nil {
 		log.Printf("Failed to connect to MongoDB: %v", err)
 		return nil, err
 	}
+
+	clientRedis := redis.NewClient(&redis.Options{
+		Addr: redisAddress,
+	})
 
 	if err := client.Ping(ctx, nil); err != nil {
 		log.Printf("MongoDB ping failed: %v", err)
@@ -44,7 +54,7 @@ func NewTaskRepo(ctx context.Context, logger *log.Logger, tracer trace.Tracer) (
 		log.Printf("Failed to insert initial tasks: %v", err)
 	}
 
-	return &TaskRepo{Cli: client, Tracer: tracer}, nil
+	return &TaskRepo{Cli: client, Tracer: tracer, cache: clientRedis}, nil
 }
 
 func (tr *TaskRepo) Disconnect(ctx context.Context) error {
@@ -416,5 +426,144 @@ func (tr *TaskRepo) Update(task domain.Task, ctx context.Context) error {
 	}
 
 	log.Printf("Updated task with ID: %s", task.Id)
+	return nil
+}
+
+//REDIS---------------
+
+func (tr *TaskRepo) Post(task *domain.Task, ctx context.Context) error {
+	ctx, span := tr.Tracer.Start(ctx, "r.PostProjectCache")
+	defer span.End()
+
+	key := task.ProjectID
+	value, err := json.Marshal(task)
+	if err != nil {
+		return err
+	}
+	tllKey := constructKeyProjects(key)
+	ttl, err := tr.cache.TTL(tllKey).Result()
+	if err != nil {
+		return err
+	}
+
+	err = tr.cache.Set(constructKeyProjects(key), value, ttl).Err()
+	log.Println("cache set return:", err)
+
+	return nil
+}
+
+func (tr *TaskRepo) PostOne(task *domain.Task, ctx context.Context) error {
+	ctx, span := tr.Tracer.Start(ctx, "r.PostTaskCache")
+	defer span.End()
+
+	taskId := task.Id
+	value, err := json.Marshal(task)
+	if err != nil {
+		return err
+	}
+
+	err = tr.cache.Set(constructKeyOneProject(taskId.Hex()), value, 5*time.Second).Err()
+	log.Println("Cache hit [Post]")
+
+	return err
+}
+
+func (tr *TaskRepo) PostAll(projectId string, task domain.Tasks, ctx context.Context) error {
+	ctx, span := tr.Tracer.Start(ctx, "r.PostAllProjectsCache")
+	defer span.End()
+
+	value, err := json.Marshal(task)
+	if err != nil {
+		return err
+	}
+
+	err = tr.cache.Set(constructKeyProjects(projectId), value, 5*time.Second).Err()
+	log.Println("Cache hit [PostAll]")
+	return err
+}
+
+func (tr *TaskRepo) GetCache(projectId string, ctx context.Context) (*domain.Task, error) {
+	ctx, span := tr.Tracer.Start(ctx, "r.GetByIdCache")
+	defer span.End()
+
+	value, err := tr.cache.Get(constructKeyOneProject(projectId)).Bytes()
+	if err != nil {
+		return nil, err
+	}
+
+	product := &domain.Task{}
+	err = json.Unmarshal(value, product)
+	if err != nil {
+		return nil, err
+	}
+
+	//pc.logger.Println("Cache hit")
+	log.Printf("Cache hit[Get]")
+	return product, nil
+}
+
+func (tr *TaskRepo) GetAllProjectsCache(managerId string, ctx context.Context) (domain.Tasks, error) {
+	ctx, span := tr.Tracer.Start(ctx, "r.GetAllTasksCache")
+	defer span.End()
+	values, err := tr.cache.Get(constructKeyProjects(managerId)).Bytes()
+	if err != nil {
+		return domain.Tasks{}, err
+	}
+
+	products := &domain.Tasks{}
+	err = json.Unmarshal(values, products)
+	if err != nil {
+		return domain.Tasks{}, err
+	}
+
+	//pr.logger.Println("Cache hit")
+	log.Printf("Cache hit[GetAll]")
+	return *products, nil
+}
+
+func (pc *TaskRepo) DeleteByKey(key string, username string, ctx context.Context) error {
+	ctx, span := pc.Tracer.Start(ctx, "r.DeleteByKey")
+	defer span.End()
+
+	err := pc.cache.Del(key).Err()
+	if err != nil {
+		log.Printf("Failed to delete cache for key %s: %v", key, err)
+	}
+
+	values, err := pc.cache.Get(constructKeyProjects(username)).Bytes()
+	if err != nil {
+		return err
+	}
+
+	tasks := &domain.Tasks{}
+	err = json.Unmarshal(values, tasks)
+	if err != nil {
+		return err
+	}
+
+	filteredTasks := domain.Tasks{}
+
+	for _, t := range *tasks {
+		if t.Id.Hex() != key {
+			filteredTasks = append(filteredTasks, t)
+		}
+	}
+
+	err = pc.cache.Del(constructKeyProjects(username)).Err()
+	if err != nil {
+		log.Printf("Failed to delete cache projects for key %s: %v", key, err)
+	}
+
+	value, err := json.Marshal(filteredTasks)
+	if err != nil {
+		return err
+	}
+
+	err = pc.cache.Set(username, value, 5*time.Second).Err()
+	if err != nil {
+		log.Printf("Failed to set cache projects for key %s: %v", key, err)
+		return err
+	}
+
 	return nil
 }

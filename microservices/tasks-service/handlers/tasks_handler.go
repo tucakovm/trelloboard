@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"github.com/nats-io/nats.go"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	nats_helper "tasks-service/nats_helper"
@@ -63,11 +64,17 @@ func (h *TaskHandler) DoneTasksByProject(ctx context.Context, req *proto.DoneTas
 func (h *TaskHandler) Delete(ctx context.Context, req *proto.DeleteTaskReq) (*proto.EmptyResponse, error) {
 	ctx, span := h.Tracer.Start(ctx, "h.deleteTask")
 	defer span.End()
+	task, _ := h.service.GetById(req.Id, ctx)
 	err := h.service.DeleteTask(req.Id, ctx)
 	if err != nil {
 		span.SetStatus(otelCodes.Error, err.Error())
 		return nil,
 			status.Error(codes.InvalidArgument, "bad request ...")
+	}
+
+	err = h.service.DeleteFromCache(req.Id, task.ProjectId, ctx)
+	if err != nil {
+		log.Printf("error deleting from cache")
 	}
 	return nil, nil
 }
@@ -80,13 +87,22 @@ func (h *TaskHandler) Create(ctx context.Context, req *proto.CreateTaskReq) (*pr
 	headers.Set(nats_helper.TRACE_ID, span.SpanContext().TraceID().String())
 	headers.Set(nats_helper.SPAN_ID, span.SpanContext().SpanID().String())
 
+	taskID := primitive.NewObjectID()
+
 	log.Println(req.Task)
-	err := h.service.Create(req.Task, ctx)
+	err := h.service.Create(taskID, req.Task, ctx)
 	if err != nil {
 		span.SetStatus(otelCodes.Error, err.Error())
-		log.Printf("Error creating project: %v", err)
+		log.Printf("Error creating task: %v", err)
 		return nil, status.Error(codes.InvalidArgument, "bad request ...")
 	}
+	err = h.service.PostTaskCacheTTL(taskID, req.Task, ctx)
+	if err != nil {
+		span.SetStatus(otelCodes.Error, err.Error())
+		log.Printf("Error caching task: %v", err)
+		return nil, status.Error(codes.InvalidArgument, "error caching task")
+	}
+
 	subject := "create-task"
 
 	message := map[string]string{
@@ -119,11 +135,21 @@ func (h *TaskHandler) Create(ctx context.Context, req *proto.CreateTaskReq) (*pr
 func (h *TaskHandler) GetById(ctx context.Context, req *proto.GetByIdReq) (*proto.TaskResponse, error) {
 	ctx, span := h.Tracer.Start(ctx, "h.getById")
 	defer span.End()
-	task, err := h.service.GetById(req.Id, ctx)
+	task, err := h.service.GetByIdCache(req.Id, ctx)
 	if err != nil {
-		span.SetStatus(otelCodes.Error, err.Error())
-		return nil, status.Error(codes.InvalidArgument, "bad request ...")
+		task, err := h.service.GetById(req.Id, ctx)
+		if err != nil {
+			span.SetStatus(otelCodes.Error, err.Error())
+			return nil, status.Error(codes.InvalidArgument, "bad request ...")
+		}
+		err = h.service.PostTaskCache(task, ctx)
+		if err != nil {
+			return nil, status.Error(codes.InvalidArgument, "post task cache error")
+		}
+		response := &proto.TaskResponse{Task: task}
+		return response, nil
 	}
+	log.Println("response from cache:")
 	response := &proto.TaskResponse{Task: task}
 	return response, nil
 }
@@ -131,11 +157,22 @@ func (h *TaskHandler) GetById(ctx context.Context, req *proto.GetByIdReq) (*prot
 func (h *TaskHandler) GetAllByProjectId(ctx context.Context, req *proto.GetAllTasksReq) (*proto.GetAllTasksRes, error) {
 	ctx, span := h.Tracer.Start(ctx, "h.GetAllByProjectId")
 	defer span.End()
-	allTasks, err := h.service.GetTasksByProjectId(req.Id, ctx)
+
+	allTasks, err := h.service.GetAllTasksCache(req.Id, ctx)
 	if err != nil {
-		span.SetStatus(otelCodes.Error, err.Error())
-		return nil, status.Errorf(codes.Internal, "Failed to fetch tasks")
+		allTasks, err := h.service.GetTasksByProjectId(req.Id, ctx)
+		if err != nil {
+			span.SetStatus(otelCodes.Error, err.Error())
+			return nil, status.Errorf(codes.Internal, "Failed to fetch tasks")
+		}
+		err = h.service.PostAllTasksCache(req.Id, allTasks, ctx)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "Failed to fetch tasks from cache")
+		}
+		response := &proto.GetAllTasksRes{Tasks: allTasks}
+		return response, nil
 	}
+	log.Println("response from cache:")
 	response := &proto.GetAllTasksRes{Tasks: allTasks}
 	return response, nil
 }
@@ -332,6 +369,8 @@ func (h *TaskHandler) UpdateTask(ctx context.Context, req *proto.UpdateTaskReq) 
 	}
 
 	log.Println("Task updated successfully:", req.Id)
+
+	//notification----->
 
 	getProjReq := &proto.GetByIdReq{
 		Id: req.Id,

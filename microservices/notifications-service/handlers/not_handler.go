@@ -6,6 +6,7 @@ import (
 	"go.opentelemetry.io/otel/trace"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"log"
 	proto "not_module/proto/notification"
 	"not_module/service"
 )
@@ -27,11 +28,21 @@ func (h NotificationHandler) GetAllNots(ctx context.Context, req *proto.GetAllNo
 	ctx, span := h.Tracer.Start(ctx, "h.getAllNots")
 	defer span.End()
 	id := req.UserId
-	nots, err := h.service.GetAllNotUser(ctx, id)
+	notsCache, err := h.service.GetAllNotUserCache(ctx, id)
 	if err != nil {
-		span.SetStatus(otelCodes.Error, err.Error())
-		return nil, status.Error(codes.InvalidArgument, "DB exception.")
+		nots, err := h.service.GetAllNotUser(ctx, id)
+		if err != nil {
+			span.SetStatus(otelCodes.Error, err.Error())
+			return nil, status.Error(codes.InvalidArgument, "DB exception.")
+		}
+		err = h.service.PostAllNotsCache(id, nots, ctx)
+		if err != nil {
+			return nil, err
+		}
+		response := &proto.GetAllNotsRes{Nots: nots}
+		return response, nil
 	}
-	response := &proto.GetAllNotsRes{Nots: nots}
+	log.Println("response from cache")
+	response := &proto.GetAllNotsRes{Nots: notsCache}
 	return response, nil
 }

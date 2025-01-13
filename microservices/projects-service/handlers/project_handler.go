@@ -3,6 +3,7 @@ package handlers
 import (
 	"context"
 	"encoding/json"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"log"
 	nats_helper "projects_module/nats_helper"
 	proto "projects_module/proto/project"
@@ -19,17 +20,19 @@ import (
 type ProjectHandler struct {
 	service     services.ProjectService
 	taskService proto.TaskServiceClient
+	userService proto.UserServiceClient
 	proto.UnimplementedProjectServiceServer
 	natsConn *nats.Conn
 	Tracer   trace.Tracer
 }
 
-func NewConnectionHandler(service services.ProjectService, taskService proto.TaskServiceClient, natsConn *nats.Conn, Tracer trace.Tracer) (ProjectHandler, error) {
+func NewConnectionHandler(service services.ProjectService, taskService proto.TaskServiceClient, userService proto.UserServiceClient, natsConn *nats.Conn, Tracer trace.Tracer) (ProjectHandler, error) {
 	return ProjectHandler{
 		service:     service,
 		taskService: taskService,
 		natsConn:    natsConn,
 		Tracer:      Tracer,
+		userService: userService,
 	}, nil
 }
 
@@ -53,43 +56,81 @@ func (h ProjectHandler) Create(ctx context.Context, req *proto.CreateProjectReq)
 		span.SetStatus(otelCodes.Error, "Invalid completion date")
 		return nil, status.Error(codes.ResourceExhausted, "Invalid completion date")
 	}
-	err := h.service.Create(req.Project, ctx)
+	projectId := primitive.NewObjectID()
+	err := h.service.Create(projectId, req.Project, ctx)
 	if err != nil {
 		span.SetStatus(otelCodes.Error, err.Error())
 		log.Printf("Error creating project: %v", err)
 		return nil, status.Error(codes.InvalidArgument, "bad request ...")
 	}
+	_, err = h.service.GetAllProjectsCache(req.Project.Manager.Username, ctx)
+	if err == nil {
+		err = h.service.PostProjectCacheTTL(projectId, req.Project, ctx)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	return nil, nil
 }
 
 func (h ProjectHandler) GetAllProjects(ctx context.Context, req *proto.GetAllProjectsReq) (*proto.GetAllProjectsRes, error) {
-
+	log.Printf("Usao u get all projects")
 	if h.Tracer == nil {
 		log.Println("Tracer is nil")
 		return nil, status.Error(codes.Internal, "tracer is not initialized")
 	}
 	ctx, span := h.Tracer.Start(ctx, "h.getAllProjects")
 	defer span.End()
-	allProducts, err := h.service.GetAllProjects(req.Username, ctx)
+
+	username := req.Username
+
+	allProductsCache, err := h.service.GetAllProjectsCache(username, ctx)
+
 	if err != nil {
-		span.SetStatus(otelCodes.Error, err.Error())
-		return nil, status.Error(codes.InvalidArgument, "bad request ...")
+		allProducts, err := h.service.GetAllProjects(username, ctx)
+
+		if err != nil {
+			span.SetStatus(otelCodes.Error, err.Error())
+			return nil, status.Error(codes.InvalidArgument, "bad request ...")
+		}
+
+		err = h.service.PostAllProjectsCache(username, allProducts, ctx)
+		if err != nil {
+			return nil, status.Error(codes.Internal, "error caching projects")
+		}
+
+		response := &proto.GetAllProjectsRes{Projects: allProducts}
+
+		log.Println(response)
+
+		return response, nil
+	} else {
+
+		response := &proto.GetAllProjectsRes{Projects: allProductsCache}
+		log.Println("response from cache:")
+		log.Println(response)
+
+		return response, nil
 	}
 
-	response := &proto.GetAllProjectsRes{Projects: allProducts}
-	log.Println(response)
-
-	return response, nil
 }
 
 func (h ProjectHandler) Delete(ctx context.Context, req *proto.DeleteProjectReq) (*proto.EmptyResponse, error) {
 	ctx, span := h.Tracer.Start(ctx, "h.deleteProject")
 	defer span.End()
 
+	username, _ := h.service.GetById(req.Id, ctx)
+
 	err := h.service.Delete(req.Id, ctx)
 	if err != nil {
 		span.SetStatus(otelCodes.Error, err.Error())
 		return nil, status.Error(codes.InvalidArgument, "bad request ...")
+	}
+
+	err = h.service.DeleteFromCache(req.Id, username.Manager.Username, ctx)
+	if err != nil {
+		log.Printf("error deleting from cache")
 	}
 	return nil, nil
 }
@@ -98,12 +139,24 @@ func (h ProjectHandler) GetById(ctx context.Context, req *proto.GetByIdReq) (*pr
 	log.Printf("Received Project id request: %v", req.Id)
 	ctx, span := h.Tracer.Start(ctx, "h.getProjectById")
 	defer span.End()
-	project, err := h.service.GetById(req.Id, ctx)
+
+	projectCache, err := h.service.GetByIdCache(req.Id, ctx)
 	if err != nil {
-		span.SetStatus(otelCodes.Error, err.Error())
-		return nil, status.Error(codes.InvalidArgument, "bad request ...")
+		project, err := h.service.GetById(req.Id, ctx)
+		if err != nil {
+			span.SetStatus(otelCodes.Error, err.Error())
+			return nil, status.Error(codes.InvalidArgument, "bad request ...")
+		}
+		err = h.service.PostProjectCache(project, ctx)
+		if err != nil {
+			return nil, status.Error(codes.Internal, "error caching project")
+		}
+
+		response := &proto.GetByIdRes{Project: project}
+		return response, nil
 	}
-	response := &proto.GetByIdRes{Project: project}
+	log.Println("response from cache:")
+	response := &proto.GetByIdRes{Project: projectCache}
 	return response, nil
 }
 
