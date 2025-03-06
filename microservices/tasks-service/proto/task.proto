@@ -67,8 +67,17 @@ service ProjectService {
   rpc UserOnOneProject(UserOnOneProjectReq) returns (UserOnProjectRes) {}
 }
 
-service WokrflowService {
+service WorkflowService {
   rpc TaskExists(TaskExistsRequest) returns (TaskExistsResponse) {}
+  rpc IsTaskBlocked(IsTaskBlockedReq) returns (IsTaskBlockedRes) {}
+}
+
+message IsTaskBlockedReq{
+  string TaskID = 1;
+}
+
+message IsTaskBlockedRes{
+  bool isBlocked = 1;
 }
 
 message UserOnOneProjectReq {

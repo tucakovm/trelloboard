@@ -17,6 +17,7 @@ type WorkflowService interface {
 	DeleteWorkflowByProjectID(projectID string) error
 	CheckTaskDependencies(projectID string, taskID string) (bool, error)
 	TaskExists(ctx context.Context, req *proto.TaskExistsRequest) (*proto.TaskExistsResponse, error)
+	IsTaskBlocked(ctx context.Context, id string) (bool, error)
 }
 
 type workflowService struct {
@@ -49,7 +50,6 @@ func (s *workflowService) AddTask(projectID string, task models.TaskNode) error 
 	ctx := context.Background()
 	log.Printf("Service for task %s", task.TaskID)
 
-	// Ensure proper error handling when calling the repository method
 	if err := s.repo.AddTask(ctx, projectID, task); err != nil {
 		return fmt.Errorf("failed to add task: %w", err)
 	}
@@ -74,6 +74,14 @@ func (s *workflowService) GetWorkflow(projectID string) (*models.Workflow, error
 		return nil, fmt.Errorf("failed to get workflow for project %s: %w", projectID, err)
 	}
 	return workflow, nil
+}
+
+func (s *workflowService) IsTaskBlocked(ctx context.Context, id string) (bool, error) {
+	isBlocked, err := s.repo.IsTaskBlocked(ctx, id)
+	if err != nil {
+		return isBlocked, fmt.Errorf("failed to get workflow status for task %s: %w", id, err)
+	}
+	return isBlocked, nil
 }
 
 // Provera da li zadati ID postoji među svim taskovima

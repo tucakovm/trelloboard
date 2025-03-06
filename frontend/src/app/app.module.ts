@@ -25,6 +25,8 @@ import { AddMemberTaskComponent } from './tasks/add-member-task/add-member-task.
 import { UnauthorizedComponent } from './unauthorized/unauthorized.component';
 import { NotificationsComponent } from './notifications/notifications.component';
 import { NotificationsProjectComponent } from './notifications-project/notifications-project.component';
+import { ToastrModule } from 'ngx-toastr';
+import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 @NgModule({
   declarations: [
     AppComponent,
@@ -54,6 +56,8 @@ import { NotificationsProjectComponent } from './notifications-project/notificat
     HttpClientModule,
     FormsModule,
     RecaptchaModule,
+    BrowserAnimationsModule,
+    ToastrModule.forRoot(),
   ],
   providers: [
     {

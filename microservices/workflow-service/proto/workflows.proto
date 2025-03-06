@@ -20,10 +20,17 @@ service WorkflowService {
 
   rpc TaskExists(TaskExistsRequest) returns (TaskExistsResponse) {}
 
-
+  rpc IsTaskBlocked(IsTaskBlockedReq) returns (IsTaskBlockedRes) {}
 }
 
-// Messages for Workflow Service
+message IsTaskBlockedReq{
+  string TaskID = 1;
+}
+
+message IsTaskBlockedRes{
+  bool isBlocked = 1;
+}
+
 message VoidResponse {}
 
 message CreateWorkflowReq {
@@ -45,8 +52,8 @@ message GetWorkflowRes {
 }
 
 message Workflow {
-  string project_id = 1;
-  string project_name = 2;
+  string projectId = 1;
+  string projectName = 2;
   repeated Task tasks = 3;
 }
 
@@ -72,4 +79,31 @@ message TaskExistsRequest {
 
 message TaskExistsResponse {
   bool exists = 1;
+}
+
+service TaskService{
+  rpc GetById(GetByIdReq) returns (TaskResponse) {}
+}
+
+message GetByIdReq {
+  string id = 1;
+}
+
+message TaskResponse {
+  TaskTaskService task = 1;
+}
+
+message TaskTaskService {
+  string id = 1;
+  string name = 2;
+  string description = 3;
+  string status = 4;
+  string project_id = 5;
+  repeated User members = 6;
+}
+
+message User {
+  string id = 1;  // Define User fields based on your Go struct
+  string username = 2;
+  string role = 3;
 }

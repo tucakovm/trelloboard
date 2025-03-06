@@ -17,6 +17,9 @@ type Config struct {
 	NotServicePort         string
 	WorkflowServiceAddress string
 	WorkflowServicePort    string
+	JaegerEndpoint         string
+	ApiComposerPort        string
+	ApiComposerAddress     string
 }
 
 func GetConfig() Config {
@@ -32,6 +35,9 @@ func GetConfig() Config {
 		NotServiceAddress:      os.Getenv("NOTIFICATIONS_SERVICE_ADDRESS"),
 		WorkflowServicePort:    fmt.Sprintf(":%s", os.Getenv("WORKFLOW_SERVICE_PORT")),
 		WorkflowServiceAddress: os.Getenv("WORKFLOW_SERVICE_ADDRESS"),
+		JaegerEndpoint:         os.Getenv("JAEGER_ENDPOINT"),
+		ApiComposerPort:        fmt.Sprintf(":%s", os.Getenv("API_COMPOSER_PORT")),
+		ApiComposerAddress:     os.Getenv("API_COMPOSER_ADDRESS"),
 	}
 }
 
@@ -52,4 +58,7 @@ func (cfg Config) FullNotServiceAddress() string {
 }
 func (cfg Config) FullWorkflowServiceAddress() string {
 	return fmt.Sprintf("%s%s", cfg.WorkflowServiceAddress, cfg.WorkflowServicePort)
+}
+func (cfg Config) FullComposerAddress() string {
+	return fmt.Sprintf("%s%s", cfg.ApiComposerAddress, cfg.ApiComposerPort)
 }

@@ -11,10 +11,14 @@ import (
 type WorkflowHandler struct {
 	WorkflowService services.WorkflowService
 	proto.UnimplementedWorkflowServiceServer
+	proto.TaskServiceClient
 }
 
-func NewWorkflowHandler(service services.WorkflowService) *WorkflowHandler {
-	return &WorkflowHandler{WorkflowService: service}
+func NewWorkflowHandler(service services.WorkflowService, taskService proto.TaskServiceClient) *WorkflowHandler {
+	return &WorkflowHandler{
+		WorkflowService:   service,
+		TaskServiceClient: taskService,
+	}
 }
 
 // Implement the gRPC method for CreateWorkflow
@@ -47,12 +51,21 @@ func (h *WorkflowHandler) AddTask(ctx context.Context, req *proto.AddTaskReq) (*
 		TaskName: req.Task.Name,
 
 		Dependencies: req.Task.Dependencies,
-		Blocked:      req.Task.Blocked, // Include Blocked field
+		Blocked:      false,
 	}
 
-	log.Printf("Handler for task %s with projectId: %v", task.TaskID, projectID)
+	if len(task.Dependencies) > 0 {
+		for _, dep := range task.Dependencies {
+			taskReg := &proto.GetByIdReq{Id: dep}
+			taskRes, _ := h.TaskServiceClient.GetById(ctx, taskReg)
 
-	// Call the service to add the task
+			if taskRes.Task.Status != "Done" {
+				task.Blocked = true
+				break
+			}
+		}
+	}
+
 	if err := h.WorkflowService.AddTask(projectID, task); err != nil {
 		return nil, err
 	}
@@ -138,3 +151,9 @@ func (h *WorkflowHandler) TaskExists(ctx context.Context, req *proto.TaskExistsR
 
 	return &proto.TaskExistsResponse{Exists: exists.Exists}, nil
 }*/
+
+func (h WorkflowHandler) IsTaskBlocked(ctx context.Context, req *proto.IsTaskBlockedReq) (*proto.IsTaskBlockedRes, error) {
+	isBlocked, _ := h.WorkflowService.IsTaskBlocked(ctx, req.TaskID)
+
+	return &proto.IsTaskBlockedRes{IsBlocked: isBlocked}, nil
+}

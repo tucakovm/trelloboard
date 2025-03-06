@@ -134,7 +134,7 @@ export class ProjectService {
   getWorkflowByProjectId(projectId: string): Observable<any> {
     console.log('Fetching workflow for project ID:', projectId); // Log pred slanje zahteva
 
-    return this.http.get<any>(`${this.apiUrl}/workflows/${projectId}`).pipe(
+    return this.http.get<any>(`${this.apiUrl}/composition/${projectId}`).pipe(
       tap(response => console.log('Received workflow response:', response)), // Log nakon odgovora
       catchError(error => {
         console.error('Error fetching workflow:', error); // Log ako dođe do greške

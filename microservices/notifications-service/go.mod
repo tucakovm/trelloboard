@@ -1,6 +1,6 @@
 module not_module
 
-go 1.22.9
+go 1.24.0
 
 require (
 	github.com/gocql/gocql v1.7.0

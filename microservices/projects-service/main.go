@@ -141,6 +141,7 @@ func NatsConn() *nats.Conn {
 	log.Println("Connected to NATS at:", natsURL)
 	return conn
 }
+
 func newExporter(address string) (sdktrace.SpanExporter, error) {
 	exp, err := jaeger.New(jaeger.WithCollectorEndpoint(jaeger.WithEndpoint(address)))
 	if err != nil {

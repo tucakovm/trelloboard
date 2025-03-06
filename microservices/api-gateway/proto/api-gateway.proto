@@ -41,6 +41,25 @@ service ProjectService {
     }
 }
 
+service ApiComposer{
+  rpc Get(GetTasksAndWorkflowReq) returns (GetTasksAndWorkflowRes) {
+    option (google.api.http) = {
+      get: "/api/composition/{projectId}"
+    };
+  }
+}
+
+message GetTasksAndWorkflowReq{
+  string projectId = 1;
+}
+message GetTasksAndWorkflowRes{
+  ApiCompositionObject aco = 1;
+}
+message ApiCompositionObject {
+  repeated Task tasks = 1;
+  Workflow workflow = 2;
+}
+
 message RemoveMembersRequest {
   string projectId = 1;
   string userId = 2;
@@ -402,8 +421,8 @@ message GetWorkflowRes {
 }
 
 message Workflow {
-  string project_id = 1;
-  string project_name = 2;
+  string projectId = 1;
+  string projectName = 2;
   repeated TaskFW tasks = 3;
 }
 

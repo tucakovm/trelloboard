@@ -20,14 +20,14 @@ import (
 type TaskHandler struct {
 	service         *service.TaskService // Use a pointer here
 	projectService  proto.ProjectServiceClient
-	workflowService proto.WokrflowServiceClient
+	workflowService proto.WorkflowServiceClient
 	proto.UnimplementedTaskServiceServer
 	natsConn *nats.Conn
 	Tracer   trace.Tracer
 	//workflowClient WorkflowServiceClient
 }
 
-func NewTaskHandler(service *service.TaskService, projectService proto.ProjectServiceClient, workflowService proto.WokrflowServiceClient, natsConn *nats.Conn, tracer trace.Tracer) *TaskHandler {
+func NewTaskHandler(service *service.TaskService, projectService proto.ProjectServiceClient, workflowService proto.WorkflowServiceClient, natsConn *nats.Conn, tracer trace.Tracer) *TaskHandler {
 	return &TaskHandler{service: service,
 		projectService:  projectService,
 		natsConn:        natsConn,
@@ -318,6 +318,7 @@ func (h *TaskHandler) RemoveMemberTask(ctx context.Context, req *proto.RemoveMem
 
 	return nil, nil
 }
+
 func (h *TaskHandler) UpdateTask(ctx context.Context, req *proto.UpdateTaskReq) (*proto.EmptyResponse, error) {
 	_, span := h.Tracer.Start(ctx, "Publisher.UpdateTask")
 	defer span.End()
@@ -334,6 +335,17 @@ func (h *TaskHandler) UpdateTask(ctx context.Context, req *proto.UpdateTaskReq) 
 		span.SetStatus(otelCodes.Error, err.Error())
 		log.Printf("Error fetching task for update: %v", err)
 		return nil, status.Error(codes.NotFound, "Task not found")
+	}
+
+	workflowReq := &proto.IsTaskBlockedReq{TaskID: req.Id}
+	workflowRes, err := h.workflowService.IsTaskBlocked(ctx, workflowReq)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+	//log.Printf("response: %v", workflowRes.IsBlocked)
+
+	if workflowRes.IsBlocked {
+		return nil, status.Error(codes.Internal, "The task depends on another task")
 	}
 
 	// Update the fields of the task

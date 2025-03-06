@@ -1,5 +1,6 @@
 services:
   angular:
+    image: angular
     build:
       context: ./frontend
       dockerfile: Dockerfile
@@ -31,6 +32,8 @@ services:
       - cassandra
       - mongo
       - nats
+      - neo4j
+      - api-composer
     ports:
       - "${GATEWAY_PORT}:${GATEWAY_PORT}"
     volumes:
@@ -92,8 +95,6 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
-    volumes:
-      - ./users-data:/app/data
 
 
 
@@ -116,19 +117,35 @@ services:
         condition: service_healthy
 
   workflow-service:
+    image: workflow_server
     build:
       context: microservices/workflow-service
       dockerfile: Dockerfile
     restart: always
+    container_name: "workflow-server"
+    hostname: "workflow-server"
     ports:
       - "${WORKFLOW_SERVICE_PORT}:${WORKFLOW_SERVICE_PORT}" 
     env_file:
       .env
     depends_on:
-      neo4j:
-        condition: service_healthy
+#      neo4j:
+#        condition: service_healthy
       tracing:
         condition: service_started
+
+  api-composer:
+    image: api-composer
+    build:
+      context: microservices/api-composer
+      dockerfile: Dockerfile
+    restart: always
+    container_name: "api-composer"
+    hostname: "api-composer"
+    ports:
+      - "${API_COMPOSER_PORT}:${API_COMPOSER_PORT}"
+    env_file:
+      .env
 
 
 
@@ -231,6 +248,7 @@ services:
       retries: 3
     env_file:
       .env
+
   neo4j:
     image: neo4j:latest
     container_name: neo4j
