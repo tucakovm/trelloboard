@@ -1,0 +1,109 @@
+syntax = "proto3";
+
+option go_package = "proto/workflows";
+
+service WorkflowService {
+  // Create a new workflow
+  rpc CreateWorkflow(CreateWorkflowReq) returns (VoidResponse) {}
+
+  // Add a task to an existing workflow
+  rpc AddTask(AddTaskReq) returns (VoidResponse) {}
+
+  // Retrieve a workflow by its project ID
+  rpc GetWorkflowByProjectID(GetWorkflowReq) returns (GetWorkflowRes) {}
+
+  // Delete a workflow by its project ID
+  rpc DeleteWorkflowByProjectID(GetWorkflowReq) returns (VoidResponse) {}
+
+  // Check task dependencies
+  rpc CheckTaskDependencies(CheckTaskDependenciesReq) returns (TaskDependenciesStatus) {}
+
+  rpc TaskExists(TaskExistsRequest) returns (TaskExistsResponse) {}
+
+  rpc IsTaskBlocked(IsTaskBlockedReq) returns (IsTaskBlockedRes) {}
+}
+
+message IsTaskBlockedReq{
+  string TaskID = 1;
+}
+
+message IsTaskBlockedRes{
+  bool isBlocked = 1;
+}
+
+message VoidResponse {}
+
+message CreateWorkflowReq {
+  string project_id = 1;
+  string project_name = 2;
+}
+
+message AddTaskReq {
+  string project_id = 1;
+  Task task = 2;
+}
+
+message GetWorkflowReq {
+  string project_id = 1;
+}
+
+message GetWorkflowRes {
+  Workflow workflow = 1;
+}
+
+message Workflow {
+  string projectId = 1;
+  string projectName = 2;
+  repeated Task tasks = 3;
+}
+
+message Task {
+  string id = 1;
+  string name = 2;
+  string description = 3;
+  repeated string dependencies = 4;
+  bool blocked = 5;
+}
+
+message CheckTaskDependenciesReq {
+  string project_id = 1;
+  string task_id = 2;
+}
+
+message TaskDependenciesStatus {
+  bool allDependenciesMet = 1;
+}
+message TaskExistsRequest {
+  string task_id = 1;
+}
+
+message TaskExistsResponse {
+  bool exists = 1;
+}
+
+service TaskService{
+  rpc GetById(GetByIdReq) returns (TaskResponse) {}
+}
+
+message GetByIdReq {
+  string id = 1;
+}
+
+message TaskResponse {
+  TaskTaskService task = 1;
+}
+
+message TaskTaskService {
+  string id = 1;
+  string name = 2;
+  string description = 3;
+  string status = 4;
+  string project_id = 5;
+  repeated User members = 6;
+}
+
+message User {
+  string id = 1;  // Define User fields based on your Go struct
+  string username = 2;
+  string role = 3;
+}

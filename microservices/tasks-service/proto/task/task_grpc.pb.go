@@ -639,3 +639,143 @@ var ProjectService_ServiceDesc = grpc.ServiceDesc{
 	Streams:  []grpc.StreamDesc{},
 	Metadata: "task.proto",
 }
+
+const (
+	WorkflowService_TaskExists_FullMethodName    = "/WorkflowService/TaskExists"
+	WorkflowService_IsTaskBlocked_FullMethodName = "/WorkflowService/IsTaskBlocked"
+)
+
+// WorkflowServiceClient is the client API for WorkflowService service.
+//
+// For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
+type WorkflowServiceClient interface {
+	TaskExists(ctx context.Context, in *TaskExistsRequest, opts ...grpc.CallOption) (*TaskExistsResponse, error)
+	IsTaskBlocked(ctx context.Context, in *IsTaskBlockedReq, opts ...grpc.CallOption) (*IsTaskBlockedRes, error)
+}
+
+type workflowServiceClient struct {
+	cc grpc.ClientConnInterface
+}
+
+func NewWorkflowServiceClient(cc grpc.ClientConnInterface) WorkflowServiceClient {
+	return &workflowServiceClient{cc}
+}
+
+func (c *workflowServiceClient) TaskExists(ctx context.Context, in *TaskExistsRequest, opts ...grpc.CallOption) (*TaskExistsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(TaskExistsResponse)
+	err := c.cc.Invoke(ctx, WorkflowService_TaskExists_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *workflowServiceClient) IsTaskBlocked(ctx context.Context, in *IsTaskBlockedReq, opts ...grpc.CallOption) (*IsTaskBlockedRes, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(IsTaskBlockedRes)
+	err := c.cc.Invoke(ctx, WorkflowService_IsTaskBlocked_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// WorkflowServiceServer is the server API for WorkflowService service.
+// All implementations must embed UnimplementedWorkflowServiceServer
+// for forward compatibility.
+type WorkflowServiceServer interface {
+	TaskExists(context.Context, *TaskExistsRequest) (*TaskExistsResponse, error)
+	IsTaskBlocked(context.Context, *IsTaskBlockedReq) (*IsTaskBlockedRes, error)
+	mustEmbedUnimplementedWorkflowServiceServer()
+}
+
+// UnimplementedWorkflowServiceServer must be embedded to have
+// forward compatible implementations.
+//
+// NOTE: this should be embedded by value instead of pointer to avoid a nil
+// pointer dereference when methods are called.
+type UnimplementedWorkflowServiceServer struct{}
+
+func (UnimplementedWorkflowServiceServer) TaskExists(context.Context, *TaskExistsRequest) (*TaskExistsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method TaskExists not implemented")
+}
+func (UnimplementedWorkflowServiceServer) IsTaskBlocked(context.Context, *IsTaskBlockedReq) (*IsTaskBlockedRes, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method IsTaskBlocked not implemented")
+}
+func (UnimplementedWorkflowServiceServer) mustEmbedUnimplementedWorkflowServiceServer() {}
+func (UnimplementedWorkflowServiceServer) testEmbeddedByValue()                         {}
+
+// UnsafeWorkflowServiceServer may be embedded to opt out of forward compatibility for this service.
+// Use of this interface is not recommended, as added methods to WorkflowServiceServer will
+// result in compilation errors.
+type UnsafeWorkflowServiceServer interface {
+	mustEmbedUnimplementedWorkflowServiceServer()
+}
+
+func RegisterWorkflowServiceServer(s grpc.ServiceRegistrar, srv WorkflowServiceServer) {
+	// If the following call pancis, it indicates UnimplementedWorkflowServiceServer was
+	// embedded by pointer and is nil.  This will cause panics if an
+	// unimplemented method is ever invoked, so we test this at initialization
+	// time to prevent it from happening at runtime later due to I/O.
+	if t, ok := srv.(interface{ testEmbeddedByValue() }); ok {
+		t.testEmbeddedByValue()
+	}
+	s.RegisterService(&WorkflowService_ServiceDesc, srv)
+}
+
+func _WorkflowService_TaskExists_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(TaskExistsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(WorkflowServiceServer).TaskExists(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: WorkflowService_TaskExists_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(WorkflowServiceServer).TaskExists(ctx, req.(*TaskExistsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _WorkflowService_IsTaskBlocked_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(IsTaskBlockedReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(WorkflowServiceServer).IsTaskBlocked(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: WorkflowService_IsTaskBlocked_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(WorkflowServiceServer).IsTaskBlocked(ctx, req.(*IsTaskBlockedReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+// WorkflowService_ServiceDesc is the grpc.ServiceDesc for WorkflowService service.
+// It's only intended for direct use with grpc.RegisterService,
+// and not to be introspected or modified (even as a copy)
+var WorkflowService_ServiceDesc = grpc.ServiceDesc{
+	ServiceName: "WorkflowService",
+	HandlerType: (*WorkflowServiceServer)(nil),
+	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "TaskExists",
+			Handler:    _WorkflowService_TaskExists_Handler,
+		},
+		{
+			MethodName: "IsTaskBlocked",
+			Handler:    _WorkflowService_IsTaskBlocked_Handler,
+		},
+	},
+	Streams:  []grpc.StreamDesc{},
+	Metadata: "task.proto",
+}

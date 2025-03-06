@@ -21,7 +21,9 @@
     "@auth0/angular-jwt": "^5.2.0",
     "@popperjs/core": "^2.11.8",
     "bootstrap": "^5.3.3",
+    "d3": "^7.9.0",
     "ng-recaptcha": "^13.2.1",
+    "ngx-toastr": "^19.0.0",
     "rxjs": "~7.8.0",
     "tslib": "^2.3.0",
     "zone.js": "~0.14.3"
@@ -31,6 +33,7 @@
     "@angular/cli": "^17.3.7",
     "@angular/compiler-cli": "^17.3.0",
     "@types/bootstrap": "^5.2.10",
+    "@types/d3": "^7.4.3",
     "@types/jasmine": "~5.1.0",
     "jasmine-core": "~5.1.0",
     "karma": "~6.4.0",

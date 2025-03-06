@@ -71,6 +71,19 @@ service ProjectService {
   rpc UserOnOneProject(UserOnOneProjectReq) returns (UserOnProjectRes) {}
 }
 
+service WorkflowService {
+  rpc TaskExists(TaskExistsRequest) returns (TaskExistsResponse) {}
+  rpc IsTaskBlocked(IsTaskBlockedReq) returns (IsTaskBlockedRes) {}
+}
+
+message IsTaskBlockedReq{
+  string TaskID = 1;
+}
+
+message IsTaskBlockedRes{
+  bool isBlocked = 1;
+}
+
 message UserOnOneProjectReq {
   string projectId = 1;
   string userId = 2;
@@ -84,6 +97,13 @@ message UpdateTaskReq {
   string description = 3;     // Updated description
   string status = 4;          // Updated status
   repeated User members = 5;  // Updated members
+}
+message TaskExistsRequest {
+  string task_id = 1;
+}
+
+message TaskExistsResponse {
+  bool exists = 1;
 }
 
 message UploadFileRequest {

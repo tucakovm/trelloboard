@@ -25,7 +25,12 @@ import { AddMemberTaskComponent } from './tasks/add-member-task/add-member-task.
 import { UnauthorizedComponent } from './unauthorized/unauthorized.component';
 import { NotificationsComponent } from './notifications/notifications.component';
 import { NotificationsProjectComponent } from './notifications-project/notifications-project.component';
+<<<<<<< HEAD
 import {TaskFileComponent} from "./tasks/task-file/task-file.component";
+=======
+import { ToastrModule } from 'ngx-toastr';
+import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
+>>>>>>> feature/workflow2
 @NgModule({
   declarations: [
     AppComponent,
@@ -56,6 +61,8 @@ import {TaskFileComponent} from "./tasks/task-file/task-file.component";
     HttpClientModule,
     FormsModule,
     RecaptchaModule,
+    BrowserAnimationsModule,
+    ToastrModule.forRoot(),
   ],
   providers: [
     {

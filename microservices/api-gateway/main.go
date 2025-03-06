@@ -8,6 +8,13 @@ import (
 	"github.com/golang-jwt/jwt/v4"
 	"github.com/gorilla/mux"
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
+	"github.com/nats-io/nats.go"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/exporters/jaeger"
+	"go.opentelemetry.io/otel/propagation"
+	"go.opentelemetry.io/otel/sdk/resource"
+	sdktrace "go.opentelemetry.io/otel/sdk/trace"
+	semconv "go.opentelemetry.io/otel/semconv/v1.7.0"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/metadata"
@@ -91,10 +98,53 @@ func main() {
 		log.Fatalln("Failed to register NotService gateway:", err)
 	}
 	log.Println("NotService Gateway registered successfully.")
-	log.Println(cfg.FullNotServiceAddress())
-	if notClient == nil {
-		log.Fatal("Notification service client is nil")
+
+	// WorkflowService connection
+	workflowConn, err := grpc.DialContext(
+		ctx,
+		cfg.FullWorkflowServiceAddress(),
+		grpc.WithBlock(),
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
+	)
+	if err != nil {
+		log.Fatalf("Failed to dial WorkflowService: %v", err)
 	}
+	workflowClient := gateway.NewWorkflowServiceClient(workflowConn)
+	if err := gateway.RegisterWorkflowServiceHandlerClient(ctx, gwmux, workflowClient); err != nil {
+		log.Fatalf("Failed to register WorkflowService gateway: %v", err)
+	}
+	log.Println("WorkflowService Gateway registered successfully.")
+
+	// ApiComposerService connection
+	composerConn, err := grpc.DialContext(
+		ctx,
+		cfg.FullComposerAddress(),
+		grpc.WithBlock(),
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
+	)
+	if err != nil {
+		log.Fatalf("Failed to dial ApiComposer: %v", err)
+	}
+	composerClient := gateway.NewApiComposerClient(composerConn)
+	if err := gateway.RegisterApiComposerHandlerClient(ctx, gwmux, composerClient); err != nil {
+		log.Fatalf("Failed to register ApiComposer gateway: %v", err)
+	}
+	log.Println("ApiComposer Gateway registered successfully.")
+
+	//Nats Conn
+	natsConn := NatsConn()
+	defer natsConn.Close()
+
+	exp, err := newExporter(cfg.JaegerEndpoint)
+	if err != nil {
+		log.Fatalf("failed to initialize exporter: %v", err)
+	}
+
+	//Tracer
+	tp := newTraceProvider(exp)
+	defer func() { _ = tp.Shutdown(ctx) }()
+	otel.SetTracerProvider(tp)
+	otel.SetTextMapPropagator(propagation.TraceContext{})
 
 	// Start the HTTP server
 	gwServer := &http.Server{
@@ -126,15 +176,26 @@ func main() {
 var rolePermissions = map[string]map[string][]string{
 	"User": {
 		"GET": {"/api/projects/{username}", "/api/project/{id}", "/api/tasks/{id}", "/api/task/{id}",
+<<<<<<< HEAD
 			"/api/users/{username}", "/api/notifications/{userId}", "/api/tasks/{taskId}/files/{fileId}", "/api/tasks/{taskId}/files"},
 		"POST":   {"/api/tasks/files"},
 		"DELETE": {"/api/users/{username}", "/api/tasks/{taskId}/files/{fileId}"},
+=======
+			"/api/users/{username}", "/api/notifications/{userId}", "/api/workflows/{project_id}", "/api/composition/{projectId}"},
+		"POST":   {},
+		"DELETE": {"/api/users/{username}"},
+>>>>>>> feature/workflow2
 		"PUT":    {"/api/users/change-password", "/api/tasks/{id}"},
 	},
 	"Manager": {
 		"GET": {"/api/projects/{username}", "/api/project/{id}", "/api/tasks/{id}", "/api/task/{id}",
+<<<<<<< HEAD
 			"/api/users/{username}", "/api/notifications/{userId}", "/api/tasks/{taskId}/files/{fileId}", "/api/tasks/{taskId}/files"},
 		"POST": {"/api/project", "/api/task", "/api/tasks/files"},
+=======
+			"/api/users/{username}", "/api/notifications/{userId}", "/api/workflows/{project_id}", "/api/composition/{projectId}"},
+		"POST": {"/api/project", "/api/task", "/api/workflows/create", "/api/workflows/addtask"},
+>>>>>>> feature/workflow2
 		"DELETE": {"/api/project/{id}", "/api/task/{id}", "/api/users/{username}", "/api/task/{projectId}/members/{userId}",
 			"/api/projects/{projectId}/members/{userId}", "/api/tasks/{taskId}/files/{fileId}"},
 		"PUT": {"/api/users/change-password", "/api/task/{id}/members", "/api/projects/{projectId}/members", "/api/tasks/{id}"},
@@ -148,6 +209,10 @@ var publicRoutes = []string{
 	"/api/users/magic-link",
 	"/api/users/recovery",
 	"/api/users/recover-password",
+	"/api/workflows/create",
+	"/api/workflows/addtask",
+	"/api/workflows/{project_id}",
+	"/api/workflows/checktaskdependencies",
 }
 
 func matchesRoute(path string, template string) bool {
@@ -272,7 +337,52 @@ func enableCORS(h http.Handler) http.Handler {
 	})
 }
 
+<<<<<<< HEAD
 //func forwardClaimsToServices(ctx context.Context) context.Context {
 //	claims := ctx.Value("claims").(jwt.MapClaims)
 //	return context.WithValue(ctx, "role", claims["role"])
 //}
+=======
+func forwardClaimsToServices(ctx context.Context) context.Context {
+	claims := ctx.Value("claims").(jwt.MapClaims)
+	return context.WithValue(ctx, "role", claims["role"])
+}
+
+func NatsConn() *nats.Conn {
+	natsURL := os.Getenv("NATS_URL")
+	if natsURL == "" {
+		log.Fatal("NATS_URL environment variable not set")
+	}
+
+	opts := []nats.Option{
+		nats.Timeout(10 * time.Second), // Postavi timeout za povezivanje
+	}
+
+	conn, err := nats.Connect(natsURL, opts...)
+	if err != nil {
+		log.Fatalf("Failed to connect to NATS at %s: %v", natsURL, err)
+	}
+	log.Println("Connected to NATS at:", natsURL)
+	return conn
+}
+
+func newExporter(address string) (sdktrace.SpanExporter, error) {
+	exp, err := jaeger.New(jaeger.WithCollectorEndpoint(jaeger.WithEndpoint(address)))
+	if err != nil {
+		return nil, err
+	}
+	return exp, nil
+}
+
+func newTraceProvider(exp sdktrace.SpanExporter) *sdktrace.TracerProvider {
+	r := resource.NewWithAttributes(
+		semconv.SchemaURL,
+		semconv.ServiceNameKey.String("project-service"),
+	)
+
+	return sdktrace.NewTracerProvider(
+		sdktrace.WithSyncer(exp),
+		sdktrace.WithResource(r),
+	)
+}
+>>>>>>> feature/workflow2

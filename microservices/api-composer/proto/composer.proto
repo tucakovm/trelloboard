@@ -1,0 +1,66 @@
+syntax = "proto3";
+
+option go_package = "proto/composer";
+
+service ApiComposer{
+  rpc Get(GetReq) returns (GetRes) {}
+}
+
+message GetReq{
+  string projectId = 1;
+}
+message GetRes{
+  ApiCompositionObject aco = 1;
+}
+message ApiCompositionObject {
+  repeated Task tasks = 1;
+  Workflow workflow = 2;
+}
+
+message Task {
+  string id = 1;
+  string name = 2;
+  string description = 3;
+  string status = 4;
+  string project_id = 5;
+  repeated User members = 6;
+}
+message User {
+  string id = 1;  // Define User fields based on your Go struct
+  string username = 2;
+  string role = 3;
+}
+message Workflow {
+  string projectId = 1;
+  string projectName = 2;
+  repeated TaskFW tasks = 3;
+}
+
+message TaskFW {
+  string id = 1;
+  string name = 2;
+  string description = 3;
+  repeated string dependencies = 4;
+  bool blocked = 5;
+}
+
+service WorkflowService {
+  rpc GetWorkflowByProjectID(GetWorkflowReq) returns (GetWorkflowRes) {}
+}
+
+message GetWorkflowReq {
+  string project_id = 1;
+}
+message GetWorkflowRes {
+  Workflow workflow = 1;
+}
+
+service TaskService {
+  rpc GetAllByProjectId(GetAllTasksReq) returns (GetAllTasksRes) {}
+}
+message GetAllTasksReq {
+  string id = 1;
+}
+message GetAllTasksRes {
+  repeated Task tasks = 1;
+}

@@ -3,12 +3,12 @@
   <component name="VcsDirectoryMappings">
     <mapping directory="" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/frontend" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/microservices/api-composer/proto/googleapis" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/microservices/api-gateway/proto" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/microservices/api-gateway/proto/googleapis" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/microservices/notifications-service/proto/googleapis" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/microservices/projects-service/proto/googleapis" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/microservices/tasks-service/proto/googleapis" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/microservices/users-service/proto/googleapis" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/microservices/users-service/proto/googleapis/googleapis" vcs="Git" />
   </component>
 </project>

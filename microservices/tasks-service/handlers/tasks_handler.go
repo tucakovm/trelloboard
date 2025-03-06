@@ -11,27 +11,30 @@ import (
 
 	otelCodes "go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/trace"
-
 	"log"
 	"strings"
 	proto "tasks-service/proto/task"
+
 	"tasks-service/service"
 	//"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 type TaskHandler struct {
-	service        *service.TaskService // Use a pointer here
-	projectService proto.ProjectServiceClient
+	service         *service.TaskService // Use a pointer here
+	projectService  proto.ProjectServiceClient
+	workflowService proto.WorkflowServiceClient
 	proto.UnimplementedTaskServiceServer
 	natsConn *nats.Conn
 	Tracer   trace.Tracer
+	//workflowClient WorkflowServiceClient
 }
 
-func NewTaskHandler(service *service.TaskService, projectService proto.ProjectServiceClient, natsConn *nats.Conn, tracer trace.Tracer) *TaskHandler {
+func NewTaskHandler(service *service.TaskService, projectService proto.ProjectServiceClient, workflowService proto.WorkflowServiceClient, natsConn *nats.Conn, tracer trace.Tracer) *TaskHandler {
 	return &TaskHandler{service: service,
-		projectService: projectService,
-		natsConn:       natsConn,
-		Tracer:         tracer}
+		projectService:  projectService,
+		natsConn:        natsConn,
+		workflowService: workflowService,
+		Tracer:          tracer}
 }
 
 //func (h *TaskHandler) DoneTasksByProject(ctx context.Context, req *proto.DoneTasksByProjectReq) (*proto.DoneTasksByProjectRes, error) {
@@ -65,6 +68,26 @@ func (h *TaskHandler) Delete(ctx context.Context, req *proto.DeleteTaskReq) (*pr
 	ctx, span := h.Tracer.Start(ctx, "h.deleteTask")
 	defer span.End()
 	task, _ := h.service.GetById(req.Id, ctx)
+	log.Printf("sending grpc to workflow TaskID: req.id=%s", req.Id)
+
+	// Provera da li zadatak može biti obrisan
+	exists, erre := h.workflowService.TaskExists(ctx, &proto.TaskExistsRequest{TaskId: req.Id})
+	log.Printf("exists=%s", exists)
+
+	if erre != nil {
+		span.SetStatus(otelCodes.Error, erre.Error())
+		log.Printf("Error in workflow Service for task = %s", erre)
+
+		return nil, status.Error(codes.Internal, "failed to check task existence")
+	}
+
+	if exists.Exists {
+		span.SetStatus(otelCodes.Error, "task is part of a workflow and cannot be deleted")
+		log.Printf(" task is part of workflow = %s", erre)
+
+		return nil, status.Error(codes.FailedPrecondition, "task is part of a workflow and cannot be deleted")
+	}
+
 	err := h.service.DeleteTask(req.Id, ctx)
 	if err != nil {
 		span.SetStatus(otelCodes.Error, err.Error())
@@ -334,6 +357,7 @@ func (h *TaskHandler) RemoveMemberTask(ctx context.Context, req *proto.RemoveMem
 
 	return nil, nil
 }
+
 func (h *TaskHandler) UpdateTask(ctx context.Context, req *proto.UpdateTaskReq) (*proto.EmptyResponse, error) {
 	_, span := h.Tracer.Start(ctx, "Publisher.UpdateTask")
 	defer span.End()
@@ -350,6 +374,17 @@ func (h *TaskHandler) UpdateTask(ctx context.Context, req *proto.UpdateTaskReq) 
 		span.SetStatus(otelCodes.Error, err.Error())
 		log.Printf("Error fetching task for update: %v", err)
 		return nil, status.Error(codes.NotFound, "Task not found")
+	}
+
+	workflowReq := &proto.IsTaskBlockedReq{TaskID: req.Id}
+	workflowRes, err := h.workflowService.IsTaskBlocked(ctx, workflowReq)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+	//log.Printf("response: %v", workflowRes.IsBlocked)
+
+	if workflowRes.IsBlocked {
+		return nil, status.Error(codes.Internal, "The task depends on another task")
 	}
 
 	// Update the fields of the task

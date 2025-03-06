@@ -3,11 +3,14 @@ package main
 import (
 	"context"
 	"encoding/base64"
+	"encoding/json"
+	"go.opentelemetry.io/otel/trace"
 	"log"
 	"net"
 	"os"
 	"os/signal"
 	"syscall"
+	nats_helper "tasks-service/nats_helper"
 	tsk "tasks-service/proto/task"
 	"tasks-service/repository"
 	"tasks-service/service"
@@ -62,6 +65,16 @@ func main() {
 		}
 	}(listener)
 
+	// WorkflowService connection
+	workflowConn, err := grpc.DialContext(
+		ctx,
+		cfg.FullWorkflowServiceAddress(),
+		grpc.WithBlock(),
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
+	)
+	workflowClient := tsk.NewWorkflowServiceClient(workflowConn)
+	log.Println("WorkflowService Gateway registered successfully.")
+
 	// ProjectService connection
 	projectConn, err := grpc.DialContext(
 		ctx,
@@ -104,7 +117,7 @@ func main() {
 	serviceProject := service.NewTaskService(*repoTask, tracer, repo)
 	handleErr(err)
 
-	handlerProject := h.NewTaskHandler(serviceProject, projectClient, natsConn, tracer)
+	handlerProject := h.NewTaskHandler(serviceProject, projectClient, workflowClient, natsConn, tracer)
 	handleErr(err)
 
 	// Bootstrap gRPC server.
@@ -118,6 +131,9 @@ func main() {
 	if repo.Client == nil {
 		log.Println("main.go repo.client nil")
 	}
+
+	GetTasksForApiComp(ctx, natsConn, *handlerProject, tracer)
+
 	go func() {
 		if err := grpcServer.Serve(listener); err != nil {
 			log.Fatal("server error: ", err)
@@ -242,5 +258,75 @@ func timeoutUnaryInterceptor(timeout time.Duration) grpc.UnaryServerInterceptor 
 			return nil, status.Error(codes.DeadlineExceeded, "Request timed out")
 		}
 		return resp, err
+	}
+}
+
+func GetTasksForApiComp(
+	ctx context.Context,
+	natsConn *nats.Conn,
+	taskHandler h.TaskHandler,
+	tracer trace.Tracer,
+) {
+	subject := "get-tasks-apiComp"
+
+	_, err := natsConn.Subscribe(subject, func(msg *nats.Msg) {
+		// Parsiraj primljenu poruku
+		var message map[string]string
+		if err := json.Unmarshal(msg.Data, &message); err != nil {
+			log.Printf("Error unmarshaling message: %v", err)
+			return
+		}
+
+		// Dohvati tracing podatke iz headera
+		traceID := msg.Header.Get(nats_helper.TRACE_ID)
+		spanID := msg.Header.Get(nats_helper.SPAN_ID)
+		if traceID == "" || spanID == "" {
+			log.Println("Missing tracing headers in NATS message")
+			return
+		}
+
+		// Kreiraj kontekst za tracing koristeći roditeljski span
+		remoteCtx, err := nats_helper.GetNATSParentContext(msg)
+		if err != nil {
+			log.Fatal(err)
+		}
+		ctxWithRemote := trace.ContextWithRemoteSpanContext(ctx, remoteCtx)
+		_, span := tracer.Start(ctxWithRemote, "Subscriber.GetWorkflow")
+		defer span.End()
+
+		// Proveri prisustvo ProjectId-a
+		projectId, ok := message["ProjectId"]
+		if !ok {
+			log.Printf("Invalid message format: %v", message)
+			return
+		}
+
+		protoReg := &tsk.GetAllTasksReq{Id: projectId}
+
+		// Pozovi workflow servis
+		taskRes, err := taskHandler.GetAllByProjectId(ctx, protoReg)
+		if err != nil {
+			log.Printf("Error fetching workflow: %v", err)
+		}
+
+		// Serijalizuj rezultat
+		messageDataWorkflow, err := json.Marshal(taskRes.Tasks)
+		if err != nil {
+			log.Printf("Error marshaling task response: %v", err)
+			return
+		}
+
+		// Odgovori na zahtev koristeći reply subject iz primljene poruke
+		if msg.Reply != "" {
+			if err := natsConn.Publish(msg.Reply, messageDataWorkflow); err != nil {
+				log.Printf("Error publishing task response: %v", err)
+			}
+		} else {
+			log.Println("No reply subject provided in the request")
+		}
+	})
+
+	if err != nil {
+		log.Printf("Error subscribing to subject %s: %v", subject, err)
 	}
 }

@@ -51,6 +51,77 @@
           />
         </div>
       </div>
+      <div class="row mt-4">
+        <div class="col-md-12 text-center">
+          <ng-container *ngIf="workflow; else createWorkflowBlock">
+            <h4 class="text-success">Workflow</h4>
+            <div class="row mt-3">
+              <div class="col-md-12 text-center">
+                <button
+                  *ngIf="isManager()"
+                  class="btn btn-success w-100 shadow-sm"
+                  (click)="openTaskModal()"
+                >
+                  Add Task with Dependencies
+                </button>
+              </div>
+            </div>
+
+          </ng-container>
+
+          <ng-template #createWorkflowBlock>
+            <button
+              *ngIf="isManager()"
+              class="btn btn-primary w-100 shadow-sm"
+              (click)="createWorkflow()"
+            >
+              Create Workflow
+            </button>
+          </ng-template>
+
+          <div>
+            <h2>Add Main Task</h2>
+            <label for="mainTaskSelect">Select Main Task:</label>
+            <select id="mainTaskSelect" [(ngModel)]="mainTask.id">
+              <option *ngFor="let task of comboBoxTasks" [value]="task.id">
+                {{ task.name }}
+              </option>
+            </select>
+            <textarea
+              placeholder="Main Task Name"
+              [(ngModel)]="mainTask.name"
+            ></textarea>
+            <textarea
+              placeholder="Main Task Description"
+              [(ngModel)]="mainTask.description"
+            ></textarea>
+
+            <h2>Add Dependent Task</h2>
+            <label for="dependentTaskSelect">Select Dependent Task:</label>
+            <select id="dependentTaskSelect" [(ngModel)]="dependentTask.id">
+              <option *ngFor="let task of comboBoxTasks" [value]="task.id">
+                {{ task.name }}
+              </option>
+            </select>
+            <textarea
+              placeholder="Dependent Task Name"
+              [(ngModel)]="dependentTask.name"
+            ></textarea>
+            <textarea
+              placeholder="Dependent Task Description"
+              [(ngModel)]="dependentTask.description"
+            ></textarea>
+
+            <button (click)="addTasks()">Add Dependency</button>
+          </div>
+
+
+          </div>
+        </div>
+      </div>
+
+
+
 
       <div class="row mb-4">
         <div class="col-md-6">
@@ -128,5 +199,8 @@
         </div>
       </div>
     </div>
-  </div>
+
+
+  <h3>Workflow Graph</h3>
+  <svg id="workflow-graph" width="100%" height="600px"></svg>
 </div>

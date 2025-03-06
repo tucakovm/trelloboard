@@ -13,6 +13,8 @@ type Config struct {
 	ProjectServiceAddress string
 	JaegerEndpoint        string
 	NamenodeUrl           string
+	WorkflowPort          string
+	WorkflowAddress       string
 }
 
 func GetConfig() Config {
@@ -25,6 +27,8 @@ func GetConfig() Config {
 		ProjectServiceAddress: os.Getenv("PROJECTS_SERVICE_ADDRESS"),
 		JaegerEndpoint:        os.Getenv("JAEGER_ENDPOINT"),
 		NamenodeUrl:           os.Getenv("NAMENODE_URL"),
+		WorkflowPort:          fmt.Sprintf(":%s", os.Getenv("WORKFLOW_SERVICE_PORT")),
+		WorkflowAddress:       os.Getenv("WORKFLOW_SERVICE_ADDRESS"),
 	}
 }
 
@@ -34,4 +38,8 @@ func (cfg Config) FullUserServiceAddress() string {
 
 func (cfg Config) FullProjectServiceAddress() string {
 	return fmt.Sprintf("%s%s", cfg.ProjectServiceAddress, cfg.ProjectServicePort)
+}
+
+func (cfg Config) FullWorkflowServiceAddress() string {
+	return fmt.Sprintf("%s%s", cfg.WorkflowAddress, cfg.WorkflowPort)
 }

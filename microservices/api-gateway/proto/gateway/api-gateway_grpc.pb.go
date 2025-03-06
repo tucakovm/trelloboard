@@ -311,6 +311,108 @@ var ProjectService_ServiceDesc = grpc.ServiceDesc{
 }
 
 const (
+	ApiComposer_Get_FullMethodName = "/ApiComposer/Get"
+)
+
+// ApiComposerClient is the client API for ApiComposer service.
+//
+// For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
+type ApiComposerClient interface {
+	Get(ctx context.Context, in *GetTasksAndWorkflowReq, opts ...grpc.CallOption) (*GetTasksAndWorkflowRes, error)
+}
+
+type apiComposerClient struct {
+	cc grpc.ClientConnInterface
+}
+
+func NewApiComposerClient(cc grpc.ClientConnInterface) ApiComposerClient {
+	return &apiComposerClient{cc}
+}
+
+func (c *apiComposerClient) Get(ctx context.Context, in *GetTasksAndWorkflowReq, opts ...grpc.CallOption) (*GetTasksAndWorkflowRes, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetTasksAndWorkflowRes)
+	err := c.cc.Invoke(ctx, ApiComposer_Get_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// ApiComposerServer is the server API for ApiComposer service.
+// All implementations must embed UnimplementedApiComposerServer
+// for forward compatibility.
+type ApiComposerServer interface {
+	Get(context.Context, *GetTasksAndWorkflowReq) (*GetTasksAndWorkflowRes, error)
+	mustEmbedUnimplementedApiComposerServer()
+}
+
+// UnimplementedApiComposerServer must be embedded to have
+// forward compatible implementations.
+//
+// NOTE: this should be embedded by value instead of pointer to avoid a nil
+// pointer dereference when methods are called.
+type UnimplementedApiComposerServer struct{}
+
+func (UnimplementedApiComposerServer) Get(context.Context, *GetTasksAndWorkflowReq) (*GetTasksAndWorkflowRes, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Get not implemented")
+}
+func (UnimplementedApiComposerServer) mustEmbedUnimplementedApiComposerServer() {}
+func (UnimplementedApiComposerServer) testEmbeddedByValue()                     {}
+
+// UnsafeApiComposerServer may be embedded to opt out of forward compatibility for this service.
+// Use of this interface is not recommended, as added methods to ApiComposerServer will
+// result in compilation errors.
+type UnsafeApiComposerServer interface {
+	mustEmbedUnimplementedApiComposerServer()
+}
+
+func RegisterApiComposerServer(s grpc.ServiceRegistrar, srv ApiComposerServer) {
+	// If the following call pancis, it indicates UnimplementedApiComposerServer was
+	// embedded by pointer and is nil.  This will cause panics if an
+	// unimplemented method is ever invoked, so we test this at initialization
+	// time to prevent it from happening at runtime later due to I/O.
+	if t, ok := srv.(interface{ testEmbeddedByValue() }); ok {
+		t.testEmbeddedByValue()
+	}
+	s.RegisterService(&ApiComposer_ServiceDesc, srv)
+}
+
+func _ApiComposer_Get_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetTasksAndWorkflowReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ApiComposerServer).Get(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ApiComposer_Get_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ApiComposerServer).Get(ctx, req.(*GetTasksAndWorkflowReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+// ApiComposer_ServiceDesc is the grpc.ServiceDesc for ApiComposer service.
+// It's only intended for direct use with grpc.RegisterService,
+// and not to be introspected or modified (even as a copy)
+var ApiComposer_ServiceDesc = grpc.ServiceDesc{
+	ServiceName: "ApiComposer",
+	HandlerType: (*ApiComposerServer)(nil),
+	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "Get",
+			Handler:    _ApiComposer_Get_Handler,
+		},
+	},
+	Streams:  []grpc.StreamDesc{},
+	Metadata: "api-gateway.proto",
+}
+
+const (
 	TaskService_GetAllByProjectId_FullMethodName = "/TaskService/GetAllByProjectId"
 	TaskService_Create_FullMethodName            = "/TaskService/Create"
 	TaskService_Delete_FullMethodName            = "/TaskService/Delete"
@@ -1334,6 +1436,270 @@ var NotificationService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "CreateNot",
 			Handler:    _NotificationService_CreateNot_Handler,
+		},
+	},
+	Streams:  []grpc.StreamDesc{},
+	Metadata: "api-gateway.proto",
+}
+
+const (
+	WorkflowService_CreateWorkflow_FullMethodName            = "/WorkflowService/CreateWorkflow"
+	WorkflowService_AddTask_FullMethodName                   = "/WorkflowService/AddTask"
+	WorkflowService_GetWorkflowByProjectID_FullMethodName    = "/WorkflowService/GetWorkflowByProjectID"
+	WorkflowService_DeleteWorkflowByProjectID_FullMethodName = "/WorkflowService/DeleteWorkflowByProjectID"
+	WorkflowService_CheckTaskDependencies_FullMethodName     = "/WorkflowService/CheckTaskDependencies"
+)
+
+// WorkflowServiceClient is the client API for WorkflowService service.
+//
+// For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
+type WorkflowServiceClient interface {
+	// Create a new workflow
+	CreateWorkflow(ctx context.Context, in *CreateWorkflowReq, opts ...grpc.CallOption) (*EmptyResponse, error)
+	// Add a task to a project
+	AddTask(ctx context.Context, in *AddTaskReq, opts ...grpc.CallOption) (*EmptyResponse, error)
+	// Get the workflow details by project ID
+	GetWorkflowByProjectID(ctx context.Context, in *GetWorkflowReq, opts ...grpc.CallOption) (*GetWorkflowRes, error)
+	// Delete a workflow by project ID
+	DeleteWorkflowByProjectID(ctx context.Context, in *GetWorkflowReq, opts ...grpc.CallOption) (*EmptyResponse, error)
+	// Check if all task dependencies are met
+	CheckTaskDependencies(ctx context.Context, in *CheckTaskDependenciesReq, opts ...grpc.CallOption) (*CheckTaskDependenciesRes, error)
+}
+
+type workflowServiceClient struct {
+	cc grpc.ClientConnInterface
+}
+
+func NewWorkflowServiceClient(cc grpc.ClientConnInterface) WorkflowServiceClient {
+	return &workflowServiceClient{cc}
+}
+
+func (c *workflowServiceClient) CreateWorkflow(ctx context.Context, in *CreateWorkflowReq, opts ...grpc.CallOption) (*EmptyResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(EmptyResponse)
+	err := c.cc.Invoke(ctx, WorkflowService_CreateWorkflow_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *workflowServiceClient) AddTask(ctx context.Context, in *AddTaskReq, opts ...grpc.CallOption) (*EmptyResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(EmptyResponse)
+	err := c.cc.Invoke(ctx, WorkflowService_AddTask_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *workflowServiceClient) GetWorkflowByProjectID(ctx context.Context, in *GetWorkflowReq, opts ...grpc.CallOption) (*GetWorkflowRes, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetWorkflowRes)
+	err := c.cc.Invoke(ctx, WorkflowService_GetWorkflowByProjectID_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *workflowServiceClient) DeleteWorkflowByProjectID(ctx context.Context, in *GetWorkflowReq, opts ...grpc.CallOption) (*EmptyResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(EmptyResponse)
+	err := c.cc.Invoke(ctx, WorkflowService_DeleteWorkflowByProjectID_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *workflowServiceClient) CheckTaskDependencies(ctx context.Context, in *CheckTaskDependenciesReq, opts ...grpc.CallOption) (*CheckTaskDependenciesRes, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(CheckTaskDependenciesRes)
+	err := c.cc.Invoke(ctx, WorkflowService_CheckTaskDependencies_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// WorkflowServiceServer is the server API for WorkflowService service.
+// All implementations must embed UnimplementedWorkflowServiceServer
+// for forward compatibility.
+type WorkflowServiceServer interface {
+	// Create a new workflow
+	CreateWorkflow(context.Context, *CreateWorkflowReq) (*EmptyResponse, error)
+	// Add a task to a project
+	AddTask(context.Context, *AddTaskReq) (*EmptyResponse, error)
+	// Get the workflow details by project ID
+	GetWorkflowByProjectID(context.Context, *GetWorkflowReq) (*GetWorkflowRes, error)
+	// Delete a workflow by project ID
+	DeleteWorkflowByProjectID(context.Context, *GetWorkflowReq) (*EmptyResponse, error)
+	// Check if all task dependencies are met
+	CheckTaskDependencies(context.Context, *CheckTaskDependenciesReq) (*CheckTaskDependenciesRes, error)
+	mustEmbedUnimplementedWorkflowServiceServer()
+}
+
+// UnimplementedWorkflowServiceServer must be embedded to have
+// forward compatible implementations.
+//
+// NOTE: this should be embedded by value instead of pointer to avoid a nil
+// pointer dereference when methods are called.
+type UnimplementedWorkflowServiceServer struct{}
+
+func (UnimplementedWorkflowServiceServer) CreateWorkflow(context.Context, *CreateWorkflowReq) (*EmptyResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CreateWorkflow not implemented")
+}
+func (UnimplementedWorkflowServiceServer) AddTask(context.Context, *AddTaskReq) (*EmptyResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method AddTask not implemented")
+}
+func (UnimplementedWorkflowServiceServer) GetWorkflowByProjectID(context.Context, *GetWorkflowReq) (*GetWorkflowRes, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetWorkflowByProjectID not implemented")
+}
+func (UnimplementedWorkflowServiceServer) DeleteWorkflowByProjectID(context.Context, *GetWorkflowReq) (*EmptyResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method DeleteWorkflowByProjectID not implemented")
+}
+func (UnimplementedWorkflowServiceServer) CheckTaskDependencies(context.Context, *CheckTaskDependenciesReq) (*CheckTaskDependenciesRes, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CheckTaskDependencies not implemented")
+}
+func (UnimplementedWorkflowServiceServer) mustEmbedUnimplementedWorkflowServiceServer() {}
+func (UnimplementedWorkflowServiceServer) testEmbeddedByValue()                         {}
+
+// UnsafeWorkflowServiceServer may be embedded to opt out of forward compatibility for this service.
+// Use of this interface is not recommended, as added methods to WorkflowServiceServer will
+// result in compilation errors.
+type UnsafeWorkflowServiceServer interface {
+	mustEmbedUnimplementedWorkflowServiceServer()
+}
+
+func RegisterWorkflowServiceServer(s grpc.ServiceRegistrar, srv WorkflowServiceServer) {
+	// If the following call pancis, it indicates UnimplementedWorkflowServiceServer was
+	// embedded by pointer and is nil.  This will cause panics if an
+	// unimplemented method is ever invoked, so we test this at initialization
+	// time to prevent it from happening at runtime later due to I/O.
+	if t, ok := srv.(interface{ testEmbeddedByValue() }); ok {
+		t.testEmbeddedByValue()
+	}
+	s.RegisterService(&WorkflowService_ServiceDesc, srv)
+}
+
+func _WorkflowService_CreateWorkflow_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateWorkflowReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(WorkflowServiceServer).CreateWorkflow(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: WorkflowService_CreateWorkflow_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(WorkflowServiceServer).CreateWorkflow(ctx, req.(*CreateWorkflowReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _WorkflowService_AddTask_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AddTaskReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(WorkflowServiceServer).AddTask(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: WorkflowService_AddTask_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(WorkflowServiceServer).AddTask(ctx, req.(*AddTaskReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _WorkflowService_GetWorkflowByProjectID_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetWorkflowReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(WorkflowServiceServer).GetWorkflowByProjectID(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: WorkflowService_GetWorkflowByProjectID_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(WorkflowServiceServer).GetWorkflowByProjectID(ctx, req.(*GetWorkflowReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _WorkflowService_DeleteWorkflowByProjectID_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetWorkflowReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(WorkflowServiceServer).DeleteWorkflowByProjectID(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: WorkflowService_DeleteWorkflowByProjectID_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(WorkflowServiceServer).DeleteWorkflowByProjectID(ctx, req.(*GetWorkflowReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _WorkflowService_CheckTaskDependencies_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CheckTaskDependenciesReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(WorkflowServiceServer).CheckTaskDependencies(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: WorkflowService_CheckTaskDependencies_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(WorkflowServiceServer).CheckTaskDependencies(ctx, req.(*CheckTaskDependenciesReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+// WorkflowService_ServiceDesc is the grpc.ServiceDesc for WorkflowService service.
+// It's only intended for direct use with grpc.RegisterService,
+// and not to be introspected or modified (even as a copy)
+var WorkflowService_ServiceDesc = grpc.ServiceDesc{
+	ServiceName: "WorkflowService",
+	HandlerType: (*WorkflowServiceServer)(nil),
+	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "CreateWorkflow",
+			Handler:    _WorkflowService_CreateWorkflow_Handler,
+		},
+		{
+			MethodName: "AddTask",
+			Handler:    _WorkflowService_AddTask_Handler,
+		},
+		{
+			MethodName: "GetWorkflowByProjectID",
+			Handler:    _WorkflowService_GetWorkflowByProjectID_Handler,
+		},
+		{
+			MethodName: "DeleteWorkflowByProjectID",
+			Handler:    _WorkflowService_DeleteWorkflowByProjectID_Handler,
+		},
+		{
+			MethodName: "CheckTaskDependencies",
+			Handler:    _WorkflowService_CheckTaskDependencies_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

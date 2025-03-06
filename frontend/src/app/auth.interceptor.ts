@@ -10,7 +10,10 @@ export class AuthInterceptor implements HttpInterceptor {
 
   intercept(req: HttpRequest<any>, next: HttpHandler): Observable<HttpEvent<any>> {
     // Dohvati token
+
     const token = this.authService.getToken();
+    console.log('Token sent in header:', token);
+
 
     if (token) {
       // Ako token postoji, dodaj ga u Authorization header

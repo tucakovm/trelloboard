@@ -63,7 +63,7 @@ func main() {
 		}
 	}(listener)
 
-	log.Println("Not Serices listening on port :" + cfg.Address)
+	log.Println("Not Services listening on port :" + cfg.Address)
 
 	//Nats Conn
 	natsConn := NatsConn()
