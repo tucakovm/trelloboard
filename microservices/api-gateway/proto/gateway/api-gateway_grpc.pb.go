@@ -31,6 +31,11 @@ const (
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type ProjectServiceClient interface {
+	//	rpc GetAllProjects(GetAllProjectsReq) returns (GetAllProjectsRes) {
+	//	  option (google.api.http) = {
+	//	    get: "/api/projects/{userId}/{username}"
+	//	  };
+	//	}
 	GetAllProjects(ctx context.Context, in *GetAllProjectsReq, opts ...grpc.CallOption) (*GetAllProjectsRes, error)
 	Create(ctx context.Context, in *CreateProjectReq, opts ...grpc.CallOption) (*EmptyResponse, error)
 	Delete(ctx context.Context, in *DeleteProjectReq, opts ...grpc.CallOption) (*EmptyResponse, error)
@@ -111,6 +116,11 @@ func (c *projectServiceClient) RemoveMember(ctx context.Context, in *RemoveMembe
 // All implementations must embed UnimplementedProjectServiceServer
 // for forward compatibility.
 type ProjectServiceServer interface {
+	//	rpc GetAllProjects(GetAllProjectsReq) returns (GetAllProjectsRes) {
+	//	  option (google.api.http) = {
+	//	    get: "/api/projects/{userId}/{username}"
+	//	  };
+	//	}
 	GetAllProjects(context.Context, *GetAllProjectsReq) (*GetAllProjectsRes, error)
 	Create(context.Context, *CreateProjectReq) (*EmptyResponse, error)
 	Delete(context.Context, *DeleteProjectReq) (*EmptyResponse, error)

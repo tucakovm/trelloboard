@@ -429,6 +429,74 @@ func (tr *TaskRepo) Update(task domain.Task, ctx context.Context) error {
 	return nil
 }
 
+func (tr *TaskRepo) MarkTasksAsDeleting(projectID string, ctx context.Context) error {
+	ctx, span := tr.Tracer.Start(ctx, "r.markTasksAsDeleting")
+	defer span.End()
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	collection := tr.getCollection()
+	if collection == nil {
+		return fmt.Errorf("failed to retrieve collection")
+	}
+
+	// Aggregation pipeline update
+	update := mongo.Pipeline{
+		{{"$set", bson.D{
+			{"name", bson.D{
+				{"$concat", bson.A{"$name", " (In deletion process)"}},
+			}},
+		}}},
+	}
+
+	_, err := collection.UpdateMany(ctx, bson.M{"project_id": projectID}, update)
+	if err != nil {
+		span.SetStatus(otelCodes.Error, err.Error())
+		log.Println("Error updating task names:", err)
+		return err
+	}
+
+	log.Printf("Tasks for ProjectID %s marked as 'In deletion process'", projectID)
+	return nil
+}
+
+func (tr *TaskRepo) UnmarkTasksAsDeleting(projectID string, ctx context.Context) error {
+	ctx, span := tr.Tracer.Start(ctx, "r.unmarkTasksAsDeleting")
+	defer span.End()
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	collection := tr.getCollection()
+	if collection == nil {
+		return fmt.Errorf("failed to retrieve collection")
+	}
+
+	// Aggregation pipeline update
+	update := mongo.Pipeline{
+		{{"$set", bson.D{
+			{"name", bson.D{
+				{"$replaceOne", bson.D{
+					{"input", "$name"},
+					{"find", " (In deletion process)"},
+					{"replacement", ""},
+				}},
+			}},
+		}}},
+	}
+
+	_, err := collection.UpdateMany(ctx, bson.M{"project_id": projectID}, update)
+	if err != nil {
+		span.SetStatus(otelCodes.Error, err.Error())
+		log.Println("Error unmarking task names:", err)
+		return err
+	}
+
+	log.Printf("Tasks for ProjectID %s unmarked from 'In deletion process'", projectID)
+	return nil
+}
+
 //REDIS---------------
 
 func (tr *TaskRepo) Post(task *domain.Task, ctx context.Context) error {

@@ -13,6 +13,7 @@ import (
 	"log"
 	"os"
 	"projects_module/domain"
+	"strings"
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
@@ -300,8 +301,7 @@ func (pr *ProjectRepo) DoesMemberExistOnProject(projectId string, userId string,
 	return true, nil
 }
 
-func (pr *ProjectRepo) Delete(id string, ctx context.Context) error {
-
+func (pr *ProjectRepo) Delete(id string, ctx context.Context) (*domain.Project, error) {
 	ctx, span := pr.Tracer.Start(ctx, "r.deleteProject")
 	defer span.End()
 
@@ -310,16 +310,34 @@ func (pr *ProjectRepo) Delete(id string, ctx context.Context) error {
 
 	projectsCollection := pr.getCollection()
 
-	objID, _ := primitive.ObjectIDFromHex(id)
-	filter := bson.D{{Key: "_id", Value: objID}}
-	result, err := projectsCollection.DeleteOne(ctx, filter)
+	objID, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
 		span.SetStatus(otelCodes.Error, err.Error())
 		log.Println(err)
-		return err
+		return nil, err
 	}
+
+	var project domain.Project
+	err = projectsCollection.FindOne(ctx, bson.M{"_id": objID}).Decode(&project)
+	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			log.Println("Project not found")
+			return nil, nil
+		}
+		span.SetStatus(otelCodes.Error, err.Error())
+		log.Println(err)
+		return nil, err
+	}
+
+	result, err := projectsCollection.DeleteOne(ctx, bson.M{"_id": objID})
+	if err != nil {
+		span.SetStatus(otelCodes.Error, err.Error())
+		log.Println(err)
+		return nil, err
+	}
+
 	log.Printf("Documents deleted: %v\n", result.DeletedCount)
-	return nil
+	return &project, nil
 }
 
 func (pr *ProjectRepo) GetById(id string, ctx context.Context) (*domain.Project, error) {
@@ -426,6 +444,96 @@ func (pr *ProjectRepo) RemoveMember(projectId string, userId string, ctx context
 	}
 
 	log.Printf("User %s removed from project %s", userId, projectId)
+	return nil
+}
+
+func (pr *ProjectRepo) MarkAsDeleting(id string, ctx context.Context) error {
+	ctx, span := pr.Tracer.Start(ctx, "r.markProjectAsDeleting")
+	defer span.End()
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	projectsCollection := pr.getCollection()
+
+	objID, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		span.SetStatus(otelCodes.Error, err.Error())
+		log.Println("Invalid ID format:", err)
+		return err
+	}
+
+	var project struct {
+		Name string `bson:"name"`
+	}
+	err = projectsCollection.FindOne(ctx, bson.M{"_id": objID}).Decode(&project)
+	if err != nil {
+		span.SetStatus(otelCodes.Error, err.Error())
+		log.Println("Error finding project:", err)
+		return err
+	}
+
+	const suffix = " (In deletion process)"
+	if !strings.HasSuffix(project.Name, suffix) {
+		project.Name += suffix
+	}
+
+	update := bson.M{
+		"$set": bson.M{"name": project.Name},
+	}
+
+	_, err = projectsCollection.UpdateOne(ctx, bson.M{"_id": objID}, update)
+	if err != nil {
+		span.SetStatus(otelCodes.Error, err.Error())
+		log.Println("Error updating project name:", err)
+		return err
+	}
+
+	return nil
+}
+
+func (pr *ProjectRepo) UnmarkAsDeleting(id string, ctx context.Context) error {
+	ctx, span := pr.Tracer.Start(ctx, "r.unmarkProjectAsDeleting")
+	defer span.End()
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	projectsCollection := pr.getCollection()
+
+	objID, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		span.SetStatus(otelCodes.Error, err.Error())
+		log.Println("Invalid ID format:", err)
+		return err
+	}
+
+	var project struct {
+		Name string `bson:"name"`
+	}
+	err = projectsCollection.FindOne(ctx, bson.M{"_id": objID}).Decode(&project)
+	if err != nil {
+		span.SetStatus(otelCodes.Error, err.Error())
+		log.Println("Error finding project:", err)
+		return err
+	}
+
+	const suffix = " (In deletion process)"
+	if strings.HasSuffix(project.Name, suffix) {
+		project.Name = strings.TrimSuffix(project.Name, suffix)
+	}
+
+	update := bson.M{
+		"$set": bson.M{"name": project.Name},
+	}
+
+	_, err = projectsCollection.UpdateOne(ctx, bson.M{"_id": objID}, update)
+	if err != nil {
+		span.SetStatus(otelCodes.Error, err.Error())
+		log.Println("Error updating project name:", err)
+		return err
+	}
+
 	return nil
 }
 

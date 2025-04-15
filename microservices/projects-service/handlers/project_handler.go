@@ -117,22 +117,76 @@ func (h ProjectHandler) GetAllProjects(ctx context.Context, req *proto.GetAllPro
 }
 
 func (h ProjectHandler) Delete(ctx context.Context, req *proto.DeleteProjectReq) (*proto.EmptyResponse, error) {
-	ctx, span := h.Tracer.Start(ctx, "h.deleteProject")
+	ctx, span := h.Tracer.Start(ctx, "h.deleteProject-saga")
 	defer span.End()
 
-	username, _ := h.service.GetById(req.Id, ctx)
+	headers := nats.Header{}
+	headers.Set(nats_helper.TRACE_ID, span.SpanContext().TraceID().String())
+	headers.Set(nats_helper.SPAN_ID, span.SpanContext().SpanID().String())
 
-	err := h.service.Delete(req.Id, ctx)
+	subjectTasks := "delete-tasks-saga"
+	replySubjectTask := "delete-tasks-saga-reply"
+
+	username, err := h.service.GetById(req.Id, ctx)
 	if err != nil {
 		span.SetStatus(otelCodes.Error, err.Error())
-		return nil, status.Error(codes.InvalidArgument, "bad request ...")
+		return nil, status.Error(codes.NotFound, "project not found")
+	}
+	err = h.service.MarkAsDeleting(req.Id, ctx)
+	if err != nil {
+		return nil, status.Error(codes.Internal, "failed to move project in deletion process")
 	}
 
-	err = h.service.DeleteFromCache(req.Id, username.Manager.Username, ctx)
+	responseChan := make(chan *nats.Msg, 1)
+
+	_, err = h.natsConn.ChanSubscribe(replySubjectTask, responseChan)
 	if err != nil {
-		log.Printf("error deleting from cache")
+		span.SetStatus(otelCodes.Error, err.Error())
+		return nil, status.Error(codes.Internal, "failed to subscribe for response")
 	}
-	return nil, nil
+
+	if err != nil {
+		log.Printf("[ERROR] Failed to marshal message: %v", err)
+		return nil, status.Error(codes.Internal, "Failed to marshal message")
+	}
+
+	log.Println("Publishing delete-tasks-saga message...")
+	msg := &nats.Msg{
+		Subject: subjectTasks,
+		Reply:   replySubjectTask,
+		Data:    []byte(req.Id),
+		Header:  headers,
+	}
+	err = h.natsConn.PublishMsg(msg)
+	if err != nil {
+		span.SetStatus(otelCodes.Error, err.Error())
+		return nil, status.Error(codes.Internal, "failed to publish delete task event")
+	}
+
+	select {
+	case msg := <-responseChan:
+		log.Printf("msg projectServer data : %s\n", string(msg.Data))
+		_, err = h.service.Delete(req.Id, ctx)
+		if err != nil {
+			span.SetStatus(otelCodes.Error, err.Error())
+			return nil, status.Error(codes.InvalidArgument, "bad request ...")
+		}
+
+		err = h.service.DeleteFromCache(req.Id, username.Manager.Username, ctx)
+		if err != nil {
+			log.Printf("Error deleting from cache: %v", err)
+		}
+
+		return &proto.EmptyResponse{}, nil
+
+	case <-time.After(5 * time.Second):
+		log.Println("Timeout waiting for task deletion response, aborting project deletion")
+		err = h.service.UnMarkAsDeleting(req.Id, ctx)
+		if err != nil {
+			return nil, status.Error(codes.Internal, "failed to unmark project from deletion process")
+		}
+		return nil, status.Error(codes.DeadlineExceeded, "task deletion timeout")
+	}
 }
 
 func (h ProjectHandler) GetById(ctx context.Context, req *proto.GetByIdReq) (*proto.GetByIdRes, error) {

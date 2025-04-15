@@ -53,6 +53,18 @@ func (s *TaskService) DoneTasksByProject(id string, ctx context.Context) (bool, 
 	return s.repo.HasIncompleteTasksByProject(id, ctx)
 }
 
+func (s *TaskService) MarkTasksAsDeleting(projectID string, ctx context.Context) error {
+	ctx, span := s.Tracer.Start(ctx, "s.MarkTasksAsDeleting")
+	defer span.End()
+	return s.repo.MarkTasksAsDeleting(projectID, ctx)
+}
+
+func (s *TaskService) UnmarkTasksAsDeleting(projectID string, ctx context.Context) error {
+	ctx, span := s.Tracer.Start(ctx, "s.UnmarkTasksAsDeleting")
+	defer span.End()
+	return s.repo.UnmarkTasksAsDeleting(projectID, ctx)
+}
+
 func (s *TaskService) GetById(id string, ctx context.Context) (*proto.Task, error) {
 	ctx, span := s.Tracer.Start(ctx, "s.verify")
 	defer span.End()

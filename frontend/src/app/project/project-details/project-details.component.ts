@@ -19,12 +19,8 @@ import { ToastrService } from 'ngx-toastr';
 })
 export class ProjectDetailsComponent implements OnInit {
   id: string | null = null;
-<<<<<<< HEAD
   userId: string | null = null;
   project:Project = {
-=======
-  project: Project = {
->>>>>>> feature/workflow2
     id: '',
     name: '',
     completionDate: new Date(),
@@ -212,15 +208,6 @@ export class ProjectDetailsComponent implements OnInit {
       this.projectService.deleteProjectById(this.id).subscribe({
         next: (response) => {
           console.log('Project deleted successfully:', response);
-<<<<<<< HEAD
-          // if(this.id){
-          //   this.deleteAllTasksByProjectId(this.id);
-          // }
-=======
-          if (this.id) {
-            this.deleteAllTasksByProjectId(this.id);
-          }
->>>>>>> feature/workflow2
           this.router.navigate(['/all-projects'])
         },
         error: (error) => {

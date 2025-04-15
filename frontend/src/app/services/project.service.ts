@@ -3,13 +3,8 @@ import { Injectable } from '@angular/core';
 import { map, Observable } from 'rxjs';
 import { Project } from '../model/project';
 import { UserFP } from '../model/userForProject';
-<<<<<<< HEAD
-import { catchError } from 'rxjs/operators';
-import { of , timeout} from 'rxjs';
-=======
 import {catchError, tap} from 'rxjs/operators';
-import { of } from 'rxjs';
->>>>>>> feature/workflow2
+import { of , timeout} from 'rxjs';
 import { AuthService } from './auth.service';
 
 @Injectable({

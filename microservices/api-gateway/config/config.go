@@ -56,7 +56,6 @@ func (cfg Config) FullUserServiceAddress() string {
 func (cfg Config) FullNotServiceAddress() string {
 	return fmt.Sprintf("%s%s", cfg.NotServiceAddress, cfg.NotServicePort)
 }
-<<<<<<< HEAD
 
 type ErrResp struct {
 	URL        string
@@ -66,11 +65,10 @@ type ErrResp struct {
 
 func (e ErrResp) Error() string {
 	return fmt.Sprintf("error [status code %d] for request: HTTP %s %s", e.StatusCode, e.Method, e.URL)
-=======
+}
 func (cfg Config) FullWorkflowServiceAddress() string {
 	return fmt.Sprintf("%s%s", cfg.WorkflowServiceAddress, cfg.WorkflowServicePort)
 }
 func (cfg Config) FullComposerAddress() string {
 	return fmt.Sprintf("%s%s", cfg.ApiComposerAddress, cfg.ApiComposerPort)
->>>>>>> feature/workflow2
 }

@@ -114,10 +114,10 @@ func main() {
 	log.Println("created hdfs repo")
 	//checkHDFSConnection(repo)
 
-	serviceProject := service.NewTaskService(*repoTask, tracer, repo)
+	serviceTask := service.NewTaskService(*repoTask, tracer, repo)
 	handleErr(err)
 
-	handlerProject := h.NewTaskHandler(serviceProject, projectClient, workflowClient, natsConn, tracer)
+	handlerProject := h.NewTaskHandler(serviceTask, projectClient, workflowClient, natsConn, tracer)
 	handleErr(err)
 
 	// Bootstrap gRPC server.
@@ -133,6 +133,7 @@ func main() {
 	}
 
 	GetTasksForApiComp(ctx, natsConn, *handlerProject, tracer)
+	go SubscribeToDeleteTasksSaga(natsConn, *serviceTask, tracer)
 
 	go func() {
 		if err := grpcServer.Serve(listener); err != nil {
@@ -246,14 +247,11 @@ func timeoutUnaryInterceptor(timeout time.Duration) grpc.UnaryServerInterceptor 
 		info *grpc.UnaryServerInfo,
 		handler grpc.UnaryHandler,
 	) (interface{}, error) {
-		// Kreiraj novi kontekst sa timeout-om
 		ctx, cancel := context.WithTimeout(ctx, timeout)
 		defer cancel()
 
-		// Obradi zahtev sa novim kontekstom
 		resp, err := handler(ctx, req)
 
-		// Ako je kontekst istekao, vrati odgovarajući status
 		if ctx.Err() == context.DeadlineExceeded {
 			return nil, status.Error(codes.DeadlineExceeded, "Request timed out")
 		}
@@ -270,14 +268,12 @@ func GetTasksForApiComp(
 	subject := "get-tasks-apiComp"
 
 	_, err := natsConn.Subscribe(subject, func(msg *nats.Msg) {
-		// Parsiraj primljenu poruku
 		var message map[string]string
 		if err := json.Unmarshal(msg.Data, &message); err != nil {
 			log.Printf("Error unmarshaling message: %v", err)
 			return
 		}
 
-		// Dohvati tracing podatke iz headera
 		traceID := msg.Header.Get(nats_helper.TRACE_ID)
 		spanID := msg.Header.Get(nats_helper.SPAN_ID)
 		if traceID == "" || spanID == "" {
@@ -285,7 +281,6 @@ func GetTasksForApiComp(
 			return
 		}
 
-		// Kreiraj kontekst za tracing koristeći roditeljski span
 		remoteCtx, err := nats_helper.GetNATSParentContext(msg)
 		if err != nil {
 			log.Fatal(err)
@@ -294,7 +289,6 @@ func GetTasksForApiComp(
 		_, span := tracer.Start(ctxWithRemote, "Subscriber.GetWorkflow")
 		defer span.End()
 
-		// Proveri prisustvo ProjectId-a
 		projectId, ok := message["ProjectId"]
 		if !ok {
 			log.Printf("Invalid message format: %v", message)
@@ -303,20 +297,17 @@ func GetTasksForApiComp(
 
 		protoReg := &tsk.GetAllTasksReq{Id: projectId}
 
-		// Pozovi workflow servis
 		taskRes, err := taskHandler.GetAllByProjectId(ctx, protoReg)
 		if err != nil {
 			log.Printf("Error fetching workflow: %v", err)
 		}
 
-		// Serijalizuj rezultat
 		messageDataWorkflow, err := json.Marshal(taskRes.Tasks)
 		if err != nil {
 			log.Printf("Error marshaling task response: %v", err)
 			return
 		}
 
-		// Odgovori na zahtev koristeći reply subject iz primljene poruke
 		if msg.Reply != "" {
 			if err := natsConn.Publish(msg.Reply, messageDataWorkflow); err != nil {
 				log.Printf("Error publishing task response: %v", err)
@@ -328,5 +319,73 @@ func GetTasksForApiComp(
 
 	if err != nil {
 		log.Printf("Error subscribing to subject %s: %v", subject, err)
+	}
+}
+
+func SubscribeToDeleteTasksSaga(natsConn *nats.Conn, taskService service.TaskService, tracer trace.Tracer) {
+	subjectTasks := "delete-tasks-saga"
+
+	_, err := natsConn.Subscribe(subjectTasks, func(msg *nats.Msg) {
+		go handleDeleteTasksMessage(msg, natsConn, taskService, tracer)
+	})
+	if err != nil {
+		log.Printf("Failed to subscribe to subject %s: %v", subjectTasks, err)
+	}
+}
+
+func handleDeleteTasksMessage(msg *nats.Msg, natsConn *nats.Conn, taskService service.TaskService, tracer trace.Tracer) {
+	ctx, span := tracer.Start(context.Background(), "handleDeleteTasksMessage")
+	defer span.End()
+
+	projectID := string(msg.Data)
+	log.Printf("[Task Saga] Received delete for project: %s", projectID)
+
+	err := taskService.MarkTasksAsDeleting(projectID, ctx)
+	if err != nil {
+		log.Printf("[Task Saga] Error marking tasks: %v", err)
+		return
+	}
+
+	// Prepare workflow saga
+	replySubjectWorkflow := nats.NewInbox()
+	responseChanWorkflow := make(chan *nats.Msg, 1)
+
+	sub, err := natsConn.ChanSubscribe(replySubjectWorkflow, responseChanWorkflow)
+	if err != nil {
+		log.Printf("[Task Saga] Error subscribing to workflow reply: %v", err)
+		return
+	}
+	defer sub.Unsubscribe()
+
+	err = natsConn.PublishRequest("delete-workflow-saga", replySubjectWorkflow, []byte(projectID))
+	if err != nil {
+		log.Printf("[Task Saga] Error publishing to workflow saga: %v", err)
+		return
+	}
+
+	select {
+	case <-time.After(5 * time.Second):
+		log.Println("[Task Saga] Timeout waiting for workflow reply")
+		_ = taskService.UnmarkTasksAsDeleting(projectID, ctx)
+
+	case workflowReply := <-responseChanWorkflow:
+		if string(workflowReply.Data) != projectID {
+			_ = taskService.UnmarkTasksAsDeleting(projectID, ctx)
+			return
+		}
+		log.Println("[Task Saga] Workflow confirmed, deleting tasks...")
+
+		err := taskService.DeleteTasksByProjectId(projectID, ctx)
+		if err != nil {
+			log.Printf("[Task Saga] Error deleting tasks: %v", err)
+			return
+		}
+
+		if msg.Reply != "" {
+			err = natsConn.Publish(msg.Reply, []byte(projectID))
+			if err != nil {
+				log.Printf("[Task Saga] Failed to reply to project: %v", err)
+			}
+		}
 	}
 }

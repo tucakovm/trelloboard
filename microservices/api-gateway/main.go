@@ -175,30 +175,35 @@ func main() {
 
 var rolePermissions = map[string]map[string][]string{
 	"User": {
-		"GET": {"/api/projects/{username}", "/api/project/{id}", "/api/tasks/{id}", "/api/task/{id}",
-<<<<<<< HEAD
-			"/api/users/{username}", "/api/notifications/{userId}", "/api/tasks/{taskId}/files/{fileId}", "/api/tasks/{taskId}/files"},
-		"POST":   {"/api/tasks/files"},
-		"DELETE": {"/api/users/{username}", "/api/tasks/{taskId}/files/{fileId}"},
-=======
-			"/api/users/{username}", "/api/notifications/{userId}", "/api/workflows/{project_id}", "/api/composition/{projectId}"},
-		"POST":   {},
-		"DELETE": {"/api/users/{username}"},
->>>>>>> feature/workflow2
-		"PUT":    {"/api/users/change-password", "/api/tasks/{id}"},
+		"GET": {
+			"/api/projects/{username}", "/api/project/{id}", "/api/tasks/{id}", "/api/task/{id}",
+			"/api/users/{username}", "/api/notifications/{userId}", "/api/tasks/{taskId}/files/{fileId}",
+			"/api/tasks/{taskId}/files", "/api/composition/{projectId}",
+		},
+		"POST": {"/api/tasks/files"},
+		"DELETE": {
+			"/api/users/{username}", "/api/tasks/{taskId}/files/{fileId}",
+		},
+		"PUT": {
+			"/api/users/change-password", "/api/tasks/{id}",
+		},
 	},
 	"Manager": {
-		"GET": {"/api/projects/{username}", "/api/project/{id}", "/api/tasks/{id}", "/api/task/{id}",
-<<<<<<< HEAD
-			"/api/users/{username}", "/api/notifications/{userId}", "/api/tasks/{taskId}/files/{fileId}", "/api/tasks/{taskId}/files"},
-		"POST": {"/api/project", "/api/task", "/api/tasks/files"},
-=======
-			"/api/users/{username}", "/api/notifications/{userId}", "/api/workflows/{project_id}", "/api/composition/{projectId}"},
-		"POST": {"/api/project", "/api/task", "/api/workflows/create", "/api/workflows/addtask"},
->>>>>>> feature/workflow2
-		"DELETE": {"/api/project/{id}", "/api/task/{id}", "/api/users/{username}", "/api/task/{projectId}/members/{userId}",
-			"/api/projects/{projectId}/members/{userId}", "/api/tasks/{taskId}/files/{fileId}"},
-		"PUT": {"/api/users/change-password", "/api/task/{id}/members", "/api/projects/{projectId}/members", "/api/tasks/{id}"},
+		"GET": {
+			"/api/projects/{username}", "/api/project/{id}", "/api/tasks/{id}", "/api/task/{id}",
+			"/api/users/{username}", "/api/notifications/{userId}", "/api/tasks/{taskId}/files/{fileId}",
+			"/api/tasks/{taskId}/files", "/api/composition/{projectId}",
+		},
+		"POST": {
+			"/api/project", "/api/task", "/api/tasks/files", "/api/workflows/create", "/api/workflows/addtask",
+		},
+		"DELETE": {
+			"/api/project/{id}", "/api/task/{id}", "/api/users/{username}", "/api/task/{projectId}/members/{userId}",
+			"/api/projects/{projectId}/members/{userId}", "/api/tasks/{taskId}/files/{fileId}",
+		},
+		"PUT": {
+			"/api/users/change-password", "/api/task/{id}/members", "/api/projects/{projectId}/members", "/api/tasks/{id}",
+		},
 	},
 }
 
@@ -337,12 +342,10 @@ func enableCORS(h http.Handler) http.Handler {
 	})
 }
 
-<<<<<<< HEAD
-//func forwardClaimsToServices(ctx context.Context) context.Context {
-//	claims := ctx.Value("claims").(jwt.MapClaims)
-//	return context.WithValue(ctx, "role", claims["role"])
-//}
-=======
+//	func forwardClaimsToServices(ctx context.Context) context.Context {
+//		claims := ctx.Value("claims").(jwt.MapClaims)
+//		return context.WithValue(ctx, "role", claims["role"])
+//	}
 func forwardClaimsToServices(ctx context.Context) context.Context {
 	claims := ctx.Value("claims").(jwt.MapClaims)
 	return context.WithValue(ctx, "role", claims["role"])
@@ -385,4 +388,3 @@ func newTraceProvider(exp sdktrace.SpanExporter) *sdktrace.TracerProvider {
 		sdktrace.WithResource(r),
 	)
 }
->>>>>>> feature/workflow2

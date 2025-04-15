@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/nats-io/nats.go"
 	"go.opentelemetry.io/otel"
+	otelCodes "go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/exporters/jaeger"
 	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/sdk/resource"
@@ -91,6 +92,7 @@ func main() {
 	defer natsConn.Close()
 
 	GetWorkflowForApiComp(ctx, natsConn, *handlerWorkflow, tracer)
+	go SubscribeToDeleteWorkflowSaga(ctx, natsConn, serviceWorkflow, tracer)
 
 	// Run gRPC server in a separate goroutine
 	go func() {
@@ -293,5 +295,38 @@ func GetWorkflowForApiComp(ctx context.Context, natsConn *nats.Conn, workflowhan
 	})
 	if err != nil {
 		log.Printf("Error subscribing to subject %s: %v", subject, err)
+	}
+}
+
+func SubscribeToDeleteWorkflowSaga(ctx context.Context, natsConn *nats.Conn, workflowService services.WorkflowService, tracer trace.Tracer) {
+	subjectWorkflow := "delete-workflow-saga"
+
+	_, err := natsConn.Subscribe(subjectWorkflow, func(msg *nats.Msg) {
+		go handleDeleteWorkflowMessage(ctx, msg, natsConn, workflowService, tracer)
+	})
+	if err != nil {
+		log.Printf("Error subscribing to workflow saga: %v", err)
+	}
+}
+
+func handleDeleteWorkflowMessage(ctx context.Context, msg *nats.Msg, natsConn *nats.Conn, workflowService services.WorkflowService, tracer trace.Tracer) {
+	ctx, span := tracer.Start(context.Background(), "handleDeleteWorkflowMessage")
+	defer span.End()
+
+	projectID := string(msg.Data)
+	log.Printf("[Workflow Saga] Deleting workflow for project: %s", projectID)
+
+	err := workflowService.DeleteWorkflowByProjectID(projectID)
+	if err != nil {
+		span.SetStatus(otelCodes.Error, err.Error())
+		log.Printf("[Workflow Saga] Failed to delete workflow: %v", err)
+		return
+	}
+
+	if msg.Reply != "" {
+		err = natsConn.Publish(msg.Reply, []byte(projectID))
+		if err != nil {
+			log.Printf("[Workflow Saga] Failed to send reply: %v", err)
+		}
 	}
 }

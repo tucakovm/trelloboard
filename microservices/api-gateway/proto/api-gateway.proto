@@ -395,7 +395,6 @@ message UploadFileRequest {
   string fileName = 3;
 }
 
-<<<<<<< HEAD
 message DownloadFileRequest {
   string taskId = 1;
   string fileId = 2;
@@ -419,7 +418,6 @@ message GetTaskFilesRequest {
 message GetTaskFilesResponse {
   repeated string fileNames = 1;
 }
-=======
 
 service WorkflowService {
   // Create a new workflow
@@ -501,4 +499,3 @@ message CheckTaskDependenciesReq {
 message CheckTaskDependenciesRes {
   bool allDependenciesMet = 1;
 }
->>>>>>> feature/workflow2

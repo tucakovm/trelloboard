@@ -109,7 +109,7 @@ func (s ProjectService) GetAllProjects(id string, ctx context.Context) ([]*proto
 	return protoProjects, nil
 }
 
-func (s ProjectService) Delete(id string, ctx context.Context) error {
+func (s ProjectService) Delete(id string, ctx context.Context) (*domain.Project, error) {
 	ctx, span := s.Tracer.Start(ctx, "s.Delete")
 	defer span.End()
 	return s.repo.Delete(id, ctx)
@@ -180,6 +180,20 @@ func (s ProjectService) AddMember(projectId string, protoUser *proto.User, ctx c
 
 func (s ProjectService) RemoveMember(projectId string, userId string, ctx context.Context) error {
 	return s.repo.RemoveMember(projectId, userId, ctx)
+}
+
+func (s ProjectService) MarkAsDeleting(ProjectId string, ctx context.Context) error {
+	ctx, span := s.Tracer.Start(ctx, "s.markProjectAsDeleting")
+	defer span.End()
+
+	return s.repo.MarkAsDeleting(ProjectId, ctx)
+}
+
+func (s ProjectService) UnMarkAsDeleting(ProjectId string, ctx context.Context) error {
+	ctx, span := s.Tracer.Start(ctx, "s.unmarkProjectAsDeleting")
+	defer span.End()
+
+	return s.repo.UnmarkAsDeleting(ProjectId, ctx)
 }
 
 func (s ProjectService) GetByIdCache(prjId string, ctx context.Context) (*proto.Project, error) {

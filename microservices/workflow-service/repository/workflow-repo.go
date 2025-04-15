@@ -251,6 +251,7 @@ func (r *WorkflowRepository) DeleteWorkflowByProjectID(ctx context.Context, proj
 	session := r.Driver.NewSession(ctx, neo4j.SessionConfig{})
 	defer session.Close(ctx)
 
+	log.Printf("dosao do delete workflow: %s\n", projectID)
 	_, err := session.ExecuteWrite(ctx, func(tx neo4j.ManagedTransaction) (interface{}, error) {
 		// Delete dependencies
 		dependencyQuery := `
@@ -286,6 +287,7 @@ func (r *WorkflowRepository) DeleteWorkflowByProjectID(ctx context.Context, proj
 	}
 	return nil
 }
+
 func (r *WorkflowRepository) CheckWorkflowsExist(ctx context.Context) (bool, error) {
 	session := r.Driver.NewSession(ctx, neo4j.SessionConfig{})
 	defer session.Close(ctx)
