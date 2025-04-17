@@ -93,6 +93,7 @@ func main() {
 
 	GetWorkflowForApiComp(ctx, natsConn, *handlerWorkflow, tracer)
 	go SubscribeToDeleteWorkflowSaga(ctx, natsConn, serviceWorkflow, tracer)
+	CQRSUpdateGraph(ctx, natsConn, serviceWorkflow, tracer)
 
 	// Run gRPC server in a separate goroutine
 	go func() {
@@ -328,5 +329,63 @@ func handleDeleteWorkflowMessage(ctx context.Context, msg *nats.Msg, natsConn *n
 		if err != nil {
 			log.Printf("[Workflow Saga] Failed to send reply: %v", err)
 		}
+	}
+}
+
+func CQRSUpdateGraph(ctx context.Context, natsConn *nats.Conn, workflowService services.WorkflowService, tracer trace.Tracer) {
+	ctx, span := tracer.Start(context.Background(), "m.CqrsUpdateGraph")
+	defer span.End()
+
+	subjectWorkflow := "cqrs-workflow-update"
+
+	_, err := natsConn.Subscribe(subjectWorkflow, func(msg *nats.Msg) {
+		var message map[string]interface{}
+		err := json.Unmarshal(msg.Data, &message)
+		if err != nil {
+			log.Printf("Error unmarshaling message: %v", err)
+			return
+		}
+
+		traceID := msg.Header.Get(nats_helper.TRACE_ID)
+		spanID := msg.Header.Get(nats_helper.SPAN_ID)
+
+		if traceID == "" || spanID == "" {
+			log.Println("Missing tracing headers in NATS message")
+			return
+		}
+
+		remoteCtx, err := nats_helper.GetNATSParentContext(msg)
+		if err != nil {
+			log.Fatal(err)
+		}
+		_, span := tracer.Start(trace.ContextWithRemoteSpanContext(ctx, remoteCtx), "Subscriber.UpdateTaskCQRS")
+		defer span.End()
+
+		taskID, ok := message["TaskId"].(string)
+		if !ok {
+			log.Println("Invalid task ID format")
+			return
+		}
+
+		statusStr, ok := message["TaskStatus"].(string)
+		if !ok {
+			log.Println("Invalid task status format")
+			return
+		}
+
+		statusBool := true
+
+		if statusStr == "Pending" || statusStr == "Working" {
+			statusBool = false
+		}
+
+		err = workflowService.UpdateTaskStatus(taskID, statusBool)
+		if err != nil {
+			log.Printf("Error updating workflow cqrs: %v", err)
+			return
+		}
+	})
+	if err != nil {
+		log.Printf("Error subscribing to workflow cqrs: %v", err)
 	}
 }

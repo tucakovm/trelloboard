@@ -83,14 +83,15 @@ func (h *WorkflowHandler) GetWorkflowByProjectID(ctx context.Context, req *proto
 		return nil, err
 	}
 
-	// Convert the workflow to the proto response format
 	taskResponses := make([]*proto.Task, len(workflow.Tasks))
 	for i, task := range workflow.Tasks {
+		blocked := toBool(task.Blocked)
+
 		taskResponses[i] = &proto.Task{
 			Id:           task.TaskID,
 			Name:         task.TaskName,
 			Dependencies: task.Dependencies,
-			Blocked:      task.Blocked, // Include Blocked field
+			Blocked:      blocked,
 		}
 	}
 
@@ -101,6 +102,21 @@ func (h *WorkflowHandler) GetWorkflowByProjectID(ctx context.Context, req *proto
 			Tasks:       taskResponses,
 		},
 	}, nil
+}
+
+func toBool(v interface{}) bool {
+	switch val := v.(type) {
+	case bool:
+		return val
+	case string:
+		return val == "true" || val == "1" || val == "2"
+	case int:
+		return val != 0
+	case float64:
+		return val != 0
+	default:
+		return false
+	}
 }
 
 // Implement the gRPC method for DeleteWorkflowByProjectID

@@ -18,6 +18,7 @@ type WorkflowService interface {
 	CheckTaskDependencies(projectID string, taskID string) (bool, error)
 	TaskExists(ctx context.Context, req *proto.TaskExistsRequest) (*proto.TaskExistsResponse, error)
 	IsTaskBlocked(ctx context.Context, id string) (bool, error)
+	UpdateTaskStatus(taskId string, blocked bool) error
 }
 
 type workflowService struct {
@@ -107,6 +108,15 @@ func (s *workflowService) DeleteWorkflowByProjectID(projectID string) error {
 	ctx := context.Background()
 	if err := s.repo.DeleteWorkflowByProjectID(ctx, projectID); err != nil {
 		return fmt.Errorf("failed to delete workflow for project %s: %w", projectID, err)
+	}
+	return nil
+}
+
+func (s *workflowService) UpdateTaskStatus(taskId string, blocked bool) error {
+	ctx := context.Background()
+
+	if err := s.repo.UpdateTaskStatus(ctx, taskId, blocked); err != nil {
+		return fmt.Errorf("failed to update status for task %s: %w", taskId, err)
 	}
 	return nil
 }

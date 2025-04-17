@@ -337,7 +337,8 @@ func (r *WorkflowRepository) GetAllTasksFromAllWorkflows(ctx context.Context) ([
 	// Cypher upit za dobijanje svih taskova
 	query := `
 		MATCH (:Workflow)-[:HAS_TASK]->(t:Task)
-		RETURN t.id AS id, t.name AS name, t.description AS description, t.dependencies AS dependencies, t.blocked AS blocked
+		RETURN t.id AS id, t.name AS name, t.description AS description, 
+		t.dependencies AS dependencies, t.blocked AS blocked
 	`
 
 	tasks := []models.TaskNode{}
@@ -435,4 +436,158 @@ func (r *WorkflowRepository) IsTaskBlocked(ctx context.Context, taskID string) (
 
 	log.Printf("blocked, %t: ", boolValue)
 	return boolValue, nil
+}
+
+func (r *WorkflowRepository) UpdateTaskStatus(ctx context.Context, taskID string, blocked bool) error {
+	session := r.Driver.NewSession(ctx, neo4j.SessionConfig{})
+	defer session.Close(ctx)
+
+	_, err := session.ExecuteWrite(ctx, func(tx neo4j.ManagedTransaction) (interface{}, error) {
+		log.Printf("Updating status for task %s to blocked=%v", taskID, blocked)
+
+		updateQuery := `
+			MATCH (t:Task {id: $taskID})
+			SET t.blocked = $blocked
+			RETURN t`
+		result, err := tx.Run(ctx, updateQuery, map[string]interface{}{
+			"taskID":  taskID,
+			"blocked": blocked,
+		})
+		if err != nil {
+			return nil, fmt.Errorf("failed to run update query: %w", err)
+		}
+
+		if !result.Next(ctx) {
+			return nil, fmt.Errorf("task with ID %s not found", taskID)
+		}
+
+		err = r.UpdateBlockedStatusForDependents(ctx, taskID)
+		if err != nil {
+			return nil, err
+		}
+
+		log.Printf("Task %s status successfully updated", taskID)
+		return nil, nil
+	})
+
+	if err != nil {
+		log.Printf("Error updating task status: %v", err)
+		return fmt.Errorf("failed to update task status: %w", err)
+	}
+
+	return nil
+}
+
+func (r *WorkflowRepository) IsTaskBlockedByDependency(ctx context.Context, taskID string) (bool, error) {
+	session := r.Driver.NewSession(ctx, neo4j.SessionConfig{})
+	defer session.Close(ctx)
+
+	result, err := session.ExecuteRead(ctx, func(tx neo4j.ManagedTransaction) (interface{}, error) {
+		query := `
+			MATCH (t:Task {id: $taskID})-[:DEPENDS_ON]->(d:Task)
+			WHERE d.blocked = true
+			RETURN COUNT(d) > 0 AS isBlockedByDependency`
+
+		res, err := tx.Run(ctx, query, map[string]interface{}{
+			"taskID": taskID,
+		})
+		if err != nil {
+			return false, fmt.Errorf("query execution failed: %w", err)
+		}
+
+		if res.Next(ctx) {
+			return res.Record().Values[0].(bool), nil
+		}
+
+		if err := res.Err(); err != nil {
+			return false, fmt.Errorf("result reading failed: %w", err)
+		}
+
+		return false, nil
+	})
+
+	if err != nil {
+		return false, fmt.Errorf("failed to check blocked dependency: %w", err)
+	}
+	return result.(bool), nil
+}
+
+func (r *WorkflowRepository) UpdateBlockedStatusForDependents(ctx context.Context, taskID string) error {
+	session := r.Driver.NewSession(ctx, neo4j.SessionConfig{})
+	defer session.Close(ctx)
+
+	_, err := session.ExecuteWrite(ctx, func(tx neo4j.ManagedTransaction) (interface{}, error) {
+		return r.updateDependentsRecursive(ctx, tx, taskID)
+	})
+
+	if err != nil {
+		log.Printf("Error while updating blocked statuses: %v", err)
+		return fmt.Errorf("failed to update blocked statuses: %w", err)
+	}
+
+	return nil
+}
+
+func (r *WorkflowRepository) updateDependentsRecursive(ctx context.Context, tx neo4j.ManagedTransaction, taskID string) (interface{}, error) {
+	query := `
+		MATCH (t:Task {id: $taskID})<-[:DEPENDS_ON]-(dependent:Task)
+		RETURN dependent.id AS dependentID, dependent.blocked AS currentBlocked`
+
+	result, err := tx.Run(ctx, query, map[string]interface{}{
+		"taskID": taskID,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	for result.Next(ctx) {
+		record := result.Record()
+		dependentID, _ := record.Get("dependentID")
+		currentBlocked, _ := record.Get("currentBlocked")
+
+		checkDepsQuery := `
+			MATCH (dependent:Task {id: $dependentID})-[:DEPENDS_ON]->(dep:Task)
+			RETURN dep.blocked AS blocked`
+
+		depResult, err := tx.Run(ctx, checkDepsQuery, map[string]interface{}{
+			"dependentID": dependentID,
+		})
+		if err != nil {
+			return nil, err
+		}
+
+		newStatus := true
+
+		for depResult.Next(ctx) {
+			blockedVal, _ := depResult.Record().Get("blocked")
+			if val, ok := blockedVal.(bool); ok && val {
+				continue
+			}
+			newStatus = false
+			break
+		}
+
+		if currentBlockedBool, ok := currentBlocked.(bool); ok && currentBlockedBool != newStatus {
+			updateQuery := `
+				MATCH (t:Task {id: $dependentID})
+				SET t.blocked = $newStatus`
+
+			_, err = tx.Run(ctx, updateQuery, map[string]interface{}{
+				"dependentID": dependentID,
+				"newStatus":   newStatus,
+			})
+			if err != nil {
+				return nil, err
+			}
+
+			log.Printf("Updated blocked status for task %s to %v", dependentID, newStatus)
+
+			_, err = r.updateDependentsRecursive(ctx, tx, dependentID.(string))
+			if err != nil {
+				return nil, err
+			}
+		}
+	}
+
+	return nil, nil
 }

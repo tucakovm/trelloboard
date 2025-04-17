@@ -387,15 +387,9 @@ func (h *TaskHandler) UpdateTask(ctx context.Context, req *proto.UpdateTaskReq) 
 		return nil, status.Error(codes.Internal, "The task depends on another task")
 	}
 
-	// Update the fields of the task
-	//Commented out the actual update logic in order to leave only status update
 	updatedTask := existingTask
-	//pdatedTask.Name = req.Name
-	//updatedTask.Description = req.Description
 	updatedTask.Status = req.Status
-	//updatedTask.Members = req.Members
 
-	// Call the service layer to save changes
 	err = h.service.UpdateTask(updatedTask, ctx)
 	if err != nil {
 		span.SetStatus(otelCodes.Error, err.Error())
@@ -404,6 +398,32 @@ func (h *TaskHandler) UpdateTask(ctx context.Context, req *proto.UpdateTaskReq) 
 	}
 
 	log.Println("Task updated successfully:", req.Id)
+
+	//CQRS workflow----->
+
+	subjectWorkflow := "cqrs-workflow-update"
+
+	messageWorkflow := map[string]interface{}{
+		"TaskId":     req.Id,
+		"TaskStatus": req.Status,
+	}
+
+	messageDataWorkflow, err := json.Marshal(messageWorkflow)
+	if err != nil {
+		log.Printf("Error marshaling cqrs message: %v", err)
+		return nil, status.Error(codes.Internal, "Failed to create cqrs message...")
+	}
+
+	msgWorkflow := &nats.Msg{
+		Subject: subjectWorkflow,
+		Data:    messageDataWorkflow,
+		Header:  headers,
+	}
+	err = h.natsConn.PublishMsg(msgWorkflow)
+	if err != nil {
+		span.SetStatus(otelCodes.Error, err.Error())
+		return nil, status.Error(codes.Internal, "failed to publish update task event")
+	}
 
 	//notification----->
 
