@@ -393,6 +393,7 @@ message UploadFileRequest {
   string taskId = 1;
   bytes fileContent = 2;
   string fileName = 3;
+  string userId = 4;
 }
 
 message DownloadFileRequest {
@@ -401,10 +402,7 @@ message DownloadFileRequest {
 }
 
 message FileResponse {
-  string fileId = 1;
-  string taskId = 2;
-  string fileName = 3;
-  bytes fileContent = 4;
+  bytes fileContent = 1;
 }
 
 message DeleteFileRequest {

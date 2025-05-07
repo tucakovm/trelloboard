@@ -52,9 +52,8 @@ export class TaskService {
   }
 
   // Metoda za dodavanje člana u zadatak
-  AddMemberToTask(id: string, user: UserFP, timeout: number): Observable<any> {
+  AddMemberToTask(id: string, user: UserFP): Observable<any> {
     const headers = new HttpHeaders({
-      Timeout: timeout.toString(),
     });
     return this.http
       .put<any>(`${this.apiUrl}/task/${id}/members`, user, { headers })
@@ -89,10 +88,11 @@ export class TaskService {
     return this.http.get<any[]>(`${this.apiUrl}/tasks/${taskId}/files`);
   }
 
-  downloadFile(taskId: string, fileName: string, options?: any): Observable<any> {
+  downloadFile(taskId: string, fileName: string): Observable<any> {
     const url = `https://localhost:8000/api/tasks/${taskId}/files/${fileName}`;
-    return this.http.get(url, { responseType: 'json', ...options });
+    return this.http.get(url);
   }
+
 
   deleteFile(taskId: String, fileName: String){
     console.log("foo")

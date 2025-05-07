@@ -57,6 +57,8 @@ services:
         condition: service_healthy
       cassandra:
         condition: service_healthy
+      esdb:
+        condition: service_healthy
 
   tasks_server:
     image: tasks-service
@@ -74,6 +76,8 @@ services:
       mongo:
         condition: service_healthy
       cassandra:
+        condition: service_healthy
+      esdb:
         condition: service_healthy
 
   users_server:
@@ -151,9 +155,9 @@ services:
       .env
 
 
-
   mongo:
     image: mongo
+    container_name: mongo
     restart: always
     ports:
       - "${MONGO_PORT}:${MONGO_PORT}"
@@ -171,6 +175,7 @@ services:
 
   consul:
     image: hashicorp/consul:latest
+    container_name: consul
     ports:
       - "${CONSUL_PORT}:${CONSUL_PORT}"
       - "${CONSUL_PORT_TCP}"
@@ -188,6 +193,7 @@ services:
 
   mongo-express:
     image: mongo-express
+    container_name: mongo-express
     restart: always
     environment:
       ME_CONFIG_MONGODB_SERVER: "${ME_CONFIG_MONGODB_SERVER}"
@@ -204,6 +210,7 @@ services:
 
   cassandra:
     image: cassandra
+    container_name: cassandra
     restart: always
     ports:
       - "${CASSANDRA_PORT}:${CASSANDRA_PORT}"
@@ -220,6 +227,7 @@ services:
 
   nats:
     image: nats:latest
+    container_name: nats
     ports:
       - "${NATS_PORT}:${NATS_PORT}"
     expose:
@@ -299,11 +307,35 @@ services:
       timeout: 5s
       retries: 5
 
+  esdb:
+    image: eventstore/eventstore:21.10.8-buster-slim
+    hostname: ${ESDB_HOST}
+    container_name: ${ESDB_HOST}
+    environment:
+      - EVENTSTORE_CLUSTER_SIZE=1
+      - EVENTSTORE_EXT_TCP_PORT=${ESDB_UI_PORT}
+      - EVENTSTORE_HTTP_PORT=${ESDB_PORT}
+      - EVENTSTORE_INSECURE=true
+      - EVENTSTORE_ENABLE_EXTERNAL_TCP=true
+      - EVENTSTORE_ENABLE_ATOM_PUB_OVER_HTTP=true
+    ports:
+      - ${ESDB_PORT}:${ESDB_PORT}
+      - ${ESDB_UI_PORT}:${ESDB_UI_PORT}
+    # volumes:
+    #  - type: volume
+    #    source: eventstore-volume-data
+    #    target: /var/lib/eventstore
+    #  - type: volume
+    #    source: eventstore-volume-logs
+    #    target: /var/log/eventstore
+
 volumes:
   mongo_store:
   mongo_express_data:
   cass_store:
   redis-data:
+  #  eventstore-volume-data:
+  #  eventstore-volume-logs:
 
   #namenode_data:
   #datanode_data:

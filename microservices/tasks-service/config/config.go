@@ -15,6 +15,11 @@ type Config struct {
 	NamenodeUrl           string
 	WorkflowPort          string
 	WorkflowAddress       string
+	ESDBUser              string
+	ESDBPass              string
+	ESDBHost              string
+	ESDBPort              string
+	ESDBGroup             string
 }
 
 func GetConfig() Config {
@@ -29,6 +34,11 @@ func GetConfig() Config {
 		NamenodeUrl:           os.Getenv("NAMENODE_URL"),
 		WorkflowPort:          fmt.Sprintf(":%s", os.Getenv("WORKFLOW_SERVICE_PORT")),
 		WorkflowAddress:       os.Getenv("WORKFLOW_SERVICE_ADDRESS"),
+		ESDBPass:              os.Getenv("ESDB_PASS"),
+		ESDBUser:              os.Getenv("ESDB_USER"),
+		ESDBHost:              os.Getenv("ESDB_HOST"),
+		ESDBPort:              os.Getenv("ESDB_PORT"),
+		ESDBGroup:             os.Getenv("ESDB_GROUP"),
 	}
 }
 

@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/EventStore/EventStore-Client-Go/esdb"
 	"github.com/go-redis/redis"
 	otelCodes "go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/trace"
@@ -27,6 +28,13 @@ type ProjectRepo struct {
 	cli    *mongo.Client
 	Tracer trace.Tracer
 	cache  *redis.Client
+	esdb   *ESDBEventStream
+}
+
+type ESDBEventStream struct {
+	client *esdb.Client
+	group  string
+	sub    *esdb.PersistentSubscription
 }
 
 func (pr *ProjectRepo) Disconnect(ctx context.Context) error {
@@ -131,7 +139,7 @@ func insertInitialProjects(client *mongo.Client) error {
 	return nil
 }
 
-func New(ctx context.Context, logger *log.Logger, tracer trace.Tracer) (*ProjectRepo, error) {
+func New(ctx context.Context, clientESDB *esdb.Client, group string, logger *log.Logger, tracer trace.Tracer) (*ProjectRepo, error) {
 
 	dburi := os.Getenv("MONGO_DB_URI")
 	redisHost := os.Getenv("REDIS_HOST")
@@ -153,6 +161,24 @@ func New(ctx context.Context, logger *log.Logger, tracer trace.Tracer) (*Project
 		return nil, err
 	}
 
+	opts := esdb.PersistentAllSubscriptionOptions{
+		From: esdb.Start{},
+	}
+	err = clientESDB.CreatePersistentSubscriptionAll(context.Background(), group, opts)
+	if err != nil {
+		// persistent subscription group already exists
+		log.Println(err)
+	}
+	eventStream := &ESDBEventStream{
+		client: clientESDB,
+		group:  group,
+	}
+	err = eventStream.subscribe()
+	if err != nil {
+		log.Println(err)
+		return nil, err
+	}
+
 	if err := insertInitialProjects(client); err != nil {
 		log.Printf("Failed to insert initial projects: %v", err)
 	}
@@ -161,6 +187,7 @@ func New(ctx context.Context, logger *log.Logger, tracer trace.Tracer) (*Project
 		cli:    client,
 		Tracer: tracer,
 		cache:  clientRedis,
+		esdb:   eventStream,
 	}, nil
 }
 
@@ -408,6 +435,7 @@ func (pr *ProjectRepo) AddMember(projectId string, user domain.User, ctx context
 	log.Printf("User %s added to project %s", user.Username, projectId)
 	return nil
 }
+
 func (pr *ProjectRepo) RemoveMember(projectId string, userId string, ctx context.Context) error {
 
 	ctx, span := pr.Tracer.Start(ctx, "r.removeMemberFromProject")
@@ -537,7 +565,7 @@ func (pr *ProjectRepo) UnmarkAsDeleting(id string, ctx context.Context) error {
 	return nil
 }
 
-//REDIS---------------
+// REDIS -------------------------------------------------------------------->
 
 func (pc *ProjectRepo) Post(project *domain.Project, ctx context.Context) error {
 	ctx, span := pc.Tracer.Start(ctx, "r.PostProjectCache")
@@ -685,3 +713,39 @@ func (pc *ProjectRepo) DeleteByKey(key string, username string, ctx context.Cont
 //	}
 //	return false
 //}
+
+// ESDB --------------------------------------------------->
+
+func (s *ESDBEventStream) subscribe() error {
+	opts := esdb.ConnectToPersistentSubscriptionOptions{}
+	sub, err := s.client.ConnectToPersistentSubscriptionToAll(context.Background(), s.group, opts)
+	if err != nil {
+		return err
+	}
+	s.sub = sub
+	return nil
+}
+
+func (r *ProjectRepo) AppendEvent(ctx context.Context, streamID string, data []byte, eventType string) error {
+	ctx, span := r.Tracer.Start(ctx, "r.esdb-AppendEvent")
+	defer span.End()
+
+	event := esdb.EventData{
+		ContentType: esdb.JsonContentType,
+		EventType:   eventType,
+		Data:        data,
+	}
+
+	opts := esdb.AppendToStreamOptions{
+		ExpectedRevision: esdb.Any{},
+	}
+
+	stream := "project-" + streamID
+
+	_, err := r.esdb.client.AppendToStream(ctx, stream, opts, event)
+	if err != nil {
+		return fmt.Errorf("failed to append event to stream %s: %w", stream, err)
+	}
+
+	return nil
+}

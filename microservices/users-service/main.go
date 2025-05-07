@@ -147,7 +147,7 @@ func main() {
 	}
 
 	grpcServer := grpc.NewServer(
-		//grpc.UnaryInterceptor(timeoutUnaryInterceptor(5 * time.Second)), // Timeout na 5 sekundi
+	//grpc.UnaryInterceptor(timeoutUnaryInterceptor(5 * time.Second)), // Timeout na 5 sekundi
 	)
 	reflection.Register(grpcServer)
 	users.RegisterUsersServiceServer(grpcServer, &handlerUser)

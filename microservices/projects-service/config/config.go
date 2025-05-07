@@ -12,6 +12,11 @@ type Config struct {
 	UserServicePort    string
 	UserServiceAddress string
 	JaegerEndpoint     string
+	ESDBUser           string
+	ESDBPass           string
+	ESDBHost           string
+	ESDBPort           string
+	ESDBGroup          string
 }
 
 func GetConfig() Config {
@@ -23,6 +28,11 @@ func GetConfig() Config {
 		UserServicePort:    fmt.Sprintf(":%s", os.Getenv("USER_SERVICE_PORT")),
 		UserServiceAddress: os.Getenv("USER_SERVICE_ADDRESS"),
 		JaegerEndpoint:     os.Getenv("JAEGER_ENDPOINT"),
+		ESDBPass:           os.Getenv("ESDB_PASS"),
+		ESDBUser:           os.Getenv("ESDB_USER"),
+		ESDBHost:           os.Getenv("ESDB_HOST"),
+		ESDBPort:           os.Getenv("ESDB_PORT"),
+		ESDBGroup:          os.Getenv("ESDB_GROUP"),
 	}
 }
 

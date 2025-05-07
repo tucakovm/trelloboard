@@ -386,3 +386,10 @@ func (s ProjectService) PostProjectCacheTTL(projectId primitive.ObjectID, p *pro
 func (s ProjectService) DeleteFromCache(key string, username string, ctx context.Context) error {
 	return s.repo.DeleteByKey(key, username, ctx)
 }
+
+func (s ProjectService) AppendEvent(ctx context.Context, projectId string, data []byte, eventType string) error {
+	ctx, span := s.Tracer.Start(ctx, "s.esdb-AppendEvent")
+	defer span.End()
+
+	return s.repo.AppendEvent(ctx, projectId, data, eventType)
+}

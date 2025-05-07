@@ -7,7 +7,9 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"tasks-service/domain"
 	nats_helper "tasks-service/nats_helper"
+	"time"
 
 	otelCodes "go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/trace"
@@ -15,6 +17,7 @@ import (
 	"strings"
 	proto "tasks-service/proto/task"
 
+	grpcstatus "google.golang.org/grpc/status"
 	"tasks-service/service"
 	//"google.golang.org/protobuf/types/known/timestamppb"
 )
@@ -103,56 +106,115 @@ func (h *TaskHandler) Delete(ctx context.Context, req *proto.DeleteTaskReq) (*pr
 }
 
 func (h *TaskHandler) Create(ctx context.Context, req *proto.CreateTaskReq) (*proto.EmptyResponse, error) {
-	_, span := h.Tracer.Start(ctx, "Publisher.CreateTask")
+	_, span := h.Tracer.Start(ctx, "h.createTask")
 	defer span.End()
 
 	headers := nats.Header{}
 	headers.Set(nats_helper.TRACE_ID, span.SpanContext().TraceID().String())
 	headers.Set(nats_helper.SPAN_ID, span.SpanContext().SpanID().String())
 
-	taskID := primitive.NewObjectID()
+	status, _ := domain.ParseTaskStatus2(req.Task.Status)
 
-	log.Println(req.Task)
-	err := h.service.Create(taskID, req.Task, ctx)
+	task := domain.Task{
+		Name:        req.Task.Name,
+		Description: req.Task.Description,
+		Status:      status,
+		ProjectID:   req.Task.ProjectId,
+	}
+
+	event := domain.ProjectTaskCreateEvent{
+		ProjectID:  req.Task.ProjectId,
+		Task:       task,
+		OccurredAt: time.Now().UTC(),
+	}
+
+	data, err := json.Marshal(event)
 	if err != nil {
-		span.SetStatus(otelCodes.Error, err.Error())
-		log.Printf("Error creating task: %v", err)
-		return nil, status.Error(codes.InvalidArgument, "bad request ...")
+		log.Printf("Failed to marshal event: %v", err)
+		return nil, grpcstatus.Error(codes.Internal, "internal error")
 	}
-	err = h.service.PostTaskCacheTTL(taskID, req.Task, ctx)
+
+	err = h.service.AppendEvent(ctx, req.Task.ProjectId, data, "CreateTask")
 	if err != nil {
-		span.SetStatus(otelCodes.Error, err.Error())
-		log.Printf("Error caching task: %v", err)
-		return nil, status.Error(codes.InvalidArgument, "error caching task")
+		log.Printf("Failed to append to event store: %v", err)
+		return nil, grpcstatus.Error(codes.Internal, "event store error")
 	}
 
-	subject := "create-task"
-
-	message := map[string]string{
-		"TaskName":  req.Task.Name,
-		"ProjectId": req.Task.ProjectId,
-	}
-
-	messageData, err := json.Marshal(message)
+	err = h.natsConn.Publish("task.create.es", data)
 	if err != nil {
-		log.Printf("Error marshaling notification message: %v", err)
-		return nil, status.Error(codes.Internal, "Failed to create notification message...")
+		log.Printf("Failed to publish to NATS: %v", err)
+		return nil, grpcstatus.Error(codes.Internal, "nats error")
 	}
 
-	msg := &nats.Msg{
-		Subject: subject,
-		Header:  headers,
-		Data:    messageData,
-	}
-	err = h.natsConn.PublishMsg(msg)
+	return &proto.EmptyResponse{}, nil
+}
+
+func (h *TaskHandler) CreateTask(ctx context.Context) error {
+	_, err := h.natsConn.Subscribe("task.create.es", func(msg *nats.Msg) {
+
+		var req domain.ProjectTaskCreateEvent
+		if err := json.Unmarshal(msg.Data, &req); err != nil {
+			log.Printf("Invalid event format: %v", err)
+			return
+		}
+
+		_, span := h.Tracer.Start(ctx, "h.createTask.esdb")
+		defer span.End()
+
+		headers := nats.Header{}
+		headers.Set(nats_helper.TRACE_ID, span.SpanContext().TraceID().String())
+		headers.Set(nats_helper.SPAN_ID, span.SpanContext().SpanID().String())
+
+		taskID := primitive.NewObjectID()
+
+		task := &proto.Task{
+			Name:        req.Task.Name,
+			Description: req.Task.Description,
+			ProjectId:   req.ProjectID,
+		}
+		err := h.service.Create(taskID, task, ctx)
+		if err != nil {
+			span.SetStatus(otelCodes.Error, err.Error())
+			log.Printf("Error creating task: %v", err)
+			return
+		}
+		err = h.service.PostTaskCacheTTL(taskID, task, ctx)
+		if err != nil {
+			span.SetStatus(otelCodes.Error, err.Error())
+			log.Printf("Error caching task: %v", err)
+			return
+		}
+
+		subject := "create-task"
+
+		message := map[string]string{
+			"TaskName":  req.Task.Name,
+			"ProjectId": req.Task.ProjectID,
+		}
+
+		messageData, err := json.Marshal(message)
+		if err != nil {
+			log.Printf("Error marshaling notification message: %v", err)
+			return
+		}
+
+		msgNot := &nats.Msg{
+			Subject: subject,
+			Header:  headers,
+			Data:    messageData,
+		}
+		err = h.natsConn.PublishMsg(msgNot)
+		if err != nil {
+			log.Printf("Error publishing notification: %v", err)
+			return
+		}
+
+		log.Printf("Notification sent: %s", string(messageData))
+	})
 	if err != nil {
-		log.Printf("Error publishing notification: %v", err)
-		return nil, status.Error(codes.Internal, "Failed to send notification...")
+		return err
 	}
-
-	log.Printf("Notification sent: %s", string(messageData))
-
-	return nil, nil
+	return nil
 }
 
 func (h *TaskHandler) GetById(ctx context.Context, req *proto.GetByIdReq) (*proto.TaskResponse, error) {
@@ -202,50 +264,120 @@ func (h *TaskHandler) GetAllByProjectId(ctx context.Context, req *proto.GetAllTa
 
 func (h *TaskHandler) AddMemberTask(ctx context.Context, req *proto.AddMemberTaskReq) (*proto.EmptyResponse, error) {
 
-	_, span := h.Tracer.Start(ctx, "Publisher.AddMemberToTask")
+	_, span := h.Tracer.Start(ctx, "h.AddMemberToTask")
 	defer span.End()
 
 	headers := nats.Header{}
 	headers.Set(nats_helper.TRACE_ID, span.SpanContext().TraceID().String())
 	headers.Set(nats_helper.SPAN_ID, span.SpanContext().SpanID().String())
 
-	select {
-	case <-ctx.Done():
-		log.Printf("Handler detected context cancellation or timeout: %v", ctx.Err())
-		return nil, status.Error(codes.DeadlineExceeded, "Request timed out or was canceled")
-	default:
-	}
-
 	task, _ := h.service.GetById(req.TaskId, ctx)
 	if task.Status == "Done" {
 		log.Printf("cannot add members to a done task")
-		return nil, status.Error(codes.FailedPrecondition, "cannot add members to a done task")
-	}
-	userOnProjectReq := &proto.UserOnOneProjectReq{
-		UserId:    req.User.Username,
-		ProjectId: task.ProjectId,
+		return nil, status.Error(codes.NotFound, "cannot add members to a done task")
 	}
 
-	// Provera timeout-a pre pozivanja udaljenog servisa
-	select {
-	case <-ctx.Done():
-		log.Printf("Context timeout before calling project service: %v", ctx.Err())
-		return nil, status.Error(codes.DeadlineExceeded, "Request timed out or was canceled")
-	default:
-
+	userToAdd := domain.User{
+		Id:       req.User.Id,
+		Username: req.User.Username,
+		Role:     req.User.Role,
 	}
 
-	projServiceResponse, err := h.projectService.UserOnOneProject(ctx, userOnProjectReq)
+	event := domain.ProjectTaskAddMemberEvent{
+		TaskId:      req.TaskId,
+		ProjectID:   task.ProjectId,
+		TaskName:    task.Name,
+		MemberToAdd: userToAdd,
+		OccurredAt:  time.Now().UTC(),
+	}
+
+	data, err := json.Marshal(event)
 	if err != nil {
-
-		log.Printf("Error checking project: %v", err)
-
-		span.SetStatus(otelCodes.Error, err.Error())
-		return nil, status.Error(codes.Internal, "Error checking project")
+		log.Printf("Failed to marshal event: %v", err)
+		return nil, status.Error(codes.NotFound, "failed to marshal")
 	}
 
-	if projServiceResponse.IsOnProj {
-		taskId := req.TaskId
+	err = h.service.AppendEvent(ctx, task.ProjectId, data, "AddMemberToTask")
+	if err != nil {
+		log.Printf("Failed to append to event store: %v", err)
+		return nil, status.Error(codes.NotFound, "failed to append to event store")
+	}
+
+	err = h.natsConn.Publish("task.addMember.es", data)
+	if err != nil {
+		log.Printf("Failed to publish to NATS: %v", err)
+		return nil, status.Error(codes.NotFound, "failed to publish to NATS")
+	}
+
+	return &proto.EmptyResponse{}, nil
+
+}
+
+func (h *TaskHandler) AddMemberToTask(ctx context.Context) (*proto.EmptyResponse, error) {
+	_, err := h.natsConn.Subscribe("task.addMember.es", func(msg *nats.Msg) {
+		log.Printf("log add member to task !!1")
+		var req domain.ProjectTaskAddMemberEvent
+		if err := json.Unmarshal(msg.Data, &req); err != nil {
+			log.Printf("Invalid event format: %v", err)
+			return
+		}
+		_, span := h.Tracer.Start(ctx, "h.AddMemberToTask-esdb")
+		defer span.End()
+
+		headers := nats.Header{}
+		headers.Set(nats_helper.TRACE_ID, span.SpanContext().TraceID().String())
+		headers.Set(nats_helper.SPAN_ID, span.SpanContext().SpanID().String())
+
+		select {
+		case <-ctx.Done():
+			log.Printf("Handler detected context cancellation or timeout: %v", ctx.Err())
+			return
+		default:
+		}
+
+		task, _ := h.service.GetById(req.TaskId, ctx)
+		if task.Status == "Done" {
+			log.Printf("cannot add members to a done task")
+			return
+		}
+		//
+		//userOnProjectReq := &proto.UserOnOneProjectReq{
+		//	UserId:    req.MemberToAdd.Username,
+		//	ProjectId: task.ProjectId,
+		//}
+
+		// Provera timeout-a pre pozivanja udaljenog servisa
+		select {
+		case <-ctx.Done():
+			log.Printf("Context timeout before calling project service: %v", ctx.Err())
+			return
+		default:
+
+		}
+
+		//checker := true
+		//if h.projectService != nil {
+		//	projServiceResponse, err := h.projectService.UserOnOneProject(ctx, userOnProjectReq)
+		//	if err != nil {
+		//
+		//		log.Printf("Error checking project: %v", err)
+		//
+		//		span.SetStatus(otelCodes.Error, err.Error())
+		//		return
+		//	}
+		//	checker = projServiceResponse.IsOnProj
+		//}
+		////projServiceResponse, err := h.projectService.UserOnOneProject(ctx, userOnProjectReq)
+		////if err != nil {
+		////
+		////	log.Printf("Error checking project: %v", err)
+		////
+		////	span.SetStatus(otelCodes.Error, err.Error())
+		////	return
+		////}
+		//
+		//if checker {
+		//	taskId := req.TaskId
 
 		//time.Sleep(5 * time.Second) // test : Request timeout
 
@@ -253,24 +385,145 @@ func (h *TaskHandler) AddMemberTask(ctx context.Context, req *proto.AddMemberTas
 		select {
 		case <-ctx.Done():
 			log.Printf("Context timeout before adding member: %v", ctx.Err())
-			return nil, status.Error(codes.DeadlineExceeded, "Request timed out or was canceled")
+			return
 		default:
 		}
 		subject := "add-to-task"
 
-		err = h.service.AddMember(taskId, req.User, ctx)
+		memberToAdd := &proto.User{
+			Id:       req.MemberToAdd.Id,
+			Username: req.MemberToAdd.Username,
+			Role:     req.MemberToAdd.Role,
+		}
+
+		err := h.service.AddMember(req.TaskId, memberToAdd, ctx)
 
 		if err != nil {
 			span.SetStatus(otelCodes.Error, err.Error())
 			log.Printf("Error adding member on project: %v", err)
-			return nil, status.Error(codes.InvalidArgument, "Error adding member...")
+			return
+		}
+		projectFromTaskReq := &proto.GetByIdReq{
+			Id: req.TaskId,
+		}
+		projectFromTask, _ := h.GetById(ctx, projectFromTaskReq)
+		message := map[string]string{
+			"UserId":    req.MemberToAdd.Id,
+			"TaskId":    req.TaskId,
+			"ProjectId": projectFromTask.Task.ProjectId,
+		}
+
+		messageData, err := json.Marshal(message)
+		if err != nil {
+			log.Printf("Error marshaling notification message: %v", err)
+			return
+		}
+
+		msgNot := &nats.Msg{
+			Subject: subject,
+			Header:  headers,
+			Data:    messageData,
+		}
+		err = h.natsConn.PublishMsg(msgNot)
+		if err != nil {
+			log.Printf("Error publishing notification: %v", err)
+			return
+		}
+
+		log.Printf("Notification sent: %s", string(messageData))
+
+		//} else {
+		//	return
+		//}
+	})
+	if err != nil {
+		return nil, err
+	}
+	return &proto.EmptyResponse{}, nil
+}
+func (h *TaskHandler) RemoveMemberTask(ctx context.Context, req *proto.RemoveMemberTaskReq) (*proto.EmptyResponse, error) {
+	_, span := h.Tracer.Start(ctx, "h.RemoveMemberFromTask")
+	defer span.End()
+
+	headers := nats.Header{}
+	headers.Set(nats_helper.TRACE_ID, span.SpanContext().TraceID().String())
+	headers.Set(nats_helper.SPAN_ID, span.SpanContext().SpanID().String())
+
+	task, err := h.service.GetById(req.TaskId, ctx)
+	if err != nil {
+		span.SetStatus(otelCodes.Error, err.Error())
+		return nil, status.Error(codes.NotFound, "project not found")
+	}
+
+	event := domain.ProjectTaskRemoveMemberEvent{
+		ProjectID:     task.ProjectId,
+		TaskName:      task.Name,
+		TaskId:        task.Id,
+		MemberToAddId: req.UserId,
+		OccurredAt:    time.Now().UTC(),
+	}
+
+	data, err := json.Marshal(event)
+	if err != nil {
+		log.Printf("Failed to marshal event: %v", err)
+		return nil, status.Error(codes.Internal, "internal error")
+	}
+
+	err = h.service.AppendEvent(ctx, task.ProjectId, data, "RemoveMemberFromProject")
+	if err != nil {
+		log.Printf("Failed to append to event store: %v", err)
+		return nil, status.Error(codes.Internal, "event store error")
+	}
+
+	err = h.natsConn.Publish("task.removeMember.es", data)
+	if err != nil {
+		log.Printf("Failed to publish to NATS: %v", err)
+		return nil, status.Error(codes.Internal, "nats error")
+	}
+
+	return &proto.EmptyResponse{}, nil
+}
+
+func (h *TaskHandler) RemoveMemberFromTask(ctx context.Context) error {
+	_, err := h.natsConn.Subscribe("task.removeMember.es", func(msg *nats.Msg) {
+		log.Printf("addmember to proj esdb")
+		var req domain.ProjectTaskRemoveMemberEvent
+		if err := json.Unmarshal(msg.Data, &req); err != nil {
+			log.Printf("Invalid event format: %v", err)
+			return
+		}
+
+		_, span := h.Tracer.Start(ctx, "h.RemoveMemberFromTask.esdb")
+		defer span.End()
+
+		headers := nats.Header{}
+		headers.Set(nats_helper.TRACE_ID, span.SpanContext().TraceID().String())
+		headers.Set(nats_helper.SPAN_ID, span.SpanContext().SpanID().String())
+
+		taskId := req.TaskId
+		task, err := h.service.GetById(taskId, ctx)
+		if err != nil {
+			log.Printf("Error getting task: %v", err)
+			return
+		}
+		log.Println(task.Status)
+		if task.Status == "Done" {
+			log.Printf("cannot remove member from a done task")
+			return
+		}
+		err = h.service.RemoveMember(taskId, req.MemberToAddId, ctx)
+		if err != nil {
+			span.SetStatus(otelCodes.Error, err.Error())
+			log.Printf("Error creating project: %v", err)
+			return
 		}
 		projectFromTaskReq := &proto.GetByIdReq{
 			Id: taskId,
 		}
 		projectFromTask, _ := h.GetById(ctx, projectFromTaskReq)
+		subject := "remove-from-task"
 		message := map[string]string{
-			"UserId":    req.User.Id,
+			"UserId":    req.MemberToAddId,
 			"TaskId":    taskId,
 			"ProjectId": projectFromTask.Task.ProjectId,
 		}
@@ -278,223 +531,287 @@ func (h *TaskHandler) AddMemberTask(ctx context.Context, req *proto.AddMemberTas
 		messageData, err := json.Marshal(message)
 		if err != nil {
 			log.Printf("Error marshaling notification message: %v", err)
-			return nil, status.Error(codes.Internal, "Failed to create notification message...")
+			return
 		}
 
-		msg := &nats.Msg{
+		msgNot := &nats.Msg{
 			Subject: subject,
 			Header:  headers,
 			Data:    messageData,
 		}
-		err = h.natsConn.PublishMsg(msg)
+		err = h.natsConn.PublishMsg(msgNot)
 		if err != nil {
 			log.Printf("Error publishing notification: %v", err)
-			return nil, status.Error(codes.Internal, "Failed to send notification...")
+			return
 		}
 
 		log.Printf("Notification sent: %s", string(messageData))
 
-		return nil, nil
-	} else {
-		return nil, status.Error(codes.Internal, "User is not assigned to a project.")
-	}
-}
-
-func (h *TaskHandler) RemoveMemberTask(ctx context.Context, req *proto.RemoveMemberTaskReq) (*proto.EmptyResponse, error) {
-	_, span := h.Tracer.Start(ctx, "Publisher.RemoveMemberFromTask")
-	defer span.End()
-
-	headers := nats.Header{}
-	headers.Set(nats_helper.TRACE_ID, span.SpanContext().TraceID().String())
-	headers.Set(nats_helper.SPAN_ID, span.SpanContext().SpanID().String())
-
-	taskId := req.TaskId
-	task, err := h.service.GetById(taskId, ctx)
+		return
+	})
 	if err != nil {
-		log.Printf("Error getting task: %v", err)
-		return nil, status.Error(codes.Internal, "Error getting task")
+		return err
 	}
-	log.Println(task.Status)
-	if task.Status == "Done" {
-		log.Printf("cannot remove member from a done task")
-		return nil, status.Error(codes.FailedPrecondition, "cannot remove member from a done task")
-	}
-	err = h.service.RemoveMember(taskId, req.UserId, ctx)
-	if err != nil {
-		span.SetStatus(otelCodes.Error, err.Error())
-		log.Printf("Error creating project: %v", err)
-		return nil, status.Error(codes.InvalidArgument, "Error removing member...")
-	}
-	projectFromTaskReq := &proto.GetByIdReq{
-		Id: taskId,
-	}
-	projectFromTask, _ := h.GetById(ctx, projectFromTaskReq)
-	subject := "remove-from-task"
-	message := map[string]string{
-		"UserId":    req.UserId,
-		"TaskId":    taskId,
-		"ProjectId": projectFromTask.Task.ProjectId,
-	}
-
-	messageData, err := json.Marshal(message)
-	if err != nil {
-		log.Printf("Error marshaling notification message: %v", err)
-		return nil, status.Error(codes.Internal, "Failed to create notification message...")
-	}
-
-	msg := &nats.Msg{
-		Subject: subject,
-		Header:  headers,
-		Data:    messageData,
-	}
-	err = h.natsConn.PublishMsg(msg)
-	if err != nil {
-		log.Printf("Error publishing notification: %v", err)
-		return nil, status.Error(codes.Internal, "Failed to send notification...")
-	}
-
-	log.Printf("Notification sent: %s", string(messageData))
-
-	return nil, nil
+	return nil
 }
 
 func (h *TaskHandler) UpdateTask(ctx context.Context, req *proto.UpdateTaskReq) (*proto.EmptyResponse, error) {
-	_, span := h.Tracer.Start(ctx, "Publisher.UpdateTask")
+	_, span := h.Tracer.Start(ctx, "h.UpdateTask")
 	defer span.End()
 
 	headers := nats.Header{}
 	headers.Set(nats_helper.TRACE_ID, span.SpanContext().TraceID().String())
 	headers.Set(nats_helper.SPAN_ID, span.SpanContext().SpanID().String())
 
-	log.Println("Received UpdateTask request for task ID:", req.Id)
-
-	// Validate the task exists
-	existingTask, err := h.service.GetById(req.Id, ctx)
+	task, err := h.service.GetById(req.Id, ctx)
 	if err != nil {
 		span.SetStatus(otelCodes.Error, err.Error())
-		log.Printf("Error fetching task for update: %v", err)
-		return nil, status.Error(codes.NotFound, "Task not found")
+		return nil, status.Error(codes.NotFound, "project not found")
 	}
 
-	workflowReq := &proto.IsTaskBlockedReq{TaskID: req.Id}
-	workflowRes, err := h.workflowService.IsTaskBlocked(ctx, workflowReq)
-	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
-	}
-	//log.Printf("response: %v", workflowRes.IsBlocked)
-
-	if workflowRes.IsBlocked {
-		return nil, status.Error(codes.Internal, "The task depends on another task")
-	}
-
-	updatedTask := existingTask
-	updatedTask.Status = req.Status
-
-	err = h.service.UpdateTask(updatedTask, ctx)
-	if err != nil {
-		span.SetStatus(otelCodes.Error, err.Error())
-		log.Printf("Error updating task: %v", err)
-		return nil, status.Error(codes.Internal, "Failed to update task")
-	}
-
-	log.Println("Task updated successfully:", req.Id)
-
-	//CQRS workflow----->
-
-	subjectWorkflow := "cqrs-workflow-update"
-
-	messageWorkflow := map[string]interface{}{
-		"TaskId":     req.Id,
-		"TaskStatus": req.Status,
-	}
-
-	messageDataWorkflow, err := json.Marshal(messageWorkflow)
-	if err != nil {
-		log.Printf("Error marshaling cqrs message: %v", err)
-		return nil, status.Error(codes.Internal, "Failed to create cqrs message...")
-	}
-
-	msgWorkflow := &nats.Msg{
-		Subject: subjectWorkflow,
-		Data:    messageDataWorkflow,
-		Header:  headers,
-	}
-	err = h.natsConn.PublishMsg(msgWorkflow)
-	if err != nil {
-		span.SetStatus(otelCodes.Error, err.Error())
-		return nil, status.Error(codes.Internal, "failed to publish update task event")
-	}
-
-	//notification----->
-
-	getProjReq := &proto.GetByIdReq{
-		Id: req.Id,
-	}
-
-	projId, _ := h.GetById(ctx, getProjReq)
-
-	subject := "update-task"
-	message := map[string]string{
-		"TaskId":     req.Id,
-		"TaskStatus": req.Status,
-		"ProjectId":  projId.Task.ProjectId,
-	}
-	if len(req.Members) > 0 {
-		var memberIds []string
-		for _, member := range req.Members {
-			memberIds = append(memberIds, member.Id)
+	var mems []domain.User
+	for _, m := range req.Members {
+		mem := domain.User{
+			Id:       m.Id,
+			Username: m.Username,
+			Role:     m.Role,
 		}
-		message["MemberIds"] = strings.Join(memberIds, ",")
+		mems = append(mems, mem)
 	}
 
-	messageData, err := json.Marshal(message)
+	event := domain.ProjectTaskStatusEvent{
+		ProjectID:     task.ProjectId,
+		TaskId:        task.Id,
+		TaskStatus:    task.Status,
+		TaskNewStatus: req.Status,
+		Members:       mems,
+		OccurredAt:    time.Time{},
+	}
+
+	data, err := json.Marshal(event)
 	if err != nil {
-		log.Printf("Error marshaling notification message: %v", err)
-		return nil, status.Error(codes.Internal, "Failed to create notification message...")
+		log.Printf("Failed to marshal event: %v", err)
+		return nil, status.Error(codes.Internal, "internal error")
 	}
 
-	msg := &nats.Msg{
-		Subject: subject,
-		Header:  headers,
-		Data:    messageData,
-	}
-	err = h.natsConn.PublishMsg(msg)
+	err = h.service.AppendEvent(ctx, task.ProjectId, data, "StatusUpdate")
 	if err != nil {
-		log.Printf("Error publishing notification: %v", err)
-		return nil, status.Error(codes.Internal, "Failed to send notification...")
+		log.Printf("Failed to append to event store: %v", err)
+		return nil, status.Error(codes.Internal, "event store error")
 	}
 
-	log.Printf("Notification sent: %s", string(messageData))
+	err = h.natsConn.Publish("task.update.es", data)
+	if err != nil {
+		log.Printf("Failed to publish to NATS: %v", err)
+		return nil, status.Error(codes.Internal, "nats error")
+	}
+
 	return &proto.EmptyResponse{}, nil
 }
 
-func (h *TaskHandler) UploadFile(ctx context.Context, req *proto.UploadFileRequest) (*proto.EmptyResponse, error) {
-	log.Printf("Received task_id: %s, file_name: %s, file_content length: %d", req.TaskId, req.FileName, len(req.FileContent))
+func (h *TaskHandler) UpdateTaskStatus(ctx context.Context) error {
+	_, err := h.natsConn.Subscribe("task.update.es", func(msg *nats.Msg) {
 
+		var req domain.ProjectTaskStatusEvent
+		if err := json.Unmarshal(msg.Data, &req); err != nil {
+			log.Printf("Invalid event format: %v", err)
+			return
+		}
+
+		_, span := h.Tracer.Start(ctx, "h.UpdateTask.esdb")
+		defer span.End()
+
+		headers := nats.Header{}
+		headers.Set(nats_helper.TRACE_ID, span.SpanContext().TraceID().String())
+		headers.Set(nats_helper.SPAN_ID, span.SpanContext().SpanID().String())
+
+		log.Println("Received UpdateTask request for task ID:", req.TaskId)
+
+		// Validate the task exists
+		existingTask, err := h.service.GetById(req.TaskId, ctx)
+		if err != nil {
+			span.SetStatus(otelCodes.Error, err.Error())
+			log.Printf("Error fetching task for update: %v", err)
+			return
+		}
+
+		workflowReq := &proto.IsTaskBlockedReq{TaskID: req.TaskId}
+		workflowRes, err := h.workflowService.IsTaskBlocked(ctx, workflowReq)
+		if err != nil {
+			return
+		}
+		//log.Printf("response: %v", workflowRes.IsBlocked)
+
+		if workflowRes.IsBlocked {
+			return
+		}
+
+		updatedTask := existingTask
+		updatedTask.Status = req.TaskNewStatus
+
+		err = h.service.UpdateTask(updatedTask, ctx)
+		if err != nil {
+			span.SetStatus(otelCodes.Error, err.Error())
+			log.Printf("Error updating task: %v", err)
+			return
+		}
+
+		log.Println("Task updated successfully:", req.TaskId)
+
+		//CQRS workflow----->
+
+		subjectWorkflow := "cqrs-workflow-update"
+
+		messageWorkflow := map[string]interface{}{
+			"TaskId":     req.TaskId,
+			"TaskStatus": req.TaskNewStatus,
+		}
+
+		messageDataWorkflow, err := json.Marshal(messageWorkflow)
+		if err != nil {
+			log.Printf("Error marshaling cqrs message: %v", err)
+			return
+		}
+
+		msgWorkflow := &nats.Msg{
+			Subject: subjectWorkflow,
+			Data:    messageDataWorkflow,
+			Header:  headers,
+		}
+		err = h.natsConn.PublishMsg(msgWorkflow)
+		if err != nil {
+			span.SetStatus(otelCodes.Error, err.Error())
+			return
+		}
+
+		//notification----->
+
+		getProjReq := &proto.GetByIdReq{
+			Id: req.TaskId,
+		}
+
+		projId, _ := h.GetById(ctx, getProjReq)
+
+		subject := "update-task"
+		message := map[string]string{
+			"TaskId":     req.TaskId,
+			"TaskStatus": req.TaskNewStatus,
+			"ProjectId":  projId.Task.ProjectId,
+		}
+		if len(req.Members) > 0 {
+			var memberIds []string
+			for _, member := range req.Members {
+				memberIds = append(memberIds, member.Id)
+			}
+			message["MemberIds"] = strings.Join(memberIds, ",")
+		}
+
+		messageData, err := json.Marshal(message)
+		if err != nil {
+			log.Printf("Error marshaling notification message: %v", err)
+			return
+		}
+
+		msgNot := &nats.Msg{
+			Subject: subject,
+			Header:  headers,
+			Data:    messageData,
+		}
+		err = h.natsConn.PublishMsg(msgNot)
+		if err != nil {
+			log.Printf("Error publishing notification: %v", err)
+			return
+		}
+
+		log.Printf("Notification sent: %s", string(messageData))
+		return
+	})
+	if err != nil {
+		return err
+	}
+	return nil
+}
+func (h *TaskHandler) UploadFile(ctx context.Context, req *proto.UploadFileRequest) (*proto.EmptyResponse, error) {
 	ctx, span := h.Tracer.Start(ctx, "h.uploadFile")
 	defer span.End()
 
-	log.Printf("handler upload file")
-	log.Println("task name", req.FileName)
-	log.Println("end on file name")
-
 	headers := nats.Header{}
 	headers.Set(nats_helper.TRACE_ID, span.SpanContext().TraceID().String())
 	headers.Set(nats_helper.SPAN_ID, span.SpanContext().SpanID().String())
 
-	// Pass the task ID, file name, and raw file content to the service
-	err := h.service.UploadFile(ctx, req.TaskId, string(req.FileContent), []byte(req.FileName))
-	if err != nil {
-		span.SetStatus(otelCodes.Error, err.Error())
-		return nil, status.Error(codes.Internal, "Failed to upload file")
+	event := domain.TaskUpdateFileEvent{
+		TaskId:      req.TaskId,
+		UserId:      req.UserId,
+		FileName:    req.FileName,
+		FileContent: req.FileContent,
+		OccurredAt:  time.Now().UTC(),
 	}
 
-	log.Printf("File uploaded : %s")
+	task, err := h.service.GetById(req.TaskId, ctx)
+	if err != nil {
+		span.SetStatus(otelCodes.Error, err.Error())
+		return nil, status.Error(codes.NotFound, "project not found")
+	}
+
+	data, err := json.Marshal(event)
+	if err != nil {
+		log.Printf("Failed to marshal event: %v", err)
+		return nil, status.Error(codes.Internal, "internal error")
+	}
+
+	err = h.service.AppendEvent(ctx, task.ProjectId, data, "UploadFile")
+	if err != nil {
+		log.Printf("Failed to append to event store: %v", err)
+		return nil, status.Error(codes.Internal, "event store error")
+	}
+
+	err = h.natsConn.Publish("project.taskUploadFile.es", data)
+	if err != nil {
+		log.Printf("Failed to publish to NATS: %v", err)
+		return nil, status.Error(codes.Internal, "nats error")
+	}
 
 	return &proto.EmptyResponse{}, nil
+
 }
 
-func (h *TaskHandler) DownloadFile(ctx context.Context, req *proto.DownloadFileRequest) (*proto.DownloadFileResponse, error) {
+func (h *TaskHandler) UploadFileESDB(ctx context.Context) error {
+	_, err := h.natsConn.Subscribe("project.taskUploadFile.es", func(msg *nats.Msg) {
+
+		var req domain.TaskUpdateFileEvent
+		if err := json.Unmarshal(msg.Data, &req); err != nil {
+			log.Printf("Invalid event format: %v", err)
+			return
+		}
+
+		log.Printf("Received task_id: %s, file_name: %s, file_content length: %d", req.TaskId, req.FileName, len(req.FileContent))
+
+		ctx, span := h.Tracer.Start(ctx, "h.uploadFile.esdb")
+		defer span.End()
+
+		headers := nats.Header{}
+		headers.Set(nats_helper.TRACE_ID, span.SpanContext().TraceID().String())
+		headers.Set(nats_helper.SPAN_ID, span.SpanContext().SpanID().String())
+
+		// Pass the task ID, file name, and raw file content to the service
+		err := h.service.UploadFile(ctx, req.TaskId, req.FileName, req.FileContent)
+		if err != nil {
+			span.SetStatus(otelCodes.Error, err.Error())
+			log.Printf("Failed to upload file")
+			return
+		}
+
+		log.Printf("File uploaded : %s", req.FileName)
+
+		return
+	})
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (h *TaskHandler) DownloadFile(ctx context.Context, req *proto.DownloadFileRequest) (*proto.FileResponse, error) {
 	log.Println("handler Download file")
 	ctx, span := h.Tracer.Start(ctx, "h.downloadFile")
 	defer span.End()
@@ -505,7 +822,7 @@ func (h *TaskHandler) DownloadFile(ctx context.Context, req *proto.DownloadFileR
 		return nil, status.Error(codes.Internal, "Failed to download file")
 	}
 
-	return &proto.DownloadFileResponse{
+	return &proto.FileResponse{
 		FileContent: fileContent,
 	}, nil
 }

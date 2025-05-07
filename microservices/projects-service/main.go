@@ -2,6 +2,8 @@ package main
 
 import (
 	"context"
+	"fmt"
+	"github.com/EventStore/EventStore-Client-Go/esdb"
 	"log"
 	"net"
 	"os"
@@ -93,8 +95,18 @@ func main() {
 	logger := log.New(os.Stdout, "[project-api] ", log.LstdFlags)
 	storeLogger := log.New(os.Stdout, "[project-store] ", log.LstdFlags)
 
+	connString := fmt.Sprintf("esdb://%s:%s@%s:%s?tls=false", cfg.ESDBUser, cfg.ESDBPass, cfg.ESDBHost, cfg.ESDBPort)
+	settings, err := esdb.ParseConnectionString(connString)
+	if err != nil {
+		log.Fatal(err)
+	}
+	esdbClient, err := esdb.NewClient(settings)
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	// NoSQL: Initialize Product Repository store
-	repoProject, err := repositories.New(timeoutContext, storeLogger, tracer)
+	repoProject, err := repositories.New(timeoutContext, esdbClient, cfg.ESDBGroup, storeLogger, tracer)
 	if err != nil {
 		logger.Fatal(err)
 	}
@@ -105,8 +117,18 @@ func main() {
 	handleErr(err)
 
 	handlerProject, err := h.NewConnectionHandler(serviceProject, taskClient, userClient, natsConn, tracer)
-
 	handleErr(err)
+
+	go func() {
+		if err := handlerProject.AddMemberToProject(context.Background()); err != nil {
+			log.Fatalf("Failed to subscribe: %v", err)
+		}
+	}()
+	go func() {
+		if err := handlerProject.RemoveMemberFromProject(context.Background()); err != nil {
+			log.Fatalf("Failed to subscribe: %v", err)
+		}
+	}()
 
 	// Bootstrap gRPC server.
 	grpcServer := grpc.NewServer(

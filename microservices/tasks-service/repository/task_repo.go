@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/EventStore/EventStore-Client-Go/esdb"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	otelCodes "go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/trace"
@@ -22,39 +23,70 @@ type TaskRepo struct {
 	Cli    *mongo.Client
 	Tracer trace.Tracer
 	cache  *redis.Client
+	esdb   *ESDBEventStream
 }
 
-func NewTaskRepo(ctx context.Context, logger *log.Logger, tracer trace.Tracer) (*TaskRepo, error) {
+type ESDBEventStream struct {
+	client *esdb.Client
+	group  string
+	sub    *esdb.PersistentSubscription
+}
+
+func NewTaskRepo(ctx context.Context, clientESDB *esdb.Client, group string, logger *log.Logger, tracer trace.Tracer) (*TaskRepo, error) {
+	// MongoDB URI
 	dburi := os.Getenv("MONGO_DB_URI")
 	if dburi == "" {
 		return nil, fmt.Errorf("MONGO_DB_URI is not set")
 	}
+
+	// Redis connection
 	redisHost := os.Getenv("REDIS_HOST")
 	redisPort := os.Getenv("REDIS_PORT")
 	redisAddress := fmt.Sprintf("%s:%s", redisHost, redisPort)
 
+	// Connect to MongoDB
 	client, err := mongo.Connect(ctx, options.Client().ApplyURI(dburi))
 	if err != nil {
-		log.Printf("Failed to connect to MongoDB: %v", err)
+		logger.Printf("Failed to connect to MongoDB: %v", err)
 		return nil, err
 	}
 
+	// Check MongoDB connection
+	if err := client.Ping(ctx, nil); err != nil {
+		logger.Printf("MongoDB ping failed: %v", err)
+		return nil, err
+	}
+	logger.Println("Connected to MongoDB successfully")
+
+	// Setup Redis client
 	clientRedis := redis.NewClient(&redis.Options{
 		Addr: redisAddress,
 	})
 
-	if err := client.Ping(ctx, nil); err != nil {
-		log.Printf("MongoDB ping failed: %v", err)
+	// Initialize EventStoreDB stream
+	eventStream := &ESDBEventStream{
+		client: clientESDB,
+		group:  group,
+	}
+
+	// Optional: subscribe to a persistent subscription, if needed
+	if err := eventStream.subscribe(); err != nil {
+		logger.Printf("Failed to subscribe to ESDB: %v", err)
 		return nil, err
 	}
 
-	log.Println("Connected to MongoDB successfully")
-
+	// Insert initial tasks into MongoDB (optional)
 	if err := insertInitialTasks(client); err != nil {
-		log.Printf("Failed to insert initial tasks: %v", err)
+		logger.Printf("Failed to insert initial tasks: %v", err)
 	}
 
-	return &TaskRepo{Cli: client, Tracer: tracer, cache: clientRedis}, nil
+	// Return initialized TaskRepo
+	return &TaskRepo{
+		Cli:    client,
+		Tracer: tracer,
+		cache:  clientRedis,
+		esdb:   eventStream,
+	}, nil
 }
 
 func (tr *TaskRepo) Disconnect(ctx context.Context) error {
@@ -631,6 +663,44 @@ func (pc *TaskRepo) DeleteByKey(key string, username string, ctx context.Context
 	if err != nil {
 		log.Printf("Failed to set cache projects for key %s: %v", key, err)
 		return err
+	}
+
+	return nil
+}
+
+// ESDB --------------------------------------------------->
+
+func (s *ESDBEventStream) subscribe() error {
+	opts := esdb.ConnectToPersistentSubscriptionOptions{}
+	sub, err := s.client.ConnectToPersistentSubscriptionToAll(context.Background(), s.group, opts)
+	if err != nil {
+		return err
+	}
+	s.sub = sub
+	return nil
+}
+
+func (r *TaskRepo) AppendEvent(ctx context.Context, streamID string, data []byte, eventType string) error {
+	log.Println("Append event repo")
+
+	ctx, span := r.Tracer.Start(ctx, "r.esdb-AppendEvent")
+	defer span.End()
+
+	event := esdb.EventData{
+		ContentType: esdb.JsonContentType,
+		EventType:   eventType,
+		Data:        data,
+	}
+
+	opts := esdb.AppendToStreamOptions{
+		ExpectedRevision: esdb.Any{},
+	}
+
+	stream := "project-" + streamID
+
+	_, err := r.esdb.client.AppendToStream(ctx, stream, opts, event)
+	if err != nil {
+		return fmt.Errorf("failed to append event to stream %s: %w", stream, err)
 	}
 
 	return nil

@@ -86,7 +86,7 @@ export class AddMemberTaskComponent implements OnInit {
                 } else {
                   // Dodavanje člana u zadatak
                   if(this.id)
-                  this.taskService.AddMemberToTask(this.id, user, 5000).subscribe(() => {
+                  this.taskService.AddMemberToTask(this.id, user).subscribe(() => {
                     console.log('Member successfully added');
                     this.router.navigate([`/task-details/${this.id}`]);
                   });

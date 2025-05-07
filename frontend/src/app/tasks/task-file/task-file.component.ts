@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { TaskService } from '../../services/task.service';
+import {AuthService} from "../../services/auth.service";
 
 @Component({
   selector: 'app-task-file',
@@ -11,11 +12,13 @@ export class TaskFileComponent implements OnInit {
   taskId: string | null = null;
   selectedFile: File | null = null;
   files: string[] = [];
+  userId: string | null | undefined = null;
 
   constructor(
     private activatedRoute: ActivatedRoute,
     private taskService: TaskService,
-    private router: Router
+    private router: Router,
+    private authService: AuthService
   ) {
   }
 
@@ -30,13 +33,23 @@ export class TaskFileComponent implements OnInit {
     this.selectedFile = event.target.files[0];
   }
 
+  arrayBufferToBase64(buffer: ArrayBuffer): string {
+    let binary = '';
+    const bytes = new Uint8Array(buffer);
+    for (let i = 0; i < bytes.byteLength; i++) {
+      binary += String.fromCharCode(bytes[i]);
+    }
+    return btoa(binary);
+  }
+
+
   uploadFile(): void {
     if (this.selectedFile && this.taskId) {
       const reader = new FileReader();
 
       reader.onload = () => {
         // Base64 encode the file content
-        const fileContentBase64 = btoa(String.fromCharCode(...new Uint8Array(reader.result as ArrayBuffer)));
+        const fileContentBase64 = this.arrayBufferToBase64(reader.result as ArrayBuffer);
 
         // Create the request payload
 
@@ -45,6 +58,7 @@ export class TaskFileComponent implements OnInit {
           taskId: this.taskId,
           fileContent: fileContentBase64,
           fileName: this.selectedFile?.name,
+          userId: this.authService.getUserId(),
         };
 
         // Send the payload to the backend
@@ -90,19 +104,23 @@ export class TaskFileComponent implements OnInit {
     if (this.taskId) {
       this.taskService.downloadFile(this.taskId, fileName).subscribe(
         (response: any) => {
-          const fileContent = response.fileId;
-          if (fileContent) {
-            // Create a Blob with the file content
-            const blob = new Blob([fileContent], { type: 'text/plain' });
+          const base64 = response.fileContent;
 
-            const link = document.createElement('a');
-            link.href = URL.createObjectURL(blob);
-            link.download = "(" + this.taskId + ")" +  fileName  || 'download.txt';
-            link.click();
-          } else {
-            console.error('Invalid response structure or missing fileId');
-            alert('Failed to download file.');
+          if (!base64) {
+            console.error('No file content received');
+            alert('File content is missing.');
+            return;
           }
+
+          // Dekodiranje base64 u Uint8Array
+          const byteArray = Uint8Array.from(atob(base64), c => c.charCodeAt(0));
+
+          // Kreiranje BLOB-a i pokretanje preuzimanja
+          const blob = new Blob([byteArray]);
+          const link = document.createElement('a');
+          link.href = URL.createObjectURL(blob);
+          link.download = `(${this.taskId})${fileName}`;
+          link.click();
         },
         (error) => {
           console.error('Error downloading file:', error);

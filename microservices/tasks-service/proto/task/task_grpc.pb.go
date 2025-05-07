@@ -46,7 +46,7 @@ type TaskServiceClient interface {
 	UpdateTask(ctx context.Context, in *UpdateTaskReq, opts ...grpc.CallOption) (*EmptyResponse, error)
 	DoneTasksByProject(ctx context.Context, in *DoneTasksByProjectReq, opts ...grpc.CallOption) (*DoneTasksByProjectRes, error)
 	UploadFile(ctx context.Context, in *UploadFileRequest, opts ...grpc.CallOption) (*EmptyResponse, error)
-	DownloadFile(ctx context.Context, in *DownloadFileRequest, opts ...grpc.CallOption) (*DownloadFileResponse, error)
+	DownloadFile(ctx context.Context, in *DownloadFileRequest, opts ...grpc.CallOption) (*FileResponse, error)
 	DeleteFile(ctx context.Context, in *DeleteFileRequest, opts ...grpc.CallOption) (*EmptyResponse, error)
 	GetAllFiles(ctx context.Context, in *GetTaskFilesRequest, opts ...grpc.CallOption) (*GetTaskFilesResponse, error)
 }
@@ -149,9 +149,9 @@ func (c *taskServiceClient) UploadFile(ctx context.Context, in *UploadFileReques
 	return out, nil
 }
 
-func (c *taskServiceClient) DownloadFile(ctx context.Context, in *DownloadFileRequest, opts ...grpc.CallOption) (*DownloadFileResponse, error) {
+func (c *taskServiceClient) DownloadFile(ctx context.Context, in *DownloadFileRequest, opts ...grpc.CallOption) (*FileResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(DownloadFileResponse)
+	out := new(FileResponse)
 	err := c.cc.Invoke(ctx, TaskService_DownloadFile_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
@@ -192,7 +192,7 @@ type TaskServiceServer interface {
 	UpdateTask(context.Context, *UpdateTaskReq) (*EmptyResponse, error)
 	DoneTasksByProject(context.Context, *DoneTasksByProjectReq) (*DoneTasksByProjectRes, error)
 	UploadFile(context.Context, *UploadFileRequest) (*EmptyResponse, error)
-	DownloadFile(context.Context, *DownloadFileRequest) (*DownloadFileResponse, error)
+	DownloadFile(context.Context, *DownloadFileRequest) (*FileResponse, error)
 	DeleteFile(context.Context, *DeleteFileRequest) (*EmptyResponse, error)
 	GetAllFiles(context.Context, *GetTaskFilesRequest) (*GetTaskFilesResponse, error)
 	mustEmbedUnimplementedTaskServiceServer()
@@ -232,7 +232,7 @@ func (UnimplementedTaskServiceServer) DoneTasksByProject(context.Context, *DoneT
 func (UnimplementedTaskServiceServer) UploadFile(context.Context, *UploadFileRequest) (*EmptyResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method UploadFile not implemented")
 }
-func (UnimplementedTaskServiceServer) DownloadFile(context.Context, *DownloadFileRequest) (*DownloadFileResponse, error) {
+func (UnimplementedTaskServiceServer) DownloadFile(context.Context, *DownloadFileRequest) (*FileResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method DownloadFile not implemented")
 }
 func (UnimplementedTaskServiceServer) DeleteFile(context.Context, *DeleteFileRequest) (*EmptyResponse, error) {

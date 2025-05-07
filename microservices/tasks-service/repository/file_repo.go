@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/colinmarc/hdfs/v2"
 	"go.opentelemetry.io/otel/trace"
+	"io"
 	"log"
 	"os"
 	"tasks-service/config"
@@ -103,20 +104,19 @@ func (repo *HDFSRepository) DownloadFile(ctx context.Context, taskID string, fil
 	ctx, span := repo.Tracer.Start(ctx, "r.downloadFile")
 	defer span.End()
 
-	// Check if repo.client is nil
 	if repo.Client == nil {
 		log.Println("HDFS client is not initialized. Initializing...")
 		client, err := hdfs.New(config.GetConfig().NamenodeUrl)
 		if err != nil {
 			log.Printf("Failed to initialize HDFS client: %v", err)
-			return nil, nil
+			return nil, err
 		}
 		repo.Client = client
 		log.Println("HDFS client initialized successfully")
 	}
+
 	hdfsPath := "/tasks/" + taskID + "/" + fileName
 
-	// Open file in HDFS
 	file, err := repo.Client.Open(hdfsPath)
 	if err != nil {
 		log.Println("Error opening file in HDFS:", err)
@@ -124,15 +124,13 @@ func (repo *HDFSRepository) DownloadFile(ctx context.Context, taskID string, fil
 	}
 	defer file.Close()
 
-	buffer := make([]byte, 1024)
-	n, err := file.Read(buffer)
+	content, err := io.ReadAll(file)
 	if err != nil {
-		log.Println("Error reading file in HDFS:", err)
+		log.Println("Error reading file content:", err)
 		return nil, err
 	}
-	log.Println("File uploaded")
 
-	return buffer[:n], nil
+	return content, nil
 }
 
 func (repo *HDFSRepository) DeleteFile(ctx context.Context, taskID string, fileName string) error {

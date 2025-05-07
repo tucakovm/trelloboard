@@ -202,6 +202,7 @@ func (s *TaskService) UpdateTask(taskReq *proto.Task, ctx context.Context) error
 
 	return nil
 }
+
 func (s *TaskService) UploadFile(ctx context.Context, taskID string, fileName string, fileContent []byte) error {
 	ctx, span := s.Tracer.Start(ctx, "s.uploadFile")
 	defer span.End()
@@ -442,4 +443,12 @@ func (s TaskService) PostTaskCacheTTL(taskId primitive.ObjectID, t *proto.Task, 
 
 func (s TaskService) DeleteFromCache(key string, projId string, ctx context.Context) error {
 	return s.repo.DeleteByKey(key, projId, ctx)
+}
+
+func (s TaskService) AppendEvent(ctx context.Context, projectId string, data []byte, eventType string) error {
+	ctx, span := s.Tracer.Start(ctx, "s.esdb-AppendEvent")
+	defer span.End()
+	log.Println("Append event service")
+
+	return s.repo.AppendEvent(ctx, projectId, data, eventType)
 }

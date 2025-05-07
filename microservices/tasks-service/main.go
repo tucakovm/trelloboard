@@ -4,6 +4,8 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
+	"fmt"
+	"github.com/EventStore/EventStore-Client-Go/esdb"
 	"go.opentelemetry.io/otel/trace"
 	"log"
 	"net"
@@ -98,8 +100,18 @@ func main() {
 	logger := log.New(os.Stdout, "[task-api] ", log.LstdFlags)
 	storeLogger := log.New(os.Stdout, "[task-store] ", log.LstdFlags)
 
+	connString := fmt.Sprintf("esdb://%s:%s@%s:%s?tls=false", cfg.ESDBUser, cfg.ESDBPass, cfg.ESDBHost, cfg.ESDBPort)
+	settings, err := esdb.ParseConnectionString(connString)
+	if err != nil {
+		log.Fatal(err)
+	}
+	esdbClient, err := esdb.NewClient(settings)
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	// NoSQL: Initialize Product Repository store
-	repoTask, err := repository.NewTaskRepo(timeoutContext, storeLogger, tracer)
+	repoTask, err := repository.NewTaskRepo(timeoutContext, esdbClient, cfg.ESDBGroup, storeLogger, tracer)
 	if err != nil {
 		logger.Fatal(err)
 	}
@@ -134,6 +146,32 @@ func main() {
 
 	GetTasksForApiComp(ctx, natsConn, *handlerProject, tracer)
 	go SubscribeToDeleteTasksSaga(natsConn, *serviceTask, tracer)
+
+	go func() {
+		if _, err := handlerProject.AddMemberToTask(context.Background()); err != nil {
+			log.Fatalf("Failed to subscribe: %v", err)
+		}
+	}()
+	go func() {
+		if err := handlerProject.RemoveMemberFromTask(context.Background()); err != nil {
+			log.Printf("Failed to subscribe: %v", err)
+		}
+	}()
+	go func() {
+		if err := handlerProject.UpdateTaskStatus(context.Background()); err != nil {
+			log.Printf("Failed to subscribe: %v", err)
+		}
+	}()
+	go func() {
+		if err := handlerProject.CreateTask(context.Background()); err != nil {
+			log.Printf("Failed to subscribe: %v", err)
+		}
+	}()
+	go func() {
+		if err := handlerProject.UploadFileESDB(context.Background()); err != nil {
+			log.Printf("Failed to subscribe: %v", err)
+		}
+	}()
 
 	go func() {
 		if err := grpcServer.Serve(listener); err != nil {
