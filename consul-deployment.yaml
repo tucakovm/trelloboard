@@ -1,0 +1,61 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    kompose.cmd: C:\Program Files\Kompose\kompose.exe convert
+    kompose.version: 1.36.0 (ae2a39403)
+  labels:
+    app: consul
+  name: consul
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: consul
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      annotations:
+        kompose.cmd: C:\Program Files\Kompose\kompose.exe convert
+        kompose.version: 1.36.0 (ae2a39403)
+      labels:
+        app: consul
+    spec:
+      containers:
+        - args:
+            - agent
+            - -server
+            - -ui
+            - -node=server-1
+            - -bootstrap-expect=1
+            - -client=0.0.0.0
+          envFrom:
+            - configMapRef:
+                name: env
+          image: hashicorp/consul:latest
+          livenessProbe:
+            exec:
+              command:
+                - curl
+                - -f
+                - http://localhost:8500/v1/status/leader
+            failureThreshold: 3
+            periodSeconds: 30
+            timeoutSeconds: 5
+          name: consul
+          ports:
+            - containerPort: 8500
+              protocol: TCP
+            - containerPort: 8600
+              protocol: TCP
+            - containerPort: 8600
+              protocol: UDP
+          volumeMounts:
+            - mountPath: /consul/data
+              name: consul-claim0
+      restartPolicy: Always
+      volumes:
+        - name: consul-claim0
+          persistentVolumeClaim:
+            claimName: consul-claim0

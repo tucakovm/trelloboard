@@ -91,12 +91,15 @@ func main() {
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 	)
 	if err != nil {
-		log.Fatalf("Failed to dial NotificationService: %v", err)
+		log.Fatalf("Failed to connect to NotificationService at %s: %v", cfg.FullNotServiceAddress(), err)
 	}
+
 	notClient := gateway.NewNotificationServiceClient(notConn)
+
 	if err := gateway.RegisterNotificationServiceHandlerClient(ctx, gwmux, notClient); err != nil {
 		log.Fatalln("Failed to register NotService gateway:", err)
 	}
+
 	log.Println("NotService Gateway registered successfully.")
 
 	// WorkflowService connection
@@ -106,9 +109,6 @@ func main() {
 		grpc.WithBlock(),
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 	)
-	if err != nil {
-		log.Fatalf("Failed to dial WorkflowService: %v", err)
-	}
 	workflowClient := gateway.NewWorkflowServiceClient(workflowConn)
 	if err := gateway.RegisterWorkflowServiceHandlerClient(ctx, gwmux, workflowClient); err != nil {
 		log.Fatalf("Failed to register WorkflowService gateway: %v", err)
@@ -122,9 +122,6 @@ func main() {
 		grpc.WithBlock(),
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 	)
-	if err != nil {
-		log.Fatalf("Failed to dial ApiComposer: %v", err)
-	}
 	composerClient := gateway.NewApiComposerClient(composerConn)
 	if err := gateway.RegisterApiComposerHandlerClient(ctx, gwmux, composerClient); err != nil {
 		log.Fatalf("Failed to register ApiComposer gateway: %v", err)

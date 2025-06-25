@@ -1,0 +1,33 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    kompose.cmd: C:\Program Files\Kompose\kompose.exe convert
+    kompose.version: 1.36.0 (ae2a39403)
+  labels:
+    app: angular
+  name: angular
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: angular
+  template:
+    metadata:
+      annotations:
+        kompose.cmd: C:\Program Files\Kompose\kompose.exe convert
+        kompose.version: 1.36.0 (ae2a39403)
+      labels:
+        app: angular
+    spec:
+      containers:
+        - envFrom:
+            - configMapRef:
+                name: env
+          image: angular:latest
+          name: angular
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 4200
+              protocol: TCP
+      restartPolicy: Always

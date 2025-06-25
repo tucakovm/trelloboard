@@ -8,8 +8,10 @@ import (
 	"github.com/gocql/gocql"
 	"go.opentelemetry.io/otel/trace"
 	"log"
+	"net"
 	"not_module/domain"
 	"os"
+	"strconv"
 	"time"
 )
 
@@ -21,52 +23,59 @@ type NotRepo struct {
 }
 
 func New(logger *log.Logger, tracer trace.Tracer) (*NotRepo, error) {
-	db := os.Getenv("CASS_DB")
+	cassandraHost := os.Getenv("CASSANDRA_HOST")
+	cassandraPortStr := os.Getenv("CASSANDRA_PORT")
+	port, err := strconv.Atoi(cassandraPortStr)
+	if err != nil {
+		logger.Println("Invalid CASSANDRA_PORT:", err)
+		return nil, err
+	}
+
+	cluster := gocql.NewCluster(cassandraHost)
+	cluster.Port = port
+	cluster.Keyspace = "system"
+	cluster.ProtoVersion = 4
+	cluster.Consistency = gocql.Quorum
+
+	systemSession, err := cluster.CreateSession()
+	if err != nil {
+		logger.Println("Error connecting to Cassandra system keyspace:", err)
+		return nil, err
+	}
+	defer systemSession.Close()
+
+	err = systemSession.Query(`
+		CREATE KEYSPACE IF NOT EXISTS user
+		WITH replication = {
+			'class' : 'SimpleStrategy',
+			'replication_factor' : 1
+		}`).Exec()
+	if err != nil {
+		logger.Println("Error creating keyspace:", err)
+		return nil, err
+	}
+
+	cluster.Keyspace = "user"
+	userSession, err := cluster.CreateSession()
+	if err != nil {
+		logger.Println("Error connecting to 'user' keyspace:", err)
+		return nil, err
+	}
+
 	redisHost := os.Getenv("REDIS_HOST")
 	redisPort := os.Getenv("REDIS_PORT")
-	redisAddress := fmt.Sprintf("%s:%s", redisHost, redisPort)
-
-	// Connect to default keyspace
-	cluster := gocql.NewCluster(db)
-	cluster.Keyspace = "system"
-	session, err := cluster.CreateSession()
-	if err != nil {
-		logger.Println(err)
-		return nil, err
-	}
-	// Create 'student' keyspace
-	err = session.Query(
-		fmt.Sprintf(`CREATE KEYSPACE IF NOT EXISTS %s
-					WITH replication = {
-						'class' : 'SimpleStrategy',
-						'replication_factor' : %d
-					}`, "user", 1)).Exec()
-	if err != nil {
-		logger.Println(err)
-	}
-	session.Close()
-
-	// Connect to student keyspace
-	cluster.Keyspace = "user"
-	cluster.Consistency = gocql.One
-	session, err = cluster.CreateSession()
-	if err != nil {
-		logger.Println(err)
-		return nil, err
-	}
+	redisAddr := net.JoinHostPort(redisHost, redisPort)
 
 	clientRedis := redis.NewClient(&redis.Options{
-		Addr: redisAddress,
+		Addr: redisAddr,
 	})
 
-	repo := &NotRepo{
-		session: session,
+	return &NotRepo{
+		session: userSession,
 		logger:  logger,
 		Tracer:  tracer,
 		cache:   clientRedis,
-	}
-
-	return repo, nil
+	}, nil
 }
 
 // Disconnect from database

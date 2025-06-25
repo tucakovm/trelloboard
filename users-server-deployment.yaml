@@ -1,0 +1,36 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    kompose.cmd: C:\Program Files\Kompose\kompose.exe convert
+    kompose.version: 1.36.0 (ae2a39403)
+  labels:
+    app: users-server
+  name: users-server
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: users-server
+  template:
+    metadata:
+      annotations:
+        kompose.cmd: C:\Program Files\Kompose\kompose.exe convert
+        kompose.version: 1.36.0 (ae2a39403)
+      labels:
+        app: users-server
+    spec:
+      containers:
+        - envFrom:
+            - configMapRef:
+                name: env
+          image: users-server:latest
+          imagePullPolicy: IfNotPresent
+          name: users-server
+          ports:
+            - containerPort: 8003
+              protocol: TCP
+            - containerPort: 587
+              protocol: TCP
+      hostname: users-server
+      restartPolicy: Always

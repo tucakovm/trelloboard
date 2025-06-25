@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: Service
+metadata:
+  annotations:
+    kompose.cmd: C:\Program Files\Kompose\kompose.exe convert
+    kompose.version: 1.36.0 (ae2a39403)
+  labels:
+    app: esdb
+  name: esdb
+spec:
+  ports:
+    - name: "2113"
+      port: 2113
+      targetPort: 2113
+    - name: "1113"
+      port: 1113
+      targetPort: 1113
+  selector:
+    app: esdb

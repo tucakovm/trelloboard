@@ -96,7 +96,7 @@ func main() {
 
 	// Bootstrap gRPC server.
 	grpcServer := grpc.NewServer(
-		grpc.UnaryInterceptor(timeoutUnaryInterceptor(5 * time.Second)), // Timeout na 5 sekundi
+		grpc.UnaryInterceptor(timeoutUnaryInterceptor(60 * time.Second)), // Timeout na 5 sekundi
 	)
 	reflection.Register(grpcServer)
 

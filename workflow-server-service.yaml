@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Service
+metadata:
+  annotations:
+    kompose.cmd: C:\Program Files\Kompose\kompose.exe convert
+    kompose.version: 1.36.0 (ae2a39403)
+  labels:
+    app: workflow-server
+  name: workflow-server
+spec:
+  ports:
+    - name: "8005"
+      port: 8005
+      targetPort: 8005
+  selector:
+    app: workflow-server

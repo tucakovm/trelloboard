@@ -8,15 +8,15 @@ services:
     ports:
       - "${ANGULAR_PORT}:${ANGULAR_PORT}"
     depends_on:
-      - api_gateway
+      - api-gateway
     env_file:
       .env
 
 
-  api_gateway:
-    image: api_gateway
-    container_name: "api_gateway"
-    hostname: "api_gateway"
+  api-gateway:
+    image: api-gateway
+    container_name: "api-gateway"
+    hostname: "api-gateway"
     build:
       context: microservices/api-gateway/
       dockerfile: Dockerfile
@@ -24,11 +24,11 @@ services:
     env_file:
       .env
     depends_on:
-      - projects_server
-      - tasks_server
-      - users_server
-      - notifications_server
-      - workflow-service
+      - projects-server
+      - tasks-server
+      - users-server
+      - notifications-server
+      - workflow-server
       - cassandra
       - mongo
       - nats
@@ -40,7 +40,7 @@ services:
     volumes:
       - ./microservices/api-gateway/cert2:/api-gateway/cert2
 
-  projects_server:
+  projects-server:
     image: projects-server
     build:
       context: microservices/projects-service
@@ -60,8 +60,8 @@ services:
       esdb:
         condition: service_healthy
 
-  tasks_server:
-    image: tasks-service
+  tasks-server:
+    image: tasks-server
     build:
       context: microservices/tasks-service
       dockerfile: Dockerfile
@@ -80,8 +80,8 @@ services:
       esdb:
         condition: service_healthy
 
-  users_server:
-    image: users-service
+  users-server:
+    image: users-server
     build:
       context: microservices/users-service
       dockerfile: Dockerfile
@@ -105,8 +105,8 @@ services:
 
 
 
-  notifications_server:
-    image: notifications_server
+  notifications-server:
+    image: notifications-server
     build:
       context: microservices/notifications-service
       dockerfile: Dockerfile
@@ -123,8 +123,8 @@ services:
       cassandra:
         condition: service_healthy
 
-  workflow-service:
-    image: workflow_server
+  workflow-server:
+    image: workflow-server
     build:
       context: microservices/workflow-service
       dockerfile: Dockerfile

@@ -1,0 +1,43 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    kompose.cmd: C:\Program Files\Kompose\kompose.exe convert
+    kompose.version: 1.36.0 (ae2a39403)
+  labels:
+    app: api-gateway
+  name: api-gateway
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: api-gateway
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      annotations:
+        kompose.cmd: C:\Program Files\Kompose\kompose.exe convert
+        kompose.version: 1.36.0 (ae2a39403)
+      labels:
+        app: api-gateway
+    spec:
+      containers:
+        - envFrom:
+            - configMapRef:
+                name: env
+          image: api-gateway:latest
+          name: api-gateway
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8000
+              protocol: TCP
+          volumeMounts:
+            - mountPath: /api-gateway/cert2
+              name: api-gateway-cm0
+      hostname: api-gateway
+      restartPolicy: Always
+      volumes:
+        - configMap:
+            name: api-gateway-cm0
+          name: api-gateway-cm0

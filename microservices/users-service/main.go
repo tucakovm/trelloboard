@@ -147,7 +147,7 @@ func main() {
 	}
 
 	grpcServer := grpc.NewServer(
-	//grpc.UnaryInterceptor(timeoutUnaryInterceptor(5 * time.Second)), // Timeout na 5 sekundi
+		grpc.UnaryInterceptor(timeoutUnaryInterceptor(60 * time.Second)), // Timeout na 5 sekundi
 	)
 	reflection.Register(grpcServer)
 	users.RegisterUsersServiceServer(grpcServer, &handlerUser)
@@ -193,34 +193,21 @@ func newTraceProvider(exp sdktrace.SpanExporter) *sdktrace.TracerProvider {
 	)
 }
 
-// GLOBALNI TIMEOUT INTERCEPTOR
+func timeoutUnaryInterceptor(timeout time.Duration) grpc.UnaryServerInterceptor {
+	return func(
+		ctx context.Context,
+		req interface{},
+		info *grpc.UnaryServerInfo,
+		handler grpc.UnaryHandler,
+	) (interface{}, error) {
+		ctx, cancel := context.WithTimeout(ctx, timeout)
+		defer cancel()
 
-//func timeoutUnaryInterceptor(timeout time.Duration) grpc.UnaryServerInterceptor {
-//	return func(
-//		ctx context.Context,
-//		req interface{},
-//		info *grpc.UnaryServerInfo,
-//		handler grpc.UnaryHandler,
-//	) (interface{}, error) {
-//		// Kreiraj novi kontekst sa timeout-om
-//		ctx, cancel := context.WithTimeout(ctx, timeout)
-//		defer cancel()
-//
-//		//go func() {
-//		//	for remaining := timeout; remaining > 0; remaining -= time.Second {
-//		//		// Odbrojavanje sekundi
-//		//		fmt.Printf("Time remaining: %d seconds\n", remaining/time.Second)
-//		//		time.Sleep(time.Second)
-//		//	}
-//		//}()
-//
-//		// Obradi zahtev sa novim kontekstom
-//		resp, err := handler(ctx, req)
-//
-//		// Ako je kontekst istekao, vrati odgovarajući status
-//		if ctx.Err() == context.DeadlineExceeded {
-//			return nil, status.Error(codes.DeadlineExceeded, "Request timed out")
-//		}
-//		return resp, err
-//	}
-//}
+		resp, err := handler(ctx, req)
+
+		if ctx.Err() == context.DeadlineExceeded {
+			return nil, status.Error(codes.DeadlineExceeded, "Request timed out")
+		}
+		return resp, err
+	}
+}

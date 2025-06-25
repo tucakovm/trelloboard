@@ -1,0 +1,60 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cassandra
+  labels:
+    app: cassandra
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: cassandra
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: cassandra
+    spec:
+      containers:
+        - name: cassandra
+          image: cassandra
+          ports:
+            - containerPort: 9042
+              protocol: TCP
+          env:
+            - name: CASSANDRA_BROADCAST_ADDRESS
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
+            - name: CASSANDRA_LISTEN_ADDRESS
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
+            - name: CASSANDRA_RPC_ADDRESS
+              value: "0.0.0.0"
+          readinessProbe:
+            exec:
+              command:
+                - /bin/sh
+                - -c
+                - "cqlsh -e 'describe keyspaces'"
+            initialDelaySeconds: 20
+            periodSeconds: 10
+          livenessProbe:
+            exec:
+              command:
+                - cqlsh
+                - -e
+                - "describe cluster"
+            failureThreshold: 15
+            periodSeconds: 15
+            timeoutSeconds: 5
+          volumeMounts:
+            - mountPath: /var/lib/cassandra/data
+              name: cass-store
+      volumes:
+        - name: cass-store
+          persistentVolumeClaim:
+            claimName: cass-store
+      restartPolicy: Always

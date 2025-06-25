@@ -1,0 +1,34 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    kompose.cmd: C:\Program Files\Kompose\kompose.exe convert
+    kompose.version: 1.36.0 (ae2a39403)
+  labels:
+    app: tasks-server
+  name: tasks-server
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: tasks-server
+  template:
+    metadata:
+      annotations:
+        kompose.cmd: C:\Program Files\Kompose\kompose.exe convert
+        kompose.version: 1.36.0 (ae2a39403)
+      labels:
+        app: tasks-server
+    spec:
+      containers:
+        - envFrom:
+            - configMapRef:
+                name: env
+          image: tasks-server:latest
+          imagePullPolicy: IfNotPresent
+          name: tasks-server
+          ports:
+            - containerPort: 8002
+              protocol: TCP
+      hostname: tasks-server
+      restartPolicy: Always

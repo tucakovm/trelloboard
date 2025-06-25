@@ -1,0 +1,34 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    kompose.cmd: C:\Program Files\Kompose\kompose.exe convert
+    kompose.version: 1.36.0 (ae2a39403)
+  labels:
+    app: api-composer
+  name: api-composer
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: api-composer
+  template:
+    metadata:
+      annotations:
+        kompose.cmd: C:\Program Files\Kompose\kompose.exe convert
+        kompose.version: 1.36.0 (ae2a39403)
+      labels:
+        app: api-composer
+    spec:
+      containers:
+        - envFrom:
+            - configMapRef:
+                name: env
+          image: api-composer:latest
+          imagePullPolicy: IfNotPresent
+          name: api-composer
+          ports:
+            - containerPort: 8006
+              protocol: TCP
+      hostname: api-composer
+      restartPolicy: Always
