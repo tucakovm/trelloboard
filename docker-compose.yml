@@ -1,6 +1,6 @@
 services:
   angular:
-    image: angular
+    image: mtucakov/angular:latest
     build:
       context: ./frontend
       dockerfile: Dockerfile
@@ -14,7 +14,7 @@ services:
 
 
   api-gateway:
-    image: api-gateway
+    image: mtucakov/api-gateway:latest
     container_name: "api-gateway"
     hostname: "api-gateway"
     build:
@@ -41,7 +41,7 @@ services:
       - ./microservices/api-gateway/cert2:/api-gateway/cert2
 
   projects-server:
-    image: projects-server
+    image: mtucakov/projects-server:latest
     build:
       context: microservices/projects-service
       dockerfile: Dockerfile
@@ -61,7 +61,7 @@ services:
         condition: service_healthy
 
   tasks-server:
-    image: tasks-server
+    image: mtucakov/tasks-server:latest
     build:
       context: microservices/tasks-service
       dockerfile: Dockerfile
@@ -81,7 +81,7 @@ services:
         condition: service_healthy
 
   users-server:
-    image: users-server
+    image: mtucakov/users-server:latest
     build:
       context: microservices/users-service
       dockerfile: Dockerfile
@@ -106,7 +106,7 @@ services:
 
 
   notifications-server:
-    image: notifications-server
+    image: mtucakov/notifications-server:latest
     build:
       context: microservices/notifications-service
       dockerfile: Dockerfile
@@ -124,7 +124,7 @@ services:
         condition: service_healthy
 
   workflow-server:
-    image: workflow-server
+    image: mtucakov/workflow-server:latest
     build:
       context: microservices/workflow-service
       dockerfile: Dockerfile
@@ -142,7 +142,7 @@ services:
         condition: service_started
 
   api-composer:
-    image: api-composer
+    image: mtucakov/api-composer:latest
     build:
       context: microservices/api-composer
       dockerfile: Dockerfile
@@ -252,11 +252,11 @@ services:
     image: jaegertracing/all-in-one:latest
     container_name: jaeger
     ports:
-      - "6831:6831/udp"
-      - "6832:6832/udp"
+      - "${JAEGER_UDP_PORT}:${JAEGER_UDP_PORT}"
+      - "${JAEGER_UDP_PORT2}:${JAEGER_UDP_PORT2}"
       - "${JAEGER_UI_PORT}:${JAEGER_UI_PORT}"
-      - "14268:14268"
-      - "14250:14250"
+      - "${JAEGER_INGEST_PORT}:${JAEGER_INGEST_PORT}"
+      - "${JAEGER_INGEST_PORT2}:${JAEGER_INGEST_PORT2}"
     healthcheck:
       test: [ "CMD", "curl", "-f", "http://localhost:16686" ]
       interval: 10s
@@ -269,9 +269,9 @@ services:
     image: bde2020/hadoop-namenode:2.0.0-hadoop3.2.1-java8
     container_name: namenode
     ports:
-      - 9870:9870
-      - 9000:9000
-      - 8200:8200
+      - "${NAMENODE_PORT1}:${NAMENODE_PORT1}"
+      - "${NAMENODE_PORT2}:${NAMENODE_PORT2}"
+      - "${NAMENODE_PORT3}:${NAMENODE_PORT3}"
     volumes:
       - hadoop_namenode:/hadoop/dfs/name
     environment:
@@ -299,8 +299,8 @@ services:
     environment:
       - NEO4J_AUTH=neo4j/password
     ports:
-      - "7687:7687"
-      - "7474:7474"
+      - "${NEO4J_PORT}:${NEO4J_PORT}"
+      - "${NEO4J_PORT2}:${NEO4J_PORT2}"
     healthcheck:
       test: [ "CMD", "cypher-shell", "-u", "neo4j", "-p", "password", "RETURN 1" ]
       interval: 10s
