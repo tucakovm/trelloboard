@@ -24,8 +24,8 @@ spec:
         - envFrom:
             - configMapRef:
                 name: env
-          image: notifications-server:latest
-          imagePullPolicy: IfNotPresent
+          image: mtucakov/notifications-server:latest
+          imagePullPolicy: Always
           name: notifications-server
           ports:
             - containerPort: 8004

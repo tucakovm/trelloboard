@@ -24,8 +24,8 @@ spec:
         - envFrom:
             - configMapRef:
                 name: env
-          image: projects-server:latest
-          imagePullPolicy: IfNotPresent
+          image: mtucakov/projects-server:latest
+          imagePullPolicy: Always
           name: projects-server
           ports:
             - containerPort: 8001

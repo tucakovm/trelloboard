@@ -24,8 +24,8 @@ spec:
         - envFrom:
             - configMapRef:
                 name: env
-          image: api-composer:latest
-          imagePullPolicy: IfNotPresent
+          image: mtucakov/api-composer:latest
+          imagePullPolicy: Always
           name: api-composer
           ports:
             - containerPort: 8006

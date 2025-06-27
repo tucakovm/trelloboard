@@ -26,9 +26,9 @@ spec:
         - envFrom:
             - configMapRef:
                 name: env
-          image: api-gateway:latest
+          image: mtucakov/api-gateway:latest
           name: api-gateway
-          imagePullPolicy: IfNotPresent
+          imagePullPolicy: Always
           ports:
             - containerPort: 8000
               protocol: TCP
