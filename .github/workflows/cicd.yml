@@ -13,11 +13,6 @@ jobs:
       - name: Repository Checkout
         uses: actions/checkout@v2
 
-      - name: Debug DockerHub login input
-        run: |
-          if [ -z "${{ secrets.DH_USERNAME }}" ]; then echo "DH_USERNAME is empty"; else echo "DH_USERNAME is set"; fi
-          if [ -z "${{ secrets.DH_PASSWORD }}" ]; then echo "DH_PASSWORD is empty"; else echo "DH_PASSWORD is set"; fi
-
       - name: dockerhub login
         uses: docker/login-action@v2
         with:
