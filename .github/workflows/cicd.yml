@@ -99,3 +99,9 @@ jobs:
         run: |
           kubectl rollout restart deployment angular --insecure-skip-tls-verify
           kubectl rollout restart deployment api-gateway --insecure-skip-tls-verify
+          kubectl rollout restart deployment api-composer --insecure-skip-tls-verify
+          kubectl rollout restart deployment tasks-server --insecure-skip-tls-verify
+          kubectl rollout restart deployment projects-server --insecure-skip-tls-verify
+          kubectl rollout restart deployment notifications-server --insecure-skip-tls-verify
+          kubectl rollout restart deployment users-server --insecure-skip-tls-verify
+          kubectl rollout restart deployment workflow-server --insecure-skip-tls-verify
