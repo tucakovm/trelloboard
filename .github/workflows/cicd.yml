@@ -40,12 +40,12 @@ jobs:
           push: true
           tags: mtucakov/api-composer:latest
 
-      - name: build and push notification-service
+      - name: build and push notifications-service
         uses: docker/build-push-action@v5
         with:
-          context: ./microservices/notification-service
+          context: ./microservices/notifications-service
           push: true
-          tags: mtucakov/notification-server:latest
+          tags: mtucakov/notifications-server:latest
 
       - name: build and push projects-service
         uses: docker/build-push-action@v5
