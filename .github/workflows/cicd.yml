@@ -15,8 +15,8 @@ jobs:
 
       - name: Debug DockerHub login input
         run: |
-          echo "Username: ${{ secrets.DH_USERNAME }}"
-          echo "Password: ${#secrets.DH_PASSWORD} characters long"
+          if [ -z "${{ secrets.DH_USERNAME }}" ]; then echo "DH_USERNAME is empty"; else echo "DH_USERNAME is set"; fi
+          if [ -z "${{ secrets.DH_PASSWORD }}" ]; then echo "DH_PASSWORD is empty"; else echo "DH_PASSWORD is set"; fi
 
       - name: dockerhub login
         uses: docker/login-action@v2
