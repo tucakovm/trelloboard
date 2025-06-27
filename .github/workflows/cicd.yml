@@ -19,6 +19,11 @@ jobs:
           username: ${{ secrets.DH_USERNAME }}
           password: ${{ secrets.DH_TOKEN }}
 
+      - name: Debug DockerHub login input
+        run: |
+          echo "Username: ${{ secrets.DH_USERNAME }}"
+          echo "Password: ${#secrets.DH_PASSWORD} characters long"
+
       - name: build and push angular
         uses: docker/build-push-action@v5
         with:
