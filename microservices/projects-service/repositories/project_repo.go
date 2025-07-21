@@ -71,11 +71,11 @@ func insertInitialProjects(client *mongo.Client) error {
 		return nil
 	}
 
-	//existingID, _ := primitive.ObjectIDFromHex("67386650a0d21b3a8f823722") // Known ObjectID as string
+	existingID, _ := primitive.ObjectIDFromHex("67386650a0d21b3a8f823723") // Known ObjectID as string
 
 	projects := []interface{}{
 		domain.Project{
-			Id:             primitive.NewObjectID(),
+			Id:             existingID,
 			Name:           "Project Alpha",
 			CompletionDate: time.Now().AddDate(0, 3, 0),
 			MinMembers:     2,

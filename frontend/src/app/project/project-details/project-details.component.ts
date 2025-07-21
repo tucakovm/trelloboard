@@ -4,26 +4,28 @@ import { ProjectService } from '../../services/project.service';
 import { ActivatedRoute, Router } from '@angular/router';
 import { TaskService } from '../../services/task.service';
 import { AuthService } from '../../services/auth.service';
+import {Analytics} from "../../model/analytic";
 
 @Component({
   selector: 'app-project-details',
   templateUrl: './project-details.component.html',
   styleUrl: './project-details.component.css'
 })
-export class ProjectDetailsComponent implements OnInit{
+export class ProjectDetailsComponent implements OnInit {
+  analytics: Analytics | null = null;
   id: string | null = null;
-  project:Project = {
+  project: Project = {
     id: '',
     name: '',
     completionDate: new Date(),
     minMembers: 0,
     maxMembers: 0,
     manager: {
-        id: '',
-        username: '',
-        role: ''
+      id: '',
+      username: '',
+      role: ''
     },
-    members:[
+    members: [
       {
         id: '',
         username: '',
@@ -31,8 +33,10 @@ export class ProjectDetailsComponent implements OnInit{
       },
     ]
   }
-  maxLengthAchieved:boolean = false;
-  constructor(private projectService:ProjectService,private route: ActivatedRoute,private tasksService:TaskService, private router:Router, private authService:AuthService){}
+  maxLengthAchieved: boolean = false;
+
+  constructor(private projectService: ProjectService, private route: ActivatedRoute, private tasksService: TaskService, private router: Router, private authService: AuthService) {
+  }
 
   ngOnInit(): void {
     this.getProject();
@@ -62,23 +66,23 @@ export class ProjectDetailsComponent implements OnInit{
   }
 
 
-  deleteAllTasksByProjectId(id:string){
+  deleteAllTasksByProjectId(id: string) {
     this.tasksService.deleteTasksByProjectId(id).subscribe({
-      next:(response)=>{
+      next: (response) => {
         console.log("Tasks deleted sucessfuly")
       },
-      error:(error)=>{
-        console.error("Error deleting tasks:"+ error)
+      error: (error) => {
+        console.error("Error deleting tasks:" + error)
       }
     })
   }
 
   deleteProject(): void {
-    if (this.id != null){
+    if (this.id != null) {
       this.projectService.deleteProjectById(this.id).subscribe({
-        next:(response) => {
+        next: (response) => {
           console.log('Project deleted successfully:', response);
-          if(this.id){
+          if (this.id) {
             this.deleteAllTasksByProjectId(this.id);
           }
           this.router.navigate(['/all-projects'])
@@ -89,13 +93,14 @@ export class ProjectDetailsComponent implements OnInit{
       })
     }
   }
+
   addTask(): void {
     if (this.id) {
       this.router.navigate(['/tasks/create', this.id]);
     }
   }
 
-  allTasks():void{
+  allTasks(): void {
     if (this.id) {
       this.router.navigate(['/tasks', this.id]);
     }
@@ -107,26 +112,32 @@ export class ProjectDetailsComponent implements OnInit{
     }
   }
 
-  addMember(){
+  addMember() {
     if (this.id) {
-      this.router.navigate(['/all-projects', this.id,"add-member" ]);
-    }
-  }
-  removeMember(){
-    if (this.id) {
-      this.router.navigate(['/all-projects', this.id,"remove-member" ]);
+      this.router.navigate(['/all-projects', this.id, "add-member"]);
     }
   }
 
-  isManager(){
+  removeMember() {
+    if (this.id) {
+      this.router.navigate(['/all-projects', this.id, "remove-member"]);
+    }
+  }
+
+  isManager() {
     return this.authService.isManager();
+  }
+
+  objectKeys(obj: any): string[] {
+    return obj ? Object.keys(obj) : [];
   }
 
   getAnalytics() {
     if (this.id) {
       this.projectService.getAnalyticsByProjectId(this.id).subscribe(
-        (analyticsData) => {
-          console.log('Analytics Data:', analyticsData);
+        (response: any) => {
+          console.log('Analytics Response:', response);
+          this.analytics = response.analytic; // 👈 ovde je bio problem
         },
         (error) => {
           console.error('Error fetching analytics:', error);
@@ -134,5 +145,5 @@ export class ProjectDetailsComponent implements OnInit{
       );
     }
   }
-}
 
+}

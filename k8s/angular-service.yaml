@@ -1,0 +1,18 @@
+apiVersion: v1
+kind: Service
+metadata:
+  annotations:
+    kompose.cmd: C:\Program Files\Kompose\kompose.exe convert
+    kompose.version: 1.36.0 (ae2a39403)
+  labels:
+    app: angular
+  name: angular
+spec:
+  type: NodePort
+  ports:
+    - name: "4200"
+      port: 4200
+      targetPort: 4200
+      nodePort: 31200
+  selector:
+    app: angular

@@ -1348,7 +1348,7 @@ const (
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type AnalyticsServiceClient interface {
-	GetAllByProjectId(ctx context.Context, in *GetAllTasksReq, opts ...grpc.CallOption) (*GetAllTasksResult, error)
+	GetAllByProjectId(ctx context.Context, in *GetAllTasksReq, opts ...grpc.CallOption) (*GetAnalyticsResponse, error)
 }
 
 type analyticsServiceClient struct {
@@ -1359,9 +1359,9 @@ func NewAnalyticsServiceClient(cc grpc.ClientConnInterface) AnalyticsServiceClie
 	return &analyticsServiceClient{cc}
 }
 
-func (c *analyticsServiceClient) GetAllByProjectId(ctx context.Context, in *GetAllTasksReq, opts ...grpc.CallOption) (*GetAllTasksResult, error) {
+func (c *analyticsServiceClient) GetAllByProjectId(ctx context.Context, in *GetAllTasksReq, opts ...grpc.CallOption) (*GetAnalyticsResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(GetAllTasksResult)
+	out := new(GetAnalyticsResponse)
 	err := c.cc.Invoke(ctx, AnalyticsService_GetAllByProjectId_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
@@ -1373,7 +1373,7 @@ func (c *analyticsServiceClient) GetAllByProjectId(ctx context.Context, in *GetA
 // All implementations must embed UnimplementedAnalyticsServiceServer
 // for forward compatibility.
 type AnalyticsServiceServer interface {
-	GetAllByProjectId(context.Context, *GetAllTasksReq) (*GetAllTasksResult, error)
+	GetAllByProjectId(context.Context, *GetAllTasksReq) (*GetAnalyticsResponse, error)
 	mustEmbedUnimplementedAnalyticsServiceServer()
 }
 
@@ -1384,7 +1384,7 @@ type AnalyticsServiceServer interface {
 // pointer dereference when methods are called.
 type UnimplementedAnalyticsServiceServer struct{}
 
-func (UnimplementedAnalyticsServiceServer) GetAllByProjectId(context.Context, *GetAllTasksReq) (*GetAllTasksResult, error) {
+func (UnimplementedAnalyticsServiceServer) GetAllByProjectId(context.Context, *GetAllTasksReq) (*GetAnalyticsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetAllByProjectId not implemented")
 }
 func (UnimplementedAnalyticsServiceServer) mustEmbedUnimplementedAnalyticsServiceServer() {}

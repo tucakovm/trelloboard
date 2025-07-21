@@ -16,36 +16,79 @@ type AnalyticsRepo struct {
 	Tracer  trace.Tracer
 }
 
-// NewAnalyticsRepo initializes a new AnalyticsRepo
+func (ar *AnalyticsRepo) InsertTestAnalytics(ctx context.Context, projectID string) error {
+	testAnalytic := &models.Analytic{
+		ProjectID:  projectID,
+		TotalTasks: 5,
+		StatusCounts: map[string]int32{
+			"todo":        2,
+			"in_progress": 2,
+			"done":        1,
+		},
+		TaskStatusDurations: map[string]models.TaskDurations{
+			"task1": {
+				TaskID: "task1",
+				StatusDurations: []models.TaskStatusDuration{
+					{Status: "todo", Duration: 24.0},
+					{Status: "in_progress", Duration: 48.0},
+				},
+			},
+			"task2": {
+				TaskID: "task2",
+				StatusDurations: []models.TaskStatusDuration{
+					{Status: "todo", Duration: 12.0},
+					{Status: "done", Duration: 36.0},
+				},
+			},
+		},
+		MemberTasks: map[string]models.TaskAssignments{
+			"user1": {Tasks: []string{"task1", "task3"}},
+			"user2": {Tasks: []string{"task2", "task4", "task5"}},
+		},
+		FinishedEarly: false,
+	}
+
+	err := ar.InsertAnalytics(ctx, testAnalytic)
+	if err != nil {
+		ar.logger.Printf("Failed to insert test analytics: %v", err)
+		return err
+	}
+
+	ar.logger.Println("Successfully inserted test analytics for project", projectID)
+	return nil
+}
+
 func NewAnalyticsRepo(logger *log.Logger, tracer trace.Tracer) (*AnalyticsRepo, error) {
-	db := os.Getenv("CASS_DB")
-	// Connect to Cassandra cluster
-	cluster := gocql.NewCluster(db)
+	dbHost := os.Getenv("CASS_DB")
+	if dbHost == "" {
+		logger.Println("CASS_DB environment variable is not set")
+		return nil, gocql.ErrNoConnections
+	}
+
+	cluster := gocql.NewCluster(dbHost)
 	cluster.Keyspace = "system"
 	session, err := cluster.CreateSession()
 	if err != nil {
-		logger.Println(err)
+		logger.Println("Failed to connect to Cassandra system keyspace:", err)
 		return nil, err
 	}
 
-	// Create 'analytics' keyspace
-	err = session.Query(
-		`CREATE KEYSPACE IF NOT EXISTS analytics
-		WITH replication = {
-			'class': 'SimpleStrategy',
-			'replication_factor': 1
-		}`).Exec()
+	err = session.Query(`
+		CREATE KEYSPACE IF NOT EXISTS analytics 
+		WITH replication = {'class':'SimpleStrategy', 'replication_factor':1}
+	`).Exec()
 	if err != nil {
-		logger.Println(err)
+		logger.Printf("Failed to create analytics keyspace: %v", err)
+		session.Close()
+		return nil, err
 	}
 	session.Close()
 
-	// Connect to 'analytics' keyspace
 	cluster.Keyspace = "analytics"
 	cluster.Consistency = gocql.Quorum
 	session, err = cluster.CreateSession()
 	if err != nil {
-		logger.Println(err)
+		logger.Println("Failed to connect to analytics keyspace:", err)
 		return nil, err
 	}
 
@@ -56,57 +99,55 @@ func NewAnalyticsRepo(logger *log.Logger, tracer trace.Tracer) (*AnalyticsRepo, 
 	}, nil
 }
 
-// CloseSession closes the Cassandra session
 func (ar *AnalyticsRepo) CloseSession() {
 	ar.session.Close()
 }
 
-// CreateTables creates necessary tables in Cassandra
 func (ar *AnalyticsRepo) CreateTables(ctx context.Context) {
 	ctx, span := ar.Tracer.Start(ctx, "r.createTables")
 	defer span.End()
-	log.Println("started create tables func")
 
-	// Define the UDT for TaskStatusDuration, CASSANDRA doesnt allow frozen for udts (user defined types) unless they are
-	// defined as frozen
-	err := ar.session.Query(
-		`CREATE TYPE IF NOT EXISTS TaskStatusDuration (
+	ar.logger.Println("Starting table and UDT creation")
+
+	err := ar.session.Query(`
+		CREATE TYPE IF NOT EXISTS TaskStatusDuration (
 			status TEXT,
-			duration BIGINT
-		)`).Exec()
+			duration DOUBLE
+		)
+	`).Exec()
 	if err != nil {
 		ar.logger.Printf("Failed to create UDT TaskStatusDuration: %v", err)
 		return
 	}
 
-	// Create the analytics table with the corrected schema
-	err = ar.session.Query(
-		`CREATE TABLE IF NOT EXISTS analytics (
+	err = ar.session.Query(`
+		CREATE TABLE IF NOT EXISTS analytics (
 			project_id TEXT PRIMARY KEY,
 			total_tasks INT,
 			status_counts MAP<TEXT, INT>,
 			task_status_durations MAP<TEXT, FROZEN<LIST<FROZEN<TaskStatusDuration>>>>,
 			member_tasks MAP<TEXT, FROZEN<LIST<TEXT>>>,
 			finished_early BOOLEAN
-		)`).Exec()
+		)
+	`).Exec()
 	if err != nil {
-		ar.logger.Printf("Failed to create table analytics: %v", err)
+		ar.logger.Printf("Failed to create analytics table: %v", err)
 		return
 	}
-	log.Println("Created table successfully")
+
+	//ar.InsertTestAnalytics(ctx, "67386650a0d21b3a8f823723")
 
 	ar.logger.Println("Successfully created/verified analytics table and UDT")
 }
 
-// InsertAnalytics inserts an analytic entry into Cassandra
 func (ar *AnalyticsRepo) InsertAnalytics(ctx context.Context, analytic *models.Analytic) error {
 	ctx, span := ar.Tracer.Start(ctx, "r.insertAnalytics")
 	defer span.End()
 
-	err := ar.session.Query(
-		`INSERT INTO analytics (project_id, total_tasks, status_counts, task_status_durations, member_tasks, finished_early) 
-		VALUES (?, ?, ?, ?, ?, ?)`,
-
+	err := ar.session.Query(`
+		INSERT INTO analytics (project_id, total_tasks, status_counts, task_status_durations, member_tasks, finished_early)
+		VALUES (?, ?, ?, ?, ?, ?)
+	`,
 		analytic.ProjectID,
 		analytic.TotalTasks,
 		analytic.StatusCounts,
@@ -116,58 +157,91 @@ func (ar *AnalyticsRepo) InsertAnalytics(ctx context.Context, analytic *models.A
 	).Exec()
 
 	if err != nil {
-		ar.logger.Println(err)
+		ar.logger.Printf("InsertAnalytics error: %v", err)
 		return err
 	}
 	return nil
 }
 
-// GetAnalyticsByProject retrieves an analytic entry by project ID
 func (ar *AnalyticsRepo) GetAnalyticsByProject(ctx context.Context, projectID string) (*models.Analytic, error) {
 	ctx, span := ar.Tracer.Start(ctx, "r.getAnalyticsByProject")
 	defer span.End()
 
-	var analytic models.Analytic
-	var statusCounts map[string]int32
-	var taskStatusDurations map[string][]models.TaskStatusDuration
-	var memberTasks map[string][]string
+	m := map[string]interface{}{}
 
-	err := ar.session.Query(
-		`SELECT project_id, total_tasks, status_counts, task_status_durations, member_tasks, finished_early 
-		FROM analytics WHERE project_id = ?`,
-		projectID,
-	).Scan(
-		&analytic.ProjectID,
-		&analytic.TotalTasks,
-		&statusCounts,
-		&taskStatusDurations,
-		&memberTasks,
-		&analytic.FinishedEarly,
-	)
+	iter := ar.session.Query(`
+        SELECT project_id, total_tasks, status_counts, task_status_durations, member_tasks, finished_early
+        FROM analytics WHERE project_id = ?`, projectID).Iter()
 
-	if err != nil {
-		ar.logger.Println(err)
-		return nil, err
+	if !iter.MapScan(m) {
+		ar.logger.Println("No analytics found for project", projectID)
+		return nil, nil
 	}
 
-	// Correct the mapping for TaskStatusDurations and MemberTasks
-	analytic.StatusCounts = statusCounts
-	analytic.TaskStatusDurations = convertCassandraTaskDurationsToModel(taskStatusDurations)
-	analytic.MemberTasks = convertCassandraMemberTasksToModel(memberTasks)
+	rawTaskStatusDurations := m["task_status_durations"].(map[string][]map[string]interface{})
+	memberTasks := m["member_tasks"].(map[string][]string)
 
-	return &analytic, nil
+	statusCountsRaw := m["status_counts"].(map[string]int)
+	statusCounts := make(map[string]int32)
+	for k, v := range statusCountsRaw {
+		statusCounts[k] = int32(v)
+	}
+
+	analytic := &models.Analytic{
+		ProjectID:           m["project_id"].(string),
+		TotalTasks:          int32(m["total_tasks"].(int)),
+		StatusCounts:        statusCounts,
+		TaskStatusDurations: convertRawCassandraDurations(rawTaskStatusDurations),
+		MemberTasks:         convertCassandraMemberTasksToModel(memberTasks),
+		FinishedEarly:       m["finished_early"].(bool),
+	}
+
+	return analytic, nil
 }
 
-// Helper function to convert TaskStatusDurations to the appropriate Cassandra format
-func convertTaskStatusDurationsToCassandra(taskStatusDurations map[string]models.TaskDurations) map[string][]models.TaskStatusDuration {
-	result := make(map[string][]models.TaskStatusDuration)
+func (ar *AnalyticsRepo) UpdateAnalytics(ctx context.Context, projectID string, analytic *models.Analytic) error {
+	ctx, span := ar.Tracer.Start(ctx, "r.updateAnalytics")
+	defer span.End()
+
+	err := ar.session.Query(`
+		UPDATE analytics SET
+			total_tasks = ?,
+			status_counts = ?,
+			task_status_durations = ?,
+			member_tasks = ?,
+			finished_early = ?
+		WHERE project_id = ?
+	`,
+		analytic.TotalTasks,
+		analytic.StatusCounts,
+		convertTaskStatusDurationsToCassandra(analytic.TaskStatusDurations),
+		convertMemberTasksToCassandra(analytic.MemberTasks),
+		analytic.FinishedEarly,
+		projectID,
+	).Exec()
+
+	if err != nil {
+		ar.logger.Printf("UpdateAnalytics error: %v", err)
+		return err
+	}
+	return nil
+}
+
+func convertTaskStatusDurationsToCassandra(taskStatusDurations map[string]models.TaskDurations) map[string][]map[string]interface{} {
+	result := make(map[string][]map[string]interface{})
 	for taskID, taskDurations := range taskStatusDurations {
-		result[taskID] = taskDurations.StatusDurations // Directly use the slice from TaskDurations
+		var cassandraList []map[string]interface{}
+		for _, sd := range taskDurations.StatusDurations {
+			cassandraList = append(cassandraList, map[string]interface{}{
+				"status":   sd.Status,
+				"duration": sd.Duration,
+			})
+		}
+		result[taskID] = cassandraList
 	}
 	return result
 }
 
-// Helper function to convert MemberTasks to the appropriate Cassandra format
 func convertMemberTasksToCassandra(memberTasks map[string]models.TaskAssignments) map[string][]string {
 	result := make(map[string][]string)
 	for memberID, assignments := range memberTasks {
@@ -176,54 +250,30 @@ func convertMemberTasksToCassandra(memberTasks map[string]models.TaskAssignments
 	return result
 }
 
-// Helper function to convert Cassandra task status durations back to the model
-func convertCassandraTaskDurationsToModel(cassandraDurations map[string][]models.TaskStatusDuration) map[string]models.TaskDurations {
+func convertCassandraMemberTasksToModel(cassandraTasks map[string][]string) map[string]models.TaskAssignments {
+	result := make(map[string]models.TaskAssignments)
+	for memberID, tasks := range cassandraTasks {
+		result[memberID] = models.TaskAssignments{Tasks: tasks}
+	}
+	return result
+}
+
+func convertRawCassandraDurations(raw map[string][]map[string]interface{}) map[string]models.TaskDurations {
 	result := make(map[string]models.TaskDurations)
-	for taskID, durations := range cassandraDurations {
+	for taskID, rawDurations := range raw {
+		var durations []models.TaskStatusDuration
+		for _, entry := range rawDurations {
+			status, _ := entry["status"].(string)
+			duration, _ := entry["duration"].(float64)
+			durations = append(durations, models.TaskStatusDuration{
+				Status:   status,
+				Duration: duration,
+			})
+		}
 		result[taskID] = models.TaskDurations{
 			TaskID:          taskID,
 			StatusDurations: durations,
 		}
 	}
 	return result
-}
-
-// Helper function to convert Cassandra member tasks back to the model
-func convertCassandraMemberTasksToModel(cassandraTasks map[string][]string) map[string]models.TaskAssignments {
-	result := make(map[string]models.TaskAssignments)
-	for memberID, tasks := range cassandraTasks {
-		result[memberID] = models.TaskAssignments{
-			Tasks: tasks,
-		}
-	}
-	return result
-}
-
-func (ar *AnalyticsRepo) UpdateAnalytics(ctx context.Context, projectID string, analytics *models.Analytic) error {
-	ctx, span := ar.Tracer.Start(ctx, "r.updateAnalytics")
-	defer span.End()
-
-	// Construct the query to update the analytics table
-	err := ar.session.Query(
-		`UPDATE analytics 
-		SET total_tasks = ?, 
-		    status_counts = ?, 
-		    task_status_durations = ?, 
-		    member_tasks = ?, 
-		    finished_early = ? 
-		WHERE project_id = ?`,
-		analytics.TotalTasks,
-		analytics.StatusCounts,
-		convertTaskStatusDurationsToCassandra(analytics.TaskStatusDurations),
-		convertMemberTasksToCassandra(analytics.MemberTasks),
-		analytics.FinishedEarly,
-		projectID,
-	).Exec()
-
-	if err != nil {
-		ar.logger.Println(err)
-		return err
-	}
-
-	return nil
 }

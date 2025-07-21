@@ -37,5 +37,5 @@ message GetAnalyticsResponse {
 }
 
 service AnalyticsService {
-  rpc GetAnalytics(GetAnalyticsRequest) returns (GetAnalyticsResponse);
+  rpc GetAllByProjectId(GetAnalyticsRequest) returns (GetAnalyticsResponse);
 }

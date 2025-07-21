@@ -19,14 +19,14 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	AnalyticsService_GetAnalytics_FullMethodName = "/AnalyticsService/GetAnalytics"
+	AnalyticsService_GetAllByProjectId_FullMethodName = "/AnalyticsService/GetAllByProjectId"
 )
 
 // AnalyticsServiceClient is the client API for AnalyticsService service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type AnalyticsServiceClient interface {
-	GetAnalytics(ctx context.Context, in *GetAnalyticsRequest, opts ...grpc.CallOption) (*GetAnalyticsResponse, error)
+	GetAllByProjectId(ctx context.Context, in *GetAnalyticsRequest, opts ...grpc.CallOption) (*GetAnalyticsResponse, error)
 }
 
 type analyticsServiceClient struct {
@@ -37,10 +37,10 @@ func NewAnalyticsServiceClient(cc grpc.ClientConnInterface) AnalyticsServiceClie
 	return &analyticsServiceClient{cc}
 }
 
-func (c *analyticsServiceClient) GetAnalytics(ctx context.Context, in *GetAnalyticsRequest, opts ...grpc.CallOption) (*GetAnalyticsResponse, error) {
+func (c *analyticsServiceClient) GetAllByProjectId(ctx context.Context, in *GetAnalyticsRequest, opts ...grpc.CallOption) (*GetAnalyticsResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(GetAnalyticsResponse)
-	err := c.cc.Invoke(ctx, AnalyticsService_GetAnalytics_FullMethodName, in, out, cOpts...)
+	err := c.cc.Invoke(ctx, AnalyticsService_GetAllByProjectId_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -51,7 +51,7 @@ func (c *analyticsServiceClient) GetAnalytics(ctx context.Context, in *GetAnalyt
 // All implementations must embed UnimplementedAnalyticsServiceServer
 // for forward compatibility.
 type AnalyticsServiceServer interface {
-	GetAnalytics(context.Context, *GetAnalyticsRequest) (*GetAnalyticsResponse, error)
+	GetAllByProjectId(context.Context, *GetAnalyticsRequest) (*GetAnalyticsResponse, error)
 	mustEmbedUnimplementedAnalyticsServiceServer()
 }
 
@@ -62,8 +62,8 @@ type AnalyticsServiceServer interface {
 // pointer dereference when methods are called.
 type UnimplementedAnalyticsServiceServer struct{}
 
-func (UnimplementedAnalyticsServiceServer) GetAnalytics(context.Context, *GetAnalyticsRequest) (*GetAnalyticsResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetAnalytics not implemented")
+func (UnimplementedAnalyticsServiceServer) GetAllByProjectId(context.Context, *GetAnalyticsRequest) (*GetAnalyticsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetAllByProjectId not implemented")
 }
 func (UnimplementedAnalyticsServiceServer) mustEmbedUnimplementedAnalyticsServiceServer() {}
 func (UnimplementedAnalyticsServiceServer) testEmbeddedByValue()                          {}
@@ -86,20 +86,20 @@ func RegisterAnalyticsServiceServer(s grpc.ServiceRegistrar, srv AnalyticsServic
 	s.RegisterService(&AnalyticsService_ServiceDesc, srv)
 }
 
-func _AnalyticsService_GetAnalytics_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _AnalyticsService_GetAllByProjectId_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(GetAnalyticsRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(AnalyticsServiceServer).GetAnalytics(ctx, in)
+		return srv.(AnalyticsServiceServer).GetAllByProjectId(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: AnalyticsService_GetAnalytics_FullMethodName,
+		FullMethod: AnalyticsService_GetAllByProjectId_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(AnalyticsServiceServer).GetAnalytics(ctx, req.(*GetAnalyticsRequest))
+		return srv.(AnalyticsServiceServer).GetAllByProjectId(ctx, req.(*GetAnalyticsRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -112,8 +112,8 @@ var AnalyticsService_ServiceDesc = grpc.ServiceDesc{
 	HandlerType: (*AnalyticsServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
-			MethodName: "GetAnalytics",
-			Handler:    _AnalyticsService_GetAnalytics_Handler,
+			MethodName: "GetAllByProjectId",
+			Handler:    _AnalyticsService_GetAllByProjectId_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

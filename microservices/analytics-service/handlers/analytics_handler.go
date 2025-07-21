@@ -9,6 +9,7 @@ import (
 	"go.opentelemetry.io/otel/trace"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"log"
 )
 
 type AnalyticsHandler struct {
@@ -26,7 +27,7 @@ func NewAnalyticsHandler(service service.AnalyticsService, tracer trace.Tracer) 
 }
 
 // GetAnalytics fetches analytics data for a specific project
-func (h AnalyticsHandler) GetAnalytics(ctx context.Context, req *proto.GetAnalyticsRequest) (*proto.GetAnalyticsResponse, error) {
+func (h AnalyticsHandler) GetAllByProjectId(ctx context.Context, req *proto.GetAnalyticsRequest) (*proto.GetAnalyticsResponse, error) {
 	ctx, span := h.Tracer.Start(ctx, "h.GetAnalytics")
 	defer span.End()
 
@@ -40,19 +41,28 @@ func (h AnalyticsHandler) GetAnalytics(ctx context.Context, req *proto.GetAnalyt
 		return nil, status.Error(codes.InvalidArgument, "Failed to retrieve analytics.")
 	}
 
-	// Build the response using the fetched analytics data
 	response := &proto.GetAnalyticsResponse{
 		Analytic: &proto.Analytic{
 			ProjectId:           analytics.ProjectID,
-			TotalTasks:          int32(analytics.TotalTasks),
-			StatusCounts:        analytics.StatusCounts,
+			TotalTasks:          analytics.TotalTasks,
+			StatusCounts:        convertStatusCountsToProto(analytics.StatusCounts),
 			TaskStatusDurations: convertTaskDurationsToProto(analytics.TaskStatusDurations),
 			MemberTasks:         convertMemberTasksToProto(analytics.MemberTasks),
 			FinishedEarly:       analytics.FinishedEarly,
 		},
 	}
 
+	log.Println("analitike:", analytics)
+
 	return response, nil
+}
+
+func convertStatusCountsToProto(statusCounts map[string]int32) map[string]int32 {
+	result := make(map[string]int32)
+	for k, v := range statusCounts {
+		result[k] = v
+	}
+	return result
 }
 
 // Helper function to convert task durations to proto format

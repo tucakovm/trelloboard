@@ -94,7 +94,7 @@ func main() {
 		}
 	}()
 
-	test()
+	//test()
 
 	// Graceful shutdown
 	stopCh := make(chan os.Signal, 1)
