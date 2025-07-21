@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - feature/CICD
+      - develop
 
 jobs:
   build-and-push:
