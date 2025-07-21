@@ -204,3 +204,63 @@
   <h3>Workflow Graph</h3>
   <svg id="workflow-graph" width="100%" height="600px"></svg>
 </div>
+<div class="mt-5">
+  <h4 class="text-center">Project Analytics</h4>
+  <div *ngIf="analytics">
+    <div class="card my-3 shadow-sm">
+      <div class="card-header bg-light">
+        <h5 class="mb-0">Summary</h5>
+      </div>
+      <div class="card-body">
+        <p><strong>Total Tasks:</strong> {{ analytics.totalTasks }}</p>
+        <p><strong>Finished Early:</strong> {{ analytics.finishedEarly ? 'Yes' : 'No' }}</p>
+      </div>
+    </div>
+
+    <div class="card my-3 shadow-sm">
+      <div class="card-header bg-light">
+        <h5 class="mb-0">Status Counts</h5>
+      </div>
+      <ul class="list-group list-group-flush">
+        <li *ngFor="let key of objectKeys(analytics.statusCounts)" class="list-group-item d-flex justify-content-between">
+          <span>{{ key }}:</span>
+          <span class="fw-bold">{{ analytics.statusCounts[key] }}</span>
+        </li>
+      </ul>
+    </div>
+
+    <div class="card my-3 shadow-sm">
+      <div class="card-header bg-light">
+        <h5 class="mb-0">Task Durations per Status</h5>
+      </div>
+      <div class="card-body">
+        <div *ngFor="let key of objectKeys(analytics.taskStatusDurations)" class="mb-3 border p-3 rounded">
+          <h6 class="fw-bold">Task ID: {{ analytics.taskStatusDurations[key].taskId }}</h6>
+          <ul class="list-group">
+            <li *ngFor="let duration of analytics.taskStatusDurations[key].statusDurations" class="list-group-item">
+              <strong>Status:</strong> {{ duration.status }} |
+              <strong>Duration:</strong> {{ duration.duration }} hours
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div class="card my-3 shadow-sm">
+      <div class="card-header bg-light">
+        <h5 class="mb-0">Members & Their Tasks</h5>
+      </div>
+      <div class="card-body">
+        <div *ngFor="let key of objectKeys(analytics.memberTasks)" class="mb-3 border p-3 rounded">
+          <h6 class="fw-bold">Member ID: {{ analytics.memberTasks[key].memberId }}</h6>
+          <ul class="list-group">
+            <li *ngFor="let task of analytics.memberTasks[key].tasks" class="list-group-item">
+              {{ task }}
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+

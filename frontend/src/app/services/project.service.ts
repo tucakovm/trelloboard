@@ -4,7 +4,7 @@ import { map, Observable } from 'rxjs';
 import { Project } from '../model/project';
 import { UserFP } from '../model/userForProject';
 import {catchError, tap} from 'rxjs/operators';
-import { of , timeout} from 'rxjs';
+import { of } from 'rxjs';
 import { AuthService } from './auth.service';
 
 @Injectable({
@@ -15,7 +15,6 @@ export class ProjectService {
   constructor(private http: HttpClient, private authService: AuthService) {}
 
   createProject(project: Project): Observable<Project> {
-
     return this.http.post<Project>(this.apiUrl + '/project', project, {
       headers: new HttpHeaders({
         'Content-Type': 'application/json',
@@ -34,7 +33,7 @@ export class ProjectService {
     return new Date(); // Default to current date if invalid timestamp
   }
 
-  getAllProjects(username: string, userId: string): Observable<Project[]> {
+  getAllProjects(username: string): Observable<Project[]> {
     return this.http.get<any>(`${this.apiUrl}/projects/${username}`).pipe(
       map((response: any) => {
         console.log('API Response:', response); // Proveri strukturu odgovora
@@ -53,10 +52,10 @@ export class ProjectService {
               }),
               item.members && Array.isArray(item.members)
                 ? item.members.map((member: any) => ({
-                  id: member.id,
-                  username: member.username,
-                  role: member.role,
-                }))
+                    id: member.id,
+                    username: member.username,
+                    role: member.role,
+                  }))
                 : [] // Ako je null ili nije niz, vraća prazan niz
             )
         );
@@ -70,6 +69,36 @@ export class ProjectService {
 
   deleteProjectById(id: string): Observable<void> {
     return this.http.delete<void>(`${this.apiUrl}/project/${id}`);
+  }
+
+  getWorkflowByProjectId(projectId: string): Observable<any> {
+    console.log('Fetching workflow for project ID:', projectId); // Log pred slanje zahteva
+
+    return this.http.get<any>(`${this.apiUrl}/composition/${projectId}`).pipe(
+      tap(response => console.log('Received workflow response:', response)), // Log nakon odgovora
+      catchError(error => {
+        console.error('Error fetching workflow:', error); // Log ako dođe do greške
+        throw error;
+      })
+    );
+  }
+
+  createWorkflow(projectId: string, projectName: string): Observable<any> {
+    const workflow = {
+      project_id: projectId,
+      project_name: projectName
+    };
+    return this.http.post(`${this.apiUrl}/workflows/create`, workflow, {
+        headers: new HttpHeaders({
+          'Content-Type': 'application/json',
+          Authorization: 'Bearer ' + this.authService.getToken(),
+        }),
+      }
+    );
+  }
+
+  getAnalyticsByProjectId(projectId: string): Observable<any> {
+    return this.http.get<any>(`${this.apiUrl}/analytics/${projectId}`);
   }
 
   getById(id: string, userId: string): Observable<Project | null> {
@@ -90,10 +119,10 @@ export class ProjectService {
           },
           item.members && Array.isArray(item.members)
             ? item.members.map((member: any) => ({
-                id: member.id,
-                username: member.username,
-                role: member.role,
-              }))
+              id: member.id,
+              username: member.username,
+              role: member.role,
+            }))
             : [] // Ako je null ili nije niz, vraća prazan niz
         );
       }),
@@ -115,33 +144,7 @@ export class ProjectService {
       `${this.apiUrl}/projects/${id}/members/${member.id}`
     );
   }
-  //dodavanje workflow-a
-  createWorkflow(projectId: string, projectName: string): Observable<any> {
-    const workflow = {
-      project_id: projectId,
-      project_name: projectName
-    };
-    return this.http.post(`${this.apiUrl}/workflows/create`, workflow, {
-        headers: new HttpHeaders({
-          'Content-Type': 'application/json',
-          Authorization: 'Bearer ' + this.authService.getToken(),
-        }),
-      }
-      );
-  }
 
-
-  getWorkflowByProjectId(projectId: string): Observable<any> {
-    console.log('Fetching workflow for project ID:', projectId); // Log pred slanje zahteva
-
-    return this.http.get<any>(`${this.apiUrl}/composition/${projectId}`).pipe(
-      tap(response => console.log('Received workflow response:', response)), // Log nakon odgovora
-      catchError(error => {
-        console.error('Error fetching workflow:', error); // Log ako dođe do greške
-        throw error;
-      })
-    );
-  }
 
 }
 

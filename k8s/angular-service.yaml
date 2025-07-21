@@ -13,5 +13,6 @@ spec:
     - name: "4200"
       port: 4200
       targetPort: 4200
+      nodePort: 31200
   selector:
     app: angular

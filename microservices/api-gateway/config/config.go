@@ -6,38 +6,43 @@ import (
 )
 
 type Config struct {
-	Address                string
-	ProjectServicePort     string
-	ProjectServiceAddress  string
-	TaskServiceAddress     string
-	TaskServicePort        string
-	UserServiceAddress     string
-	UserServicePort        string
-	NotServiceAddress      string
-	NotServicePort         string
-	WorkflowServiceAddress string
-	WorkflowServicePort    string
-	JaegerEndpoint         string
-	ApiComposerPort        string
-	ApiComposerAddress     string
+	Address                 string
+	ProjectServicePort      string
+	ProjectServiceAddress   string
+	TaskServiceAddress      string
+	TaskServicePort         string
+	UserServiceAddress      string
+	UserServicePort         string
+	NotServiceAddress       string
+	NotServicePort          string
+	WorkflowServiceAddress  string
+	WorkflowServicePort     string
+	JaegerEndpoint          string
+	ApiComposerPort         string
+	ApiComposerAddress      string
+	AnalyticsServiceAddress string
+	AnalyticsServicePort    string
 }
 
 func GetConfig() Config {
 	return Config{
-		ProjectServicePort:     fmt.Sprintf(":%s", os.Getenv("PROJECTS_SERVICE_PORT")),
-		ProjectServiceAddress:  os.Getenv("PROJECTS_SERVICE_ADDRESS"),
-		Address:                fmt.Sprintf(":%s", os.Getenv("GATEWAY_PORT")),
-		TaskServicePort:        fmt.Sprintf(":%s", os.Getenv("TASKS_SERVICE_PORT")),
-		TaskServiceAddress:     os.Getenv("TASKS_SERVICE_ADDRESS"),
-		UserServicePort:        fmt.Sprintf(":%s", os.Getenv("USER_SERVICE_PORT")),
-		UserServiceAddress:     os.Getenv("USER_SERVICE_ADDRESS"),
-		NotServicePort:         fmt.Sprintf(":%s", os.Getenv("NOTIFICATIONS_SERVICE_PORT")),
-		NotServiceAddress:      os.Getenv("NOTIFICATIONS_SERVICE_ADDRESS"),
-		WorkflowServicePort:    fmt.Sprintf(":%s", os.Getenv("WORKFLOW_SERVICE_PORT")),
-		WorkflowServiceAddress: os.Getenv("WORKFLOW_SERVICE_ADDRESS"),
-		JaegerEndpoint:         os.Getenv("JAEGER_ENDPOINT"),
-		ApiComposerPort:        fmt.Sprintf(":%s", os.Getenv("API_COMPOSER_PORT")),
-		ApiComposerAddress:     os.Getenv("API_COMPOSER_ADDRESS"),
+
+		ProjectServicePort:      fmt.Sprintf(":%s", os.Getenv("PROJECTS_SERVICE_PORT")),
+		ProjectServiceAddress:   os.Getenv("PROJECTS_SERVICE_ADDRESS"),
+		Address:                 fmt.Sprintf(":%s", os.Getenv("GATEWAY_PORT")),
+		TaskServicePort:         fmt.Sprintf(":%s", os.Getenv("TASKS_SERVICE_PORT")),
+		TaskServiceAddress:      os.Getenv("TASKS_SERVICE_ADDRESS"),
+		UserServicePort:         fmt.Sprintf(":%s", os.Getenv("USER_SERVICE_PORT")),
+		UserServiceAddress:      os.Getenv("USER_SERVICE_ADDRESS"),
+		NotServicePort:          fmt.Sprintf(":%s", os.Getenv("NOTIFICATIONS_SERVICE_PORT")),
+		NotServiceAddress:       os.Getenv("NOTIFICATIONS_SERVICE_ADDRESS"),
+		WorkflowServicePort:     fmt.Sprintf(":%s", os.Getenv("WORKFLOW_SERVICE_PORT")),
+		WorkflowServiceAddress:  os.Getenv("WORKFLOW_SERVICE_ADDRESS"),
+		JaegerEndpoint:          os.Getenv("JAEGER_ENDPOINT"),
+		ApiComposerPort:         fmt.Sprintf(":%s", os.Getenv("API_COMPOSER_PORT")),
+		ApiComposerAddress:      os.Getenv("API_COMPOSER_ADDRESS"),
+		AnalyticsServicePort:    fmt.Sprintf(":%s", os.Getenv("ANALYTICS_SERVICE_PORT")),
+		AnalyticsServiceAddress: os.Getenv("ANALYTICS_SERVICE_ADDRESS"),
 	}
 }
 
@@ -55,6 +60,9 @@ func (cfg Config) FullUserServiceAddress() string {
 
 func (cfg Config) FullNotServiceAddress() string {
 	return fmt.Sprintf("%s%s", cfg.NotServiceAddress, cfg.NotServicePort)
+}
+func (cfg Config) FullAnalServiceAddress() string {
+	return fmt.Sprintf("%s%s", cfg.AnalyticsServiceAddress, cfg.AnalyticsServicePort)
 }
 
 type ErrResp struct {

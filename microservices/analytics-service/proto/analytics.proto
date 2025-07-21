@@ -1,0 +1,41 @@
+syntax = "proto3";
+
+option go_package = "proto/analytics";
+
+import "google/protobuf/timestamp.proto";
+
+message TaskStatusDuration {
+  string status = 1;
+  float duration = 2;
+}
+
+message TaskDurations {
+  string task_id = 1;
+  repeated TaskStatusDuration status_durations = 2;
+}
+
+message MemberTasks {
+  string member_id = 1;
+  repeated string tasks = 2;
+}
+
+message Analytic {
+  string project_id = 1;
+  int32 total_tasks = 2;
+  map<string, int32> status_counts = 3;
+  map<string, TaskDurations> task_status_durations = 4;
+  map<string, MemberTasks> member_tasks = 5;
+  bool finished_early = 6;
+}
+
+message GetAnalyticsRequest {
+  string project_id = 1;
+}
+
+message GetAnalyticsResponse {
+  Analytic analytic = 1;
+}
+
+service AnalyticsService {
+  rpc GetAllByProjectId(GetAnalyticsRequest) returns (GetAnalyticsResponse);
+}

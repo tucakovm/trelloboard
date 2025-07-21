@@ -143,11 +143,44 @@ func main() {
 	otel.SetTracerProvider(tp)
 	otel.SetTextMapPropagator(propagation.TraceContext{})
 
+	//analytics
+
+	log.Println("analytics service addres:", cfg.FullAnalServiceAddress())
+	analConn, err := grpc.DialContext(
+		ctx,
+		cfg.FullAnalServiceAddress(),
+		grpc.WithBlock(),
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
+		grpc.WithTimeout(20*time.Second),
+	)
+	if err != nil {
+		log.Fatalf("Failed to dial AnalyticsService: %v", err)
+	}
+	if analConn == nil {
+		log.Fatal("gRPC connection is nil")
+	}
+	defer analConn.Close()
+
+	analClient := gateway.NewAnalyticsServiceClient(analConn)
+	if analClient == nil {
+		log.Fatal("Analytics service client is nil")
+	}
+
+	log.Println("AnalyticsService client created successfully.")
+
+	if err := gateway.RegisterAnalyticsServiceHandler(ctx, gwmux, analConn); err != nil {
+		log.Fatalf("Failed to register Analytics gateway: %v", err)
+	}
+
+	log.Println("Analytics Gateway registered successfully.")
+	log.Println("Service Address:", cfg.FullAnalServiceAddress())
+
 	// Start the HTTP server
 	gwServer := &http.Server{
 		Addr:    cfg.Address,
 		Handler: enableCORS(gwmux),
 	}
+	log.Println("http server started successfully")
 
 	go func() {
 		log.Printf("API Gateway listening on %s\n", cfg.Address)
@@ -175,9 +208,11 @@ var rolePermissions = map[string]map[string][]string{
 		"GET": {
 			"/api/projects/{username}", "/api/project/{id}", "/api/tasks/{id}", "/api/task/{id}",
 			"/api/users/{username}", "/api/notifications/{userId}", "/api/tasks/{taskId}/files/{fileId}",
-			"/api/tasks/{taskId}/files", "/api/composition/{projectId}",
+			"/api/tasks/{taskId}/files", "/api/composition/{projectId}", "/api/analytics/{id}",
 		},
-		"POST": {"/api/tasks/files"},
+		"POST": {
+			"/api/tasks/files",
+		},
 		"DELETE": {
 			"/api/users/{username}", "/api/tasks/{taskId}/files/{fileId}",
 		},
@@ -189,7 +224,7 @@ var rolePermissions = map[string]map[string][]string{
 		"GET": {
 			"/api/projects/{username}", "/api/project/{id}", "/api/tasks/{id}", "/api/task/{id}",
 			"/api/users/{username}", "/api/notifications/{userId}", "/api/tasks/{taskId}/files/{fileId}",
-			"/api/tasks/{taskId}/files", "/api/composition/{projectId}",
+			"/api/tasks/{taskId}/files", "/api/composition/{projectId}", "/api/analytics/{id}",
 		},
 		"POST": {
 			"/api/project", "/api/task", "/api/tasks/files", "/api/workflows/create", "/api/workflows/addtask",
