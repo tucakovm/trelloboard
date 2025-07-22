@@ -154,7 +154,7 @@ services:
       .env
 
   analytics-server:
-    image: analytics-server:latest
+    image: mtucakov/analytics-server:latest
     build:
       context: microservices/analytics-service
       dockerfile: Dockerfile
