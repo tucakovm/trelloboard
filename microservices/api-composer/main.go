@@ -13,7 +13,6 @@ import (
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	semconv "go.opentelemetry.io/otel/semconv/v1.7.0"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/reflection"
 	"log"
 	"net"
@@ -57,31 +56,31 @@ func main() {
 	natsConn := NatsConn()
 	defer natsConn.Close()
 
-	// TaskService connection
-	taskConn, err := grpc.DialContext(
-		ctx,
-		cfg.FullTaskServiceAddress(),
-		grpc.WithBlock(),
-		grpc.WithTransportCredentials(insecure.NewCredentials()),
-	)
-	taskClient := proto.NewTaskServiceClient(taskConn)
-	log.Println("TaskService Gateway registered successfully.")
-
-	// WorkflowService connection
-	workflowConn, err := grpc.DialContext(
-		ctx,
-		cfg.FullWorkflowServiceAddress(),
-		grpc.WithBlock(),
-		grpc.WithTransportCredentials(insecure.NewCredentials()),
-	)
-	workflowClient := proto.NewWorkflowServiceClient(workflowConn)
-	log.Println("WorkflowService Gateway registered successfully.")
+	//// TaskService connection
+	//taskConn, err := grpc.DialContext(
+	//	ctx,
+	//	cfg.FullTaskServiceAddress(),
+	//	grpc.WithBlock(),
+	//	grpc.WithTransportCredentials(insecure.NewCredentials()),
+	//)
+	//taskClient := proto.NewTaskServiceClient(taskConn)
+	//log.Println("TaskService Gateway registered successfully.")
+	//
+	//// WorkflowService connection
+	//workflowConn, err := grpc.DialContext(
+	//	ctx,
+	//	cfg.FullWorkflowServiceAddress(),
+	//	grpc.WithBlock(),
+	//	grpc.WithTransportCredentials(insecure.NewCredentials()),
+	//)
+	//workflowClient := proto.NewWorkflowServiceClient(workflowConn)
+	//log.Println("WorkflowService Gateway registered successfully.")
 
 	// Bootstrap gRPC server.
 	grpcServer := grpc.NewServer()
 	reflection.Register(grpcServer)
 
-	composerHandler, err := h.NewConnectionHandler(workflowClient, taskClient, tracer, natsConn)
+	composerHandler, err := h.NewConnectionHandler(tracer, natsConn)
 	if err != nil {
 		log.Printf("failed to init composerHandler")
 	}

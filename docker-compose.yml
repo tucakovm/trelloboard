@@ -29,6 +29,7 @@ services:
       - users-server
       - notifications-server
       - workflow-server
+      - analytics-server
       - cassandra
       - mongo
       - nats
@@ -103,9 +104,6 @@ services:
       consul:
         condition: service_healthy
 
-
-
-
   notifications-server:
     image: mtucakov/notifications-server:latest
     build:
@@ -156,21 +154,20 @@ services:
       .env
 
   analytics-server:
-    image: analytics_server
+    image: analytics-server:latest
     build:
       context: microservices/analytics-service
       dockerfile: Dockerfile
     restart: always
-    container_name: analytics-service
+    container_name: "analytics-server"
     hostname: "analytics-server"
     ports:
-      "${ANALYTICS_SERVICE_PORT}:${ANALYTICS_SERVICE_PORT}"
+      - "${ANALYTICS_SERVICE_PORT}:${ANALYTICS_SERVICE_PORT}"
     env_file:
       .env
     depends_on:
-      - tasks_server
-      - projects_server
-      - cassandra
+      - tasks-server
+      - projects-server
 
   mongo:
     image: mongo
@@ -269,8 +266,8 @@ services:
     image: jaegertracing/all-in-one:latest
     container_name: jaeger
     ports:
-      - "${JAEGER_UDP_PORT}:${JAEGER_UDP_PORT}"
-      - "${JAEGER_UDP_PORT2}:${JAEGER_UDP_PORT2}"
+#      - "${JAEGER_UDP_PORT}:${JAEGER_UDP_PORT}"
+#      - "${JAEGER_UDP_PORT2}:${JAEGER_UDP_PORT2}"
       - "${JAEGER_UI_PORT}:${JAEGER_UI_PORT}"
       - "${JAEGER_INGEST_PORT}:${JAEGER_INGEST_PORT}"
       - "${JAEGER_INGEST_PORT2}:${JAEGER_INGEST_PORT2}"

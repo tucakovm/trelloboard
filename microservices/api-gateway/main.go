@@ -115,6 +115,22 @@ func main() {
 	}
 	log.Println("WorkflowService Gateway registered successfully.")
 
+	//AnalyticsService connection
+	analyticsConn, err := grpc.DialContext(
+		ctx,
+		cfg.FullAnalServiceAddress(),
+		grpc.WithBlock(),
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
+	)
+	if err != nil {
+		log.Fatalf("Failed to connect to Analytics Service at %s: %v", cfg.FullAnalServiceAddress(), err)
+	}
+	analyticsClient := gateway.NewAnalyticsServiceClient(analyticsConn)
+	if err := gateway.RegisterAnalyticsServiceHandlerClient(ctx, gwmux, analyticsClient); err != nil {
+		log.Fatalf("Failed to register Analytics gateway: %v", err)
+	}
+	log.Println("Analytics Gateway registered successfully.")
+
 	// ApiComposerService connection
 	composerConn, err := grpc.DialContext(
 		ctx,
@@ -122,7 +138,12 @@ func main() {
 		grpc.WithBlock(),
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 	)
+	if err != nil {
+		log.Fatalf("Failed to dial api-composer: %v", err)
+	}
+
 	composerClient := gateway.NewApiComposerClient(composerConn)
+
 	if err := gateway.RegisterApiComposerHandlerClient(ctx, gwmux, composerClient); err != nil {
 		log.Fatalf("Failed to register ApiComposer gateway: %v", err)
 	}
@@ -142,38 +163,6 @@ func main() {
 	defer func() { _ = tp.Shutdown(ctx) }()
 	otel.SetTracerProvider(tp)
 	otel.SetTextMapPropagator(propagation.TraceContext{})
-
-	//analytics
-
-	log.Println("analytics service addres:", cfg.FullAnalServiceAddress())
-	analConn, err := grpc.DialContext(
-		ctx,
-		cfg.FullAnalServiceAddress(),
-		grpc.WithBlock(),
-		grpc.WithTransportCredentials(insecure.NewCredentials()),
-		grpc.WithTimeout(20*time.Second),
-	)
-	if err != nil {
-		log.Fatalf("Failed to dial AnalyticsService: %v", err)
-	}
-	if analConn == nil {
-		log.Fatal("gRPC connection is nil")
-	}
-	defer analConn.Close()
-
-	analClient := gateway.NewAnalyticsServiceClient(analConn)
-	if analClient == nil {
-		log.Fatal("Analytics service client is nil")
-	}
-
-	log.Println("AnalyticsService client created successfully.")
-
-	if err := gateway.RegisterAnalyticsServiceHandler(ctx, gwmux, analConn); err != nil {
-		log.Fatalf("Failed to register Analytics gateway: %v", err)
-	}
-
-	log.Println("Analytics Gateway registered successfully.")
-	log.Println("Service Address:", cfg.FullAnalServiceAddress())
 
 	// Start the HTTP server
 	gwServer := &http.Server{

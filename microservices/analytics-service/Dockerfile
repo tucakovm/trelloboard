@@ -1,23 +1,12 @@
-FROM golang:1.23 AS builder
-
+FROM golang:alpine as build_container
 WORKDIR /app
-
-COPY go.mod go.sum ./
-
-RUN go mod tidy
-
+COPY go.mod .
+COPY go.sum .
+RUN go mod download
 COPY . .
+RUN go build -o server
 
-RUN CGO_ENABLED=0 GOOS=linux go build -o /bin/analytics-service .
-
-FROM alpine:3.17
-
-RUN apk --no-cache add ca-certificates
-
-WORKDIR /root/
-
-COPY --from=builder /bin/analytics-service .
-
-EXPOSE 8005
-
-CMD ["./analytics-service"]
+FROM alpine
+COPY --from=build_container /app/server /usr/bin
+EXPOSE 8007
+ENTRYPOINT ["server"]

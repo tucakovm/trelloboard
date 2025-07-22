@@ -457,12 +457,12 @@ service WorkflowService {
   }
 }
 
-  service AnalyticsService {
-    rpc GetAllByProjectId(GetAllTasksReq) returns (GetAnalyticsResponse) {
+service AnalyticsService {
+  rpc GetAllByProjectId(GetAnalyticsRequest) returns (GetAnalyticsResponse) {
     option (google.api.http) = {
-    get: "/api/analytics/{id}",
-      };
-     }
+    get: "/api/analytics/{project_id}",
+    };
+  }
 }
 
     message CreateWorkflowReq {
@@ -506,36 +506,34 @@ service WorkflowService {
     bool allDependenciesMet = 1;
         }
 
-    message GetAnalyticsResponse {
-    Analytic analytic = 1;
-        }
+message TaskStatusDuration {
+  string status = 1;
+  float duration = 2;
+}
 
+message TaskDurations {
+  string task_id = 1;
+  repeated TaskStatusDuration status_durations = 2;
+}
 
-    message Analytic {
-    string project_id = 1;
-        int32 total_tasks = 2;
-    map<string, int32> status_counts = 3;
-    map<string, TaskDurations> task_status_durations = 4;
-    map<string, MemberTasks> member_tasks = 5;
-    bool finished_early = 6;
-        }
+message MemberTasks {
+  string member_id = 1;
+  repeated string tasks = 2;
+}
 
-    message MemberTasks {
-    string member_id = 1;
-        repeated string tasks = 2;
-        }
+message Analytic {
+  string project_id = 1;
+  int32 total_tasks = 2;
+  map<string, int32> status_counts = 3;
+  map<string, TaskDurations> task_status_durations = 4;
+  map<string, MemberTasks> member_tasks = 5;
+  bool finished_early = 6;
+}
 
-    message TaskStatusDuration {
-    string status = 1;
-        float duration = 2;
-        }
+message GetAnalyticsRequest {
+  string project_id = 1;
+}
 
-    message TaskDurations {
-    string task_id = 1;
-        repeated TaskStatusDuration status_durations = 2;
-        }
-
-    message MemberTaskMapping {
-    string member_name = 1;
-        repeated string task_names = 2;
-        }
+message GetAnalyticsResponse {
+  Analytic analytic = 1;
+}

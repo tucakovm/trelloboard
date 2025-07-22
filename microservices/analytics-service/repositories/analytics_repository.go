@@ -135,7 +135,7 @@ func (ar *AnalyticsRepo) CreateTables(ctx context.Context) {
 		return
 	}
 
-	//ar.InsertTestAnalytics(ctx, "67386650a0d21b3a8f823723")
+	ar.InsertTestAnalytics(ctx, "67386650a0d21b3a8f823723")
 
 	ar.logger.Println("Successfully created/verified analytics table and UDT")
 }

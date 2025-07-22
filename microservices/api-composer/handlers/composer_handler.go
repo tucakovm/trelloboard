@@ -14,19 +14,15 @@ import (
 )
 
 type ComposerHandler struct {
-	taskService     proto.TaskServiceClient
-	workflowService proto.WorkflowServiceClient
 	proto.UnimplementedApiComposerServer
 	Tracer   trace.Tracer
 	natsConn *nats.Conn
 }
 
-func NewConnectionHandler(workflowService proto.WorkflowServiceClient, taskService proto.TaskServiceClient, Tracer trace.Tracer, natsConn *nats.Conn) (ComposerHandler, error) {
+func NewConnectionHandler(Tracer trace.Tracer, natsConn *nats.Conn) (ComposerHandler, error) {
 	return ComposerHandler{
-		taskService:     taskService,
-		workflowService: workflowService,
-		Tracer:          Tracer,
-		natsConn:        natsConn,
+		Tracer:   Tracer,
+		natsConn: natsConn,
 	}, nil
 }
 

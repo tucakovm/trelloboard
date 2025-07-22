@@ -77,9 +77,10 @@ export class ProjectDetailsComponent implements OnInit {
   ) { }
 
   ngOnInit(): void {
+    // this.getAnalytics();
     this.getProject();
+    this.createWorkflow();
     this.getWorkflow();
-    this.getAnalytics();
   }
 
   getProject() {
@@ -92,6 +93,7 @@ export class ProjectDetailsComponent implements OnInit {
           if (project) {
             this.project = project;
             this.maxLengthAchieved = this.project.members.length >= this.project.maxMembers;
+            this.getAnalytics();
           } else {
             console.error('Project not found or an error occurred.');
           }
@@ -102,6 +104,7 @@ export class ProjectDetailsComponent implements OnInit {
       );
     }
   }
+
 
   getWorkflow(): void {
     if (!this.id) {

@@ -209,7 +209,8 @@ func (r *WorkflowRepository) GetWorkflow(ctx context.Context, projectID string) 
 	session := r.Driver.NewSession(ctx, neo4j.SessionConfig{})
 	defer session.Close(ctx)
 
-	workflow, err := session.ExecuteRead(ctx, func(tx neo4j.ManagedTransaction) (interface{}, error) {
+	log.Printf("usao u repo neo4j")
+	workflowAny, err := session.ExecuteRead(ctx, func(tx neo4j.ManagedTransaction) (interface{}, error) {
 		query := `MATCH (p:Project {id: $projectID}) RETURN p.id AS id, p.name AS name`
 		result, err := tx.Run(ctx, query, map[string]interface{}{
 			"projectID": projectID,
@@ -226,25 +227,37 @@ func (r *WorkflowRepository) GetWorkflow(ctx context.Context, projectID string) 
 				Tasks:       nil,
 			}, nil
 		}
-		//Dodao polje Tasks ovde
+
 		if err := result.Err(); err != nil {
 			return nil, fmt.Errorf("failed to read results: %w", err)
 		}
+
 		return nil, nil
 	})
+	log.Printf("usao2 u repo neo4j %s", workflowAny)
+	if workflowAny == nil {
+		return &models.Workflow{
+			ProjectID:   projectID,
+			ProjectName: "",
+			Tasks:       []models.TaskNode{},
+		}, nil
+	}
+
+	workflow, ok := workflowAny.(*models.Workflow)
+	if !ok {
+		return nil, fmt.Errorf("unexpected type assertion failure: got %T", workflowAny)
+	}
+
 	tasks, err := r.GetTasks(ctx, projectID)
 	if err != nil {
-		log.Printf("Workflow repo task getTask function= %s", err)
-
+		log.Printf("Workflow repo task getTasks error: %s", err)
 		return nil, fmt.Errorf("failed to get tasks for workflow: %w", err)
 	}
-	workflow.(*models.Workflow).Tasks = tasks
-	log.Printf("Workflow exists function= %s", tasks)
 
-	if err != nil {
-		return nil, fmt.Errorf("failed to get workflow: %w", err)
-	}
-	return workflow.(*models.Workflow), nil
+	workflow.Tasks = tasks
+	log.Printf("Workflow retrieved for projectID %s with %d tasks", projectID, len(tasks))
+
+	return workflow, nil
 }
 
 func (r *WorkflowRepository) DeleteWorkflowByProjectID(ctx context.Context, projectID string) error {
@@ -288,12 +301,12 @@ func (r *WorkflowRepository) DeleteWorkflowByProjectID(ctx context.Context, proj
 	return nil
 }
 
-func (r *WorkflowRepository) CheckWorkflowsExist(ctx context.Context) (bool, error) {
+func (r *WorkflowRepository) CheckProjectsExist(ctx context.Context) (bool, error) {
 	session := r.Driver.NewSession(ctx, neo4j.SessionConfig{})
 	defer session.Close(ctx)
 
 	exists, err := session.ExecuteRead(ctx, func(tx neo4j.ManagedTransaction) (interface{}, error) {
-		query := "MATCH (w:Workflow) RETURN COUNT(w) > 0 AS exists"
+		query := "MATCH (p:Project) RETURN COUNT(p) > 0 AS exists"
 		result, err := tx.Run(ctx, query, nil)
 		if err != nil {
 			return nil, fmt.Errorf("failed to run query: %w", err)
