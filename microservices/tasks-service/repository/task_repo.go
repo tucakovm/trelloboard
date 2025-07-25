@@ -110,19 +110,31 @@ func insertInitialTasks(client *mongo.Client) error {
 		return nil
 	}
 
+	id1, _ := primitive.ObjectIDFromHex("64bc8a5f1a2b3c4d5e6f7890")
+	id2, _ := primitive.ObjectIDFromHex("64bc8a6f1a2b3c4d5e6f7891")
+
 	// Define initial tasks to insert
 	tasks := []interface{}{
 		domain.Task{
+			Id:          id1,
 			Name:        "Task 1",
 			Description: "This is the first task.",
 			Status:      domain.Status(0),
-			ProjectID:   "jnasdndslksad",
+			ProjectID:   "67386650a0d21b3a8f823723",
+			Members: []domain.User{
+				{
+					Id:       "6749ac3cfc079b8c923bb9d5",
+					Username: "bobsmith",
+					Role:     "User",
+				},
+			},
 		},
 		domain.Task{
+			Id:          id2,
 			Name:        "Task 2",
 			Description: "This is the second task.",
 			Status:      domain.Status(0),
-			ProjectID:   "lksaddsmamkls",
+			ProjectID:   "67386650a0d21b3a8f823723",
 		},
 	}
 

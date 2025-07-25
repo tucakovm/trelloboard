@@ -24,8 +24,8 @@ spec:
         - envFrom:
             - configMapRef:
                 name: env
-          image: mtucakov/analytics-server:latest
-          imagePullPolicy: Always
+          image: analytics-server:latest
+          imagePullPolicy: IfNotPresent
           name: analytics-server
           ports:
             - containerPort: 8007

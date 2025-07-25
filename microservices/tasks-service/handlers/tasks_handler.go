@@ -140,7 +140,13 @@ func (h *TaskHandler) Create(ctx context.Context, req *proto.CreateTaskReq) (*pr
 		return nil, grpcstatus.Error(codes.Internal, "event store error")
 	}
 
-	err = h.natsConn.Publish("task.create.es", data)
+	msg := &nats.Msg{
+		Subject: "task.create.es",
+		Data:    data,
+		Header:  headers,
+	}
+
+	err = h.natsConn.PublishMsg(msg)
 	if err != nil {
 		log.Printf("Failed to publish to NATS: %v", err)
 		return nil, grpcstatus.Error(codes.Internal, "nats error")
@@ -182,14 +188,16 @@ func (h *TaskHandler) CreateTask(ctx context.Context) error {
 		if err != nil {
 			span.SetStatus(otelCodes.Error, err.Error())
 			log.Printf("Error caching task: %v", err)
-			return
+			//return
 		}
 
 		subject := "create-task"
 
 		message := map[string]string{
+			"event":     subject,
 			"TaskName":  req.Task.Name,
 			"ProjectId": req.Task.ProjectID,
+			"TaskId":    taskID.Hex(),
 		}
 
 		messageData, err := json.Marshal(message)
@@ -203,6 +211,7 @@ func (h *TaskHandler) CreateTask(ctx context.Context) error {
 			Header:  headers,
 			Data:    messageData,
 		}
+
 		err = h.natsConn.PublishMsg(msgNot)
 		if err != nil {
 			log.Printf("Error publishing notification: %v", err)
@@ -408,7 +417,9 @@ func (h *TaskHandler) AddMemberToTask(ctx context.Context) (*proto.EmptyResponse
 		}
 		projectFromTask, _ := h.GetById(ctx, projectFromTaskReq)
 		message := map[string]string{
+			"event":     "add-to-task",
 			"UserId":    req.MemberToAdd.Id,
+			"UserName":  req.MemberToAdd.Username,
 			"TaskId":    req.TaskId,
 			"ProjectId": projectFromTask.Task.ProjectId,
 		}
@@ -521,10 +532,20 @@ func (h *TaskHandler) RemoveMemberFromTask(ctx context.Context) error {
 			Id: taskId,
 		}
 		projectFromTask, _ := h.GetById(ctx, projectFromTaskReq)
+
+		username := ""
+		for _, k := range task.Members {
+			if k.Id == req.MemberToAddId {
+				username = k.Username
+			}
+		}
+
 		subject := "remove-from-task"
 		message := map[string]string{
+			"event":     "remove-from-task",
 			"UserId":    req.MemberToAddId,
 			"TaskId":    taskId,
+			"Username":  username,
 			"ProjectId": projectFromTask.Task.ProjectId,
 		}
 
@@ -694,6 +715,7 @@ func (h *TaskHandler) UpdateTaskStatus(ctx context.Context) error {
 
 		subject := "update-task"
 		message := map[string]string{
+			"event":      subject,
 			"TaskId":     req.TaskId,
 			"TaskStatus": req.TaskNewStatus,
 			"ProjectId":  projId.Task.ProjectId,
@@ -731,6 +753,7 @@ func (h *TaskHandler) UpdateTaskStatus(ctx context.Context) error {
 	}
 	return nil
 }
+
 func (h *TaskHandler) UploadFile(ctx context.Context, req *proto.UploadFileRequest) (*proto.EmptyResponse, error) {
 	ctx, span := h.Tracer.Start(ctx, "h.uploadFile")
 	defer span.End()

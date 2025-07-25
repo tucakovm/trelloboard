@@ -134,7 +134,7 @@ func main() {
 
 	// Bootstrap gRPC server.
 	grpcServer := grpc.NewServer(
-		grpc.UnaryInterceptor(timeoutUnaryInterceptor(60 * time.Second)), // Timeout na 5 sekundi
+		grpc.UnaryInterceptor(timeoutUnaryInterceptor(5 * time.Second)), // Timeout na 5 sekundi
 	)
 	reflection.Register(grpcServer)
 
@@ -145,7 +145,7 @@ func main() {
 	}
 
 	GetTasksForApiComp(ctx, natsConn, *handlerProject, tracer)
-	go SubscribeToDeleteTasksSaga(natsConn, *serviceTask, tracer)
+	go SubscribeToDeleteTasksSaga(ctx, natsConn, *serviceTask, tracer)
 
 	go func() {
 		if _, err := handlerProject.AddMemberToTask(context.Background()); err != nil {
@@ -360,19 +360,34 @@ func GetTasksForApiComp(
 	}
 }
 
-func SubscribeToDeleteTasksSaga(natsConn *nats.Conn, taskService service.TaskService, tracer trace.Tracer) {
+func SubscribeToDeleteTasksSaga(ctx context.Context, natsConn *nats.Conn, taskService service.TaskService, tracer trace.Tracer) {
 	subjectTasks := "delete-tasks-saga"
 
 	_, err := natsConn.Subscribe(subjectTasks, func(msg *nats.Msg) {
-		go handleDeleteTasksMessage(msg, natsConn, taskService, tracer)
+
+		traceID := msg.Header.Get(nats_helper.TRACE_ID)
+		spanID := msg.Header.Get(nats_helper.SPAN_ID)
+		if traceID == "" || spanID == "" {
+			log.Println("Missing tracing headers in NATS message")
+		}
+
+		remoteCtx, err := nats_helper.GetNATSParentContext(msg)
+		if err != nil {
+			log.Fatal(err)
+		}
+		ctxWithRemote := trace.ContextWithRemoteSpanContext(ctx, remoteCtx)
+		_, span := tracer.Start(ctxWithRemote, "Subscriber.DeleteWorkflowSaga")
+		defer span.End()
+
+		go handleDeleteTasksMessage(ctxWithRemote, msg, natsConn, taskService, tracer)
 	})
 	if err != nil {
 		log.Printf("Failed to subscribe to subject %s: %v", subjectTasks, err)
 	}
 }
 
-func handleDeleteTasksMessage(msg *nats.Msg, natsConn *nats.Conn, taskService service.TaskService, tracer trace.Tracer) {
-	ctx, span := tracer.Start(context.Background(), "handleDeleteTasksMessage")
+func handleDeleteTasksMessage(ctx context.Context, msg *nats.Msg, natsConn *nats.Conn, taskService service.TaskService, tracer trace.Tracer) {
+	ctx, span := tracer.Start(ctx, "handleDeleteTasksMessage")
 	defer span.End()
 
 	projectID := string(msg.Data)
@@ -395,11 +410,17 @@ func handleDeleteTasksMessage(msg *nats.Msg, natsConn *nats.Conn, taskService se
 	}
 	defer sub.Unsubscribe()
 
-	err = natsConn.PublishRequest("delete-workflow-saga", replySubjectWorkflow, []byte(projectID))
-	if err != nil {
-		log.Printf("[Task Saga] Error publishing to workflow saga: %v", err)
-		return
+	headers := nats.Header{}
+	headers.Set(nats_helper.TRACE_ID, span.SpanContext().TraceID().String())
+	headers.Set(nats_helper.SPAN_ID, span.SpanContext().SpanID().String())
+
+	msgToSend := &nats.Msg{
+		Subject: "delete-workflow-saga",
+		Reply:   replySubjectWorkflow,
+		Data:    []byte(projectID),
+		Header:  headers,
 	}
+	err = natsConn.PublishMsg(msgToSend)
 
 	select {
 	case <-time.After(5 * time.Second):

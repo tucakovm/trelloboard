@@ -1,0 +1,6 @@
+projectKey=trelloboard
+serverUrl=http://localhost:9001
+serverVersion=25.7.0.110598
+dashboardUrl=http://localhost:9001/dashboard?id=trelloboard
+ceTaskId=c7808139-b9d5-48a7-8999-2f5bf9a54821
+ceTaskUrl=http://localhost:9001/api/ce/task?id=c7808139-b9d5-48a7-8999-2f5bf9a54821

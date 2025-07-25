@@ -10,25 +10,27 @@ import { AuthService } from '../../services/auth.service';
   templateUrl: './project-all.component.html',
   styleUrl: './project-all.component.css'
 })
-export class ProjectAllComponent implements OnInit{
-  projects?:Project[];
-  constructor(private projectService:ProjectService,  private router: Router, private tasksService:TaskService , private authService:AuthService){}
+export class ProjectAllComponent implements OnInit {
+  projects?: Project[];
 
-  ngOnInit(): void {
-    this.getAllProjects();
+  constructor(private projectService: ProjectService, private router: Router, private tasksService: TaskService, private authService: AuthService) {
   }
 
   getAllProjects(): void {
-    let username = this.authService.getUserName()
-    let userId = this.authService.getUserId()
-    this.projectService.getAllProjects(username, userId).subscribe( {
-      next:(data) =>{
+    let username = this.authService.getUserName();
+    let userId = this.authService.getUserId();
+    this.projectService.getAllProjects(username, userId).subscribe({
+      next: (data) => {
         this.projects = data;
       },
-      error:(error)=>{
+      error: (error) => {
         this.projects = [];
-        console.error("Error loading projects, projects are null!")
+        console.error("Error loading projects, projects are null!");
       }
-    })
+    });
+  }
+  
+  ngOnInit(): void {
+    this.getAllProjects();
   }
 }

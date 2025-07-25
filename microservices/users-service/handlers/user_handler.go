@@ -173,7 +173,15 @@ func (h UserHandler) DeleteUserByUsername(ctx context.Context, req *proto.GetUse
 	for attempt := 1; attempt <= maxRetries; attempt++ {
 		// Korišćenje circuit breaker-a za poziv koji može biti podložan greškama
 		res, cbErr := h.Cb.Execute(func() (interface{}, error) {
+			if h.projectService == nil {
+				log.Println("Project service is not initialized")
+				return nil, status.Error(codes.Unavailable, "projectService is not initialized")
+			}
 			log.Println("Processing request for user: ", req.Username)
+			log.Println("Processing request for project: ", h.projectService)
+			//if attempt == 1 {
+			//	return nil, status.Error(codes.DeadlineExceeded, "aaaaaaa1313131313")
+			//}
 
 			//log.Printf("Setting count in request: %d", attempt)
 			// Proveravamo da li je korisnik dodeljen na neki projekat
@@ -181,11 +189,6 @@ func (h UserHandler) DeleteUserByUsername(ctx context.Context, req *proto.GetUse
 				Id:    req.Username,
 				Role:  "user-role",
 				Count: int64(attempt),
-			}
-
-			if h.projectService == nil {
-				log.Println("Project service is not initialized")
-				return nil, status.Error(codes.Unavailable, "projectService is not initialized")
 			}
 
 			projServiceResponse, err := h.projectService.UserOnProject(ctx, userOnProjectReq)

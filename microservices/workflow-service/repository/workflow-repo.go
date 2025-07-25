@@ -234,13 +234,9 @@ func (r *WorkflowRepository) GetWorkflow(ctx context.Context, projectID string) 
 
 		return nil, nil
 	})
-	log.Printf("usao2 u repo neo4j %s", workflowAny)
+
 	if workflowAny == nil {
-		return &models.Workflow{
-			ProjectID:   projectID,
-			ProjectName: "",
-			Tasks:       []models.TaskNode{},
-		}, nil
+		return nil, nil
 	}
 
 	workflow, ok := workflowAny.(*models.Workflow)
@@ -491,39 +487,39 @@ func (r *WorkflowRepository) UpdateTaskStatus(ctx context.Context, taskID string
 	return nil
 }
 
-func (r *WorkflowRepository) IsTaskBlockedByDependency(ctx context.Context, taskID string) (bool, error) {
-	session := r.Driver.NewSession(ctx, neo4j.SessionConfig{})
-	defer session.Close(ctx)
-
-	result, err := session.ExecuteRead(ctx, func(tx neo4j.ManagedTransaction) (interface{}, error) {
-		query := `
-			MATCH (t:Task {id: $taskID})-[:DEPENDS_ON]->(d:Task)
-			WHERE d.blocked = true
-			RETURN COUNT(d) > 0 AS isBlockedByDependency`
-
-		res, err := tx.Run(ctx, query, map[string]interface{}{
-			"taskID": taskID,
-		})
-		if err != nil {
-			return false, fmt.Errorf("query execution failed: %w", err)
-		}
-
-		if res.Next(ctx) {
-			return res.Record().Values[0].(bool), nil
-		}
-
-		if err := res.Err(); err != nil {
-			return false, fmt.Errorf("result reading failed: %w", err)
-		}
-
-		return false, nil
-	})
-
-	if err != nil {
-		return false, fmt.Errorf("failed to check blocked dependency: %w", err)
-	}
-	return result.(bool), nil
-}
+//func (r *WorkflowRepository) IsTaskBlockedByDependency(ctx context.Context, taskID string) (bool, error) {
+//	session := r.Driver.NewSession(ctx, neo4j.SessionConfig{})
+//	defer session.Close(ctx)
+//
+//	result, err := session.ExecuteRead(ctx, func(tx neo4j.ManagedTransaction) (interface{}, error) {
+//		query := `
+//			MATCH (t:Task {id: $taskID})-[:DEPENDS_ON]->(d:Task)
+//			WHERE d.blocked = true
+//			RETURN COUNT(d) > 0 AS isBlockedByDependency`
+//
+//		res, err := tx.Run(ctx, query, map[string]interface{}{
+//			"taskID": taskID,
+//		})
+//		if err != nil {
+//			return false, fmt.Errorf("query execution failed: %w", err)
+//		}
+//
+//		if res.Next(ctx) {
+//			return res.Record().Values[0].(bool), nil
+//		}
+//
+//		if err := res.Err(); err != nil {
+//			return false, fmt.Errorf("result reading failed: %w", err)
+//		}
+//
+//		return false, nil
+//	})
+//
+//	if err != nil {
+//		return false, fmt.Errorf("failed to check blocked dependency: %w", err)
+//	}
+//	return result.(bool), nil
+//}
 
 func (r *WorkflowRepository) UpdateBlockedStatusForDependents(ctx context.Context, taskID string) error {
 	session := r.Driver.NewSession(ctx, neo4j.SessionConfig{})

@@ -453,16 +453,19 @@ func NatsUpdateTask(ctx context.Context, natsConn *nats.Conn, notService service
 		defer span.End()
 
 		taskId, taskOk := message["TaskId"]
-		memberIds, membersOk := message["MemberIds"]
+		memberIds, _ := message["MemberIds"]
 		taskStatus, taskStatusOk := message["TaskStatus"]
 		projectId, projectIdOk := message["ProjectId"]
 
-		if !taskOk || !membersOk || !taskStatusOk || !projectIdOk {
+		if !taskOk || !taskStatusOk || !projectIdOk {
 			log.Printf("Invalid message format: %v", message)
 			return
 		}
 
-		memberIdList := strings.Split(memberIds, ",")
+		var memberIdList []string
+		if memberIds != "" {
+			memberIdList = strings.Split(memberIds, ",")
+		}
 
 		notificationMessage := fmt.Sprintf("The status of the task with ID: %s has been updated to: %s.", taskId, taskStatus)
 

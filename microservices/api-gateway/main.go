@@ -90,10 +90,6 @@ func main() {
 		grpc.WithBlock(),
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 	)
-	if err != nil {
-		log.Fatalf("Failed to connect to NotificationService at %s: %v", cfg.FullNotServiceAddress(), err)
-	}
-
 	notClient := gateway.NewNotificationServiceClient(notConn)
 
 	if err := gateway.RegisterNotificationServiceHandlerClient(ctx, gwmux, notClient); err != nil {
@@ -122,9 +118,9 @@ func main() {
 		grpc.WithBlock(),
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 	)
-	if err != nil {
-		log.Fatalf("Failed to connect to Analytics Service at %s: %v", cfg.FullAnalServiceAddress(), err)
-	}
+	//if err != nil {
+	//	log.Println("Failed to connect to Analytics Service at %s: %v", cfg.FullAnalServiceAddress(), err)
+	//}
 	analyticsClient := gateway.NewAnalyticsServiceClient(analyticsConn)
 	if err := gateway.RegisterAnalyticsServiceHandlerClient(ctx, gwmux, analyticsClient); err != nil {
 		log.Fatalf("Failed to register Analytics gateway: %v", err)
@@ -138,10 +134,6 @@ func main() {
 		grpc.WithBlock(),
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 	)
-	if err != nil {
-		log.Fatalf("Failed to dial api-composer: %v", err)
-	}
-
 	composerClient := gateway.NewApiComposerClient(composerConn)
 
 	if err := gateway.RegisterApiComposerHandlerClient(ctx, gwmux, composerClient); err != nil {

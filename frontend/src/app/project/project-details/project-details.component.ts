@@ -77,9 +77,9 @@ export class ProjectDetailsComponent implements OnInit {
   ) { }
 
   ngOnInit(): void {
-    // this.getAnalytics();
+    this.getAnalytics();
     this.getProject();
-    this.createWorkflow();
+    // this.createWorkflow();
     this.getWorkflow();
   }
 

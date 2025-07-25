@@ -3,8 +3,10 @@ package repositories
 import (
 	"analytics-service/models"
 	"context"
+	"fmt"
 	"log"
 	"os"
+	"time"
 
 	"github.com/gocql/gocql"
 	"go.opentelemetry.io/otel/trace"
@@ -19,31 +21,28 @@ type AnalyticsRepo struct {
 func (ar *AnalyticsRepo) InsertTestAnalytics(ctx context.Context, projectID string) error {
 	testAnalytic := &models.Analytic{
 		ProjectID:  projectID,
-		TotalTasks: 5,
+		TotalTasks: 2,
 		StatusCounts: map[string]int32{
-			"todo":        2,
-			"in_progress": 2,
-			"done":        1,
+			"Pending": 2,
+			"Working": 0,
+			"Done":    0,
 		},
 		TaskStatusDurations: map[string]models.TaskDurations{
-			"task1": {
-				TaskID: "task1",
+			"64bc8a5f1a2b3c4d5e6f7890": {
+				TaskID: "64bc8a5f1a2b3c4d5e6f7890",
 				StatusDurations: []models.TaskStatusDuration{
-					{Status: "todo", Duration: 24.0},
-					{Status: "in_progress", Duration: 48.0},
+					{Status: "Pending", Duration: 24.0},
 				},
 			},
-			"task2": {
-				TaskID: "task2",
+			"64bc8a6f1a2b3c4d5e6f7891": {
+				TaskID: "64bc8a6f1a2b3c4d5e6f7891",
 				StatusDurations: []models.TaskStatusDuration{
-					{Status: "todo", Duration: 12.0},
-					{Status: "done", Duration: 36.0},
+					{Status: "Pending", Duration: 12.0},
 				},
 			},
 		},
 		MemberTasks: map[string]models.TaskAssignments{
-			"user1": {Tasks: []string{"task1", "task3"}},
-			"user2": {Tasks: []string{"task2", "task4", "task5"}},
+			"bobsmith": {Tasks: []string{"64bc8a5f1a2b3c4d5e6f7890"}},
 		},
 		FinishedEarly: false,
 	}
@@ -110,11 +109,12 @@ func (ar *AnalyticsRepo) CreateTables(ctx context.Context) {
 	ar.logger.Println("Starting table and UDT creation")
 
 	err := ar.session.Query(`
-		CREATE TYPE IF NOT EXISTS TaskStatusDuration (
-			status TEXT,
-			duration DOUBLE
-		)
-	`).Exec()
+	CREATE TYPE IF NOT EXISTS TaskStatusDuration (
+		status TEXT,
+		duration DOUBLE,
+		timestamp BIGINT
+	)
+`).Exec()
 	if err != nil {
 		ar.logger.Printf("Failed to create UDT TaskStatusDuration: %v", err)
 		return
@@ -191,7 +191,7 @@ func (ar *AnalyticsRepo) GetAnalyticsByProject(ctx context.Context, projectID st
 		ProjectID:           m["project_id"].(string),
 		TotalTasks:          int32(m["total_tasks"].(int)),
 		StatusCounts:        statusCounts,
-		TaskStatusDurations: convertRawCassandraDurations(rawTaskStatusDurations),
+		TaskStatusDurations: enrichDurationsWithLiveTime(convertRawCassandraDurations(rawTaskStatusDurations)),
 		MemberTasks:         convertCassandraMemberTasksToModel(memberTasks),
 		FinishedEarly:       m["finished_early"].(bool),
 	}
@@ -233,8 +233,9 @@ func convertTaskStatusDurationsToCassandra(taskStatusDurations map[string]models
 		var cassandraList []map[string]interface{}
 		for _, sd := range taskDurations.StatusDurations {
 			cassandraList = append(cassandraList, map[string]interface{}{
-				"status":   sd.Status,
-				"duration": sd.Duration,
+				"status":    sd.Status,
+				"duration":  sd.Duration,
+				"timestamp": sd.Timestamp,
 			})
 		}
 		result[taskID] = cassandraList
@@ -265,9 +266,22 @@ func convertRawCassandraDurations(raw map[string][]map[string]interface{}) map[s
 		for _, entry := range rawDurations {
 			status, _ := entry["status"].(string)
 			duration, _ := entry["duration"].(float64)
+			timestampRaw, _ := entry["timestamp"]
+
+			var timestamp int64
+			switch ts := timestampRaw.(type) {
+			case int:
+				timestamp = int64(ts)
+			case int64:
+				timestamp = ts
+			case float64:
+				timestamp = int64(ts)
+			}
+
 			durations = append(durations, models.TaskStatusDuration{
-				Status:   status,
-				Duration: duration,
+				Status:    status,
+				Duration:  duration,
+				Timestamp: timestamp,
 			})
 		}
 		result[taskID] = models.TaskDurations{
@@ -276,4 +290,62 @@ func convertRawCassandraDurations(raw map[string][]map[string]interface{}) map[s
 		}
 	}
 	return result
+}
+
+func (ar *AnalyticsRepo) AddNewTaskToAnalytics(ctx context.Context, projectID, taskID string) error {
+	ctx, span := ar.Tracer.Start(ctx, "r.addNewTaskToAnalytics")
+	defer span.End()
+
+	analytic, err := ar.GetAnalyticsByProject(ctx, projectID)
+	if err != nil {
+		ar.logger.Printf("Failed to fetch analytics for project %s: %v", projectID, err)
+		return err
+	}
+	if analytic == nil {
+		ar.logger.Printf("No analytics record found for project %s", projectID)
+		return fmt.Errorf("analytics not found for project %s", projectID)
+	}
+
+	analytic.TaskStatusDurations[taskID] = models.TaskDurations{
+		TaskID: taskID,
+		StatusDurations: []models.TaskStatusDuration{
+			{
+				Status:    "Pending",
+				Duration:  0.0,
+				Timestamp: time.Now().Unix(),
+			},
+		},
+	}
+
+	analytic.TotalTasks++
+	analytic.StatusCounts["Pending"]++
+
+	// Ažuriraj analytics u bazi
+	if err := ar.UpdateAnalytics(ctx, projectID, analytic); err != nil {
+		ar.logger.Printf("Failed to update analytics with new task for project %s: %v", projectID, err)
+		return err
+	}
+
+	ar.logger.Printf("Successfully added new task %s to analytics for project %s", taskID, projectID)
+	return nil
+}
+
+func enrichDurationsWithLiveTime(durations map[string]models.TaskDurations) map[string]models.TaskDurations {
+	now := time.Now().Unix()
+
+	for taskID, taskDur := range durations {
+		if len(taskDur.StatusDurations) == 0 {
+			continue
+		}
+
+		last := &taskDur.StatusDurations[len(taskDur.StatusDurations)-1]
+		if last.Duration == 0.0 {
+			// Status je još uvek aktivan, izračunaj koliko traje do sad
+			last.Duration = float64(now-last.Timestamp) / 3600.0 // u satima
+		}
+
+		durations[taskID] = taskDur
+	}
+
+	return durations
 }

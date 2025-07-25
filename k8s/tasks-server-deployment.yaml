@@ -24,8 +24,8 @@ spec:
         - envFrom:
             - configMapRef:
                 name: env
-          image: mtucakov/tasks-server:latest
-          imagePullPolicy: Always
+          image: tasks-server:latest
+          imagePullPolicy: IfNotPresent
           name: tasks-server
           ports:
             - containerPort: 8002

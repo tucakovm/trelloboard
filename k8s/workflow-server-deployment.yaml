@@ -24,8 +24,8 @@ spec:
         - envFrom:
             - configMapRef:
                 name: env
-          image: mtucakov/workflow-server:latest
-          imagePullPolicy: Always
+          image: workflow-server:latest
+          imagePullPolicy: IfNotPresent
           name: workflow-server
           ports:
             - containerPort: 8005

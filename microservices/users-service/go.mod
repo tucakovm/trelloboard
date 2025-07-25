@@ -14,9 +14,13 @@ require (
 	google.golang.org/protobuf v1.35.2
 )
 
-require go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.57.0
+require (
+	github.com/sirupsen/logrus v1.4.2
+	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.57.0
+	gopkg.in/natefinch/lumberjack.v2 v2.2.1
+)
 
-require github.com/eapache/go-resiliency v1.7.0 // indirect
+require github.com/konsorten/go-windows-terminal-sequences v1.0.1 // indirect
 
 require (
 	github.com/armon/go-metrics v0.4.1 // indirect
@@ -25,7 +29,7 @@ require (
 	github.com/fatih/color v1.16.0 // indirect
 	github.com/go-logr/logr v1.4.2 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
-	github.com/google/uuid v1.6.0 // indirect
+	github.com/google/uuid v1.6.0
 	github.com/hashicorp/errwrap v1.1.0 // indirect
 	github.com/hashicorp/go-cleanhttp v0.5.2 // indirect
 	github.com/hashicorp/go-hclog v1.5.0 // indirect

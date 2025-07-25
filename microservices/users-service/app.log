@@ -1,0 +1,33 @@
+{"event_id":"9c05d8c1-e78d-4b8f-812d-fd7d5adb296c","level":"info","msg":"Connected to MongoDB successfully","source":"user-server","time":"2025-07-24T14:39:00Z","timestamp":"2025-07-24T14:39:00Z"}
+{"event_id":"73c9bd6a-d4bf-43ca-aa8f-a5eccf6a799c","level":"info","msg":"Users already exist in the database","source":"user-server","time":"2025-07-24T14:39:00Z","timestamp":"2025-07-24T14:39:00Z"}
+{"event_id":"3dbe3c0f-41d8-4bc7-8e05-fe2f512ac9e3","level":"info","msg":"Mongo disconnected successfully","source":"user-server","time":"2025-07-24T14:40:13Z","timestamp":"2025-07-24T14:40:13Z"}
+{"event_id":"b1480af3-83b0-4ab7-8198-89cd7eb5c097","level":"info","msg":"Connected to MongoDB successfully","source":"user-server","time":"2025-07-24T14:55:57Z","timestamp":"2025-07-24T14:55:57Z"}
+{"event_id":"aae54197-90b6-46ea-9a80-5f9087ec42b1","level":"info","msg":"Users already exist in the database","source":"user-server","time":"2025-07-24T14:55:58Z","timestamp":"2025-07-24T14:55:58Z"}
+{"event_id":"ca5d3b3f-4b86-4d4e-965e-28b95d2e0cfa","level":"info","msg":"Mongo disconnected successfully","source":"user-server","time":"2025-07-24T15:55:45Z","timestamp":"2025-07-24T15:55:45Z"}
+{"event_id":"482ebfad-c9f8-44e1-8262-efd99a84db3d","level":"info","msg":"Connected to MongoDB successfully","source":"user-server","time":"2025-07-24T15:59:07Z","timestamp":"2025-07-24T15:59:07Z"}
+{"event_id":"5de92676-b699-4798-8b3f-f49c3c9ae4f2","level":"info","msg":"Users already exist in the database","source":"user-server","time":"2025-07-24T15:59:07Z","timestamp":"2025-07-24T15:59:07Z"}
+{"event_id":"da75006d-814a-44ae-a1c5-d27b4de6d087","level":"info","msg":"Mongo disconnected successfully","source":"user-server","time":"2025-07-24T16:46:58Z","timestamp":"2025-07-24T16:46:58Z"}
+{"event_id":"dcb5da93-0e65-4153-8763-a4a2ef6a2691","level":"info","msg":"Connected to MongoDB successfully","source":"user-server","time":"2025-07-24T16:49:52Z","timestamp":"2025-07-24T16:49:52Z"}
+{"event_id":"fdc064ee-5057-461b-956c-3363db925389","level":"info","msg":"Users already exist in the database","source":"user-server","time":"2025-07-24T16:49:52Z","timestamp":"2025-07-24T16:49:52Z"}
+{"event_id":"e3ebab12-d315-4d64-ad84-b0ada4522cf1","level":"info","msg":"Mongo disconnected successfully","source":"user-server","time":"2025-07-24T16:54:59Z","timestamp":"2025-07-24T16:54:59Z"}
+{"event_id":"349a74c9-e70c-488a-bfab-23a19c662dda","level":"info","msg":"Connected to MongoDB successfully","source":"user-server","time":"2025-07-24T17:00:27Z","timestamp":"2025-07-24T17:00:27Z"}
+{"event_id":"af3c56c9-fe93-45d2-a65c-ba1e5b294c63","level":"info","msg":"Users already exist in the database","source":"user-server","time":"2025-07-24T17:00:27Z","timestamp":"2025-07-24T17:00:27Z"}
+{"event_id":"a7082323-f4b4-4e80-b75f-49baff34ead6","level":"info","msg":"Connected to MongoDB successfully","source":"user-server","time":"2025-07-25T07:24:21Z","timestamp":"2025-07-25T07:24:21Z"}
+{"event_id":"3fa7b0f9-b50e-4277-a6e4-9d4b843de2bc","level":"info","msg":"Initial users inserted successfully","source":"user-server","time":"2025-07-25T07:24:21Z","timestamp":"2025-07-25T07:24:21Z"}
+{"event_id":"f500fcb5-47f4-4d8d-af54-4ed06183faeb","level":"info","msg":"Mongo collection retrieved","source":"user-server","time":"2025-07-25T07:36:05Z","timestamp":"2025-07-25T07:36:05Z"}
+{"event_id":"e732e4c7-a37b-4b7d-bc7f-a915b3eda7dd","level":"info","msg":"User fetched","source":"user-server","time":"2025-07-25T07:36:05Z","timestamp":"2025-07-25T07:36:05Z","username":"alicej"}
+{"event_id":"89d9c51a-14ef-440e-af67-666b5a27243a","level":"info","msg":"Mongo collection retrieved","source":"user-server","time":"2025-07-25T07:53:43Z","timestamp":"2025-07-25T07:53:43Z"}
+{"event_id":"cf34460f-ef64-46aa-9332-3a8d34e809c3","level":"info","msg":"User fetched","source":"user-server","time":"2025-07-25T07:53:43Z","timestamp":"2025-07-25T07:53:43Z","username":"alicej"}
+{"event_id":"918ee501-2490-481c-ba5f-b2dc1708a86e","level":"info","msg":"Mongo disconnected successfully","source":"user-server","time":"2025-07-25T07:57:48Z","timestamp":"2025-07-25T07:57:48Z"}
+{"event_id":"3e67ae8d-2d36-44dd-8ddb-945cbae4f952","level":"info","msg":"Connected to MongoDB successfully","source":"user-server","time":"2025-07-25T08:00:00Z","timestamp":"2025-07-25T08:00:00Z"}
+{"event_id":"56b2765e-ec0b-42b6-acbb-ab910c8f3de5","level":"info","msg":"Users already exist in the database","source":"user-server","time":"2025-07-25T08:00:01Z","timestamp":"2025-07-25T08:00:01Z"}
+{"event_id":"0fb97cd7-f2c6-4354-81ca-e97ed8f2c48d","level":"info","msg":"Mongo collection retrieved","source":"user-server","time":"2025-07-25T08:03:15Z","timestamp":"2025-07-25T08:03:15Z"}
+{"event_id":"a9b92e39-3318-45b7-a4ca-ce6f94fec4bc","level":"info","msg":"User fetched","source":"user-server","time":"2025-07-25T08:03:15Z","timestamp":"2025-07-25T08:03:15Z","username":"alicej"}
+{"event_id":"5f9683c7-e6dd-4045-b087-9348da1f9b1c","level":"info","msg":"Mongo collection retrieved","source":"user-server","time":"2025-07-25T08:03:18Z","timestamp":"2025-07-25T08:03:18Z"}
+{"event_id":"41eceaa0-2499-44b3-a81c-6fd15048f5c2","level":"info","msg":"User fetched","source":"user-server","time":"2025-07-25T08:03:18Z","timestamp":"2025-07-25T08:03:18Z","username":"alicej"}
+{"event_id":"4e4660d0-32a7-4f49-8bd3-180a153d7e08","level":"info","msg":"Mongo collection retrieved","source":"user-server","time":"2025-07-25T08:03:33Z","timestamp":"2025-07-25T08:03:33Z"}
+{"event_id":"7501dcd5-f025-421c-9170-fb2419e0e6f6","level":"info","msg":"User fetched","source":"user-server","time":"2025-07-25T08:03:33Z","timestamp":"2025-07-25T08:03:33Z","username":"alicej"}
+{"event_id":"b67d4ddc-50d4-4486-88fa-5e94cfa6d92c","level":"info","msg":"Mongo disconnected successfully","source":"user-server","time":"2025-07-25T08:06:20Z","timestamp":"2025-07-25T08:06:20Z"}
+{"event_id":"d891e079-2148-4a4e-a752-29b0730c40e2","level":"info","msg":"Connected to MongoDB successfully","source":"user-server","time":"2025-07-25T08:16:00Z","timestamp":"2025-07-25T08:16:00Z"}
+{"event_id":"25395415-0ccf-45f4-97f2-9865e7e5aa3c","level":"info","msg":"Users already exist in the database","source":"user-server","time":"2025-07-25T08:16:00Z","timestamp":"2025-07-25T08:16:00Z"}
+{"event_id":"a96ba373-630e-4b00-a75a-a98f7ba65ed9","level":"info","msg":"Mongo disconnected successfully","source":"user-server","time":"2025-07-25T08:41:53Z","timestamp":"2025-07-25T08:41:53Z"}

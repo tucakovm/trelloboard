@@ -147,7 +147,7 @@ func main() {
 	}
 
 	grpcServer := grpc.NewServer(
-		grpc.UnaryInterceptor(timeoutUnaryInterceptor(60 * time.Second)), // Timeout na 5 sekundi
+	//grpc.UnaryInterceptor(timeoutUnaryInterceptor(300 * time.Second)), // Timeout na 5 sekundi
 	)
 	reflection.Register(grpcServer)
 	users.RegisterUsersServiceServer(grpcServer, &handlerUser)
@@ -193,21 +193,21 @@ func newTraceProvider(exp sdktrace.SpanExporter) *sdktrace.TracerProvider {
 	)
 }
 
-func timeoutUnaryInterceptor(timeout time.Duration) grpc.UnaryServerInterceptor {
-	return func(
-		ctx context.Context,
-		req interface{},
-		info *grpc.UnaryServerInfo,
-		handler grpc.UnaryHandler,
-	) (interface{}, error) {
-		ctx, cancel := context.WithTimeout(ctx, timeout)
-		defer cancel()
-
-		resp, err := handler(ctx, req)
-
-		if ctx.Err() == context.DeadlineExceeded {
-			return nil, status.Error(codes.DeadlineExceeded, "Request timed out")
-		}
-		return resp, err
-	}
-}
+//func timeoutUnaryInterceptor(timeout time.Duration) grpc.UnaryServerInterceptor {
+//	return func(
+//		ctx context.Context,
+//		req interface{},
+//		info *grpc.UnaryServerInfo,
+//		handler grpc.UnaryHandler,
+//	) (interface{}, error) {
+//		ctx, cancel := context.WithTimeout(ctx, timeout)
+//		defer cancel()
+//
+//		resp, err := handler(ctx, req)
+//
+//		if ctx.Err() == context.DeadlineExceeded {
+//			return nil, status.Error(codes.DeadlineExceeded, "Request timed out")
+//		}
+//		return resp, err
+//	}
+//}

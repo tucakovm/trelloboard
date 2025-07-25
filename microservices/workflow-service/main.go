@@ -303,7 +303,23 @@ func SubscribeToDeleteWorkflowSaga(ctx context.Context, natsConn *nats.Conn, wor
 	subjectWorkflow := "delete-workflow-saga"
 
 	_, err := natsConn.Subscribe(subjectWorkflow, func(msg *nats.Msg) {
-		go handleDeleteWorkflowMessage(ctx, msg, natsConn, workflowService, tracer)
+
+		traceID := msg.Header.Get(nats_helper.TRACE_ID)
+		spanID := msg.Header.Get(nats_helper.SPAN_ID)
+		if traceID == "" || spanID == "" {
+			log.Println("Missing tracing headers in NATS message")
+			return
+		}
+
+		remoteCtx, err := nats_helper.GetNATSParentContext(msg)
+		if err != nil {
+			log.Fatal(err)
+		}
+		ctxWithRemote := trace.ContextWithRemoteSpanContext(ctx, remoteCtx)
+		_, span := tracer.Start(ctxWithRemote, "Subscriber.DeleteWorkflowSaga")
+		defer span.End()
+
+		go handleDeleteWorkflowMessage(ctxWithRemote, msg, natsConn, workflowService, tracer)
 	})
 	if err != nil {
 		log.Printf("Error subscribing to workflow saga: %v", err)
@@ -311,7 +327,7 @@ func SubscribeToDeleteWorkflowSaga(ctx context.Context, natsConn *nats.Conn, wor
 }
 
 func handleDeleteWorkflowMessage(ctx context.Context, msg *nats.Msg, natsConn *nats.Conn, workflowService services.WorkflowService, tracer trace.Tracer) {
-	ctx, span := tracer.Start(context.Background(), "handleDeleteWorkflowMessage")
+	ctx, span := tracer.Start(ctx, "handleDeleteWorkflowMessage")
 	defer span.End()
 
 	projectID := string(msg.Data)

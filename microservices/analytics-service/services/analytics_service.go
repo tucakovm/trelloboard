@@ -6,6 +6,7 @@ import (
 	"analytics-service/repositories"
 	"context"
 	"log"
+	"time"
 
 	otelCodes "go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/trace"
@@ -98,50 +99,84 @@ func convertProtoMemberTasksToModel(protoMembers map[string]*proto.MemberTasks) 
 
 //Methods for nats
 
-// UpdateTaskCount updates the total task count for a project
-func (s *AnalyticsService) UpdateTaskCount(ctx context.Context, projectID string, countDelta int) error {
+func (s *AnalyticsService) UpdateTaskCount(ctx context.Context, projectID string, taskID string, countDelta int) error {
 	ctx, span := s.Tracer.Start(ctx, "s.UpdateTaskCount")
 	defer span.End()
 
-	// Fetch the current analytics
-	analytics, err := s.repo.GetAnalyticsByProject(ctx, projectID)
+	analytics, err := s.ensureAnalyticsExists(ctx, projectID)
 	if err != nil {
 		span.SetStatus(otelCodes.Error, err.Error())
-		return status.Error(codes.Internal, "Failed to fetch analytics for project.")
+		return status.Error(codes.Internal, "Failed to ensure analytics for project.")
 	}
 
-	// Update the task count
 	analytics.TotalTasks += int32(countDelta)
 
-	// Save the updated analytics back to the repository
+	if countDelta > 0 {
+		analytics.StatusCounts["Pending"]++
+
+		analytics.TaskStatusDurations[taskID] = models.TaskDurations{
+			TaskID: taskID,
+			StatusDurations: []models.TaskStatusDuration{
+				{
+					Status:    "Pending",
+					Duration:  0.0,
+					Timestamp: time.Now().Unix(),
+				},
+			},
+		}
+	}
+
 	if err := s.repo.UpdateAnalytics(ctx, projectID, analytics); err != nil {
 		span.SetStatus(otelCodes.Error, err.Error())
-		return status.Error(codes.Internal, "Failed to update task count in analytics.")
+		return status.Error(codes.Internal, "Failed to update analytics.")
 	}
 
 	return nil
 }
 
-// UpdateTaskStatus updates the status of a task and adjusts analytics accordingly
 func (s *AnalyticsService) UpdateTaskStatus(ctx context.Context, projectID, taskID, newStatus string) error {
 	ctx, span := s.Tracer.Start(ctx, "s.UpdateTaskStatus")
 	defer span.End()
 
-	// Fetch the current analytics
-	analytics, err := s.repo.GetAnalyticsByProject(ctx, projectID)
+	analytics, err := s.ensureAnalyticsExists(ctx, projectID)
 	if err != nil {
 		span.SetStatus(otelCodes.Error, err.Error())
-		return status.Error(codes.Internal, "Failed to fetch analytics for project.")
+		return status.Error(codes.Internal, "Failed to ensure analytics for project.")
 	}
 
-	// Update status counts
-	previousStatus := "" // Assume logic to fetch the previous status of the task
-	if previousStatus != "" {
-		analytics.StatusCounts[previousStatus]--
-	}
-	analytics.StatusCounts[newStatus]++
+	now := time.Now().Unix()
+	taskDurations := analytics.TaskStatusDurations[taskID]
 
-	// Save the updated analytics back to the repository
+	if len(taskDurations.StatusDurations) == 0 {
+		analytics.StatusCounts[newStatus]++
+	} else {
+		// poslednji status
+		lastIdx := len(taskDurations.StatusDurations) - 1
+		prev := &taskDurations.StatusDurations[lastIdx]
+
+		if prev.Status != newStatus {
+			// Izračunaj trajanje prethodnog statusa
+			duration := float64(now - prev.Timestamp)
+			prev.Duration += duration / 3600.0 // pretvori u sate
+
+			// Ažuriraj status count
+			analytics.StatusCounts[prev.Status]--
+			analytics.StatusCounts[newStatus]++
+		} else {
+			// isti status, ništa ne menjamo
+			return nil
+		}
+	}
+
+	// Dodaj novi status sa vremenom početka
+	taskDurations.StatusDurations = append(taskDurations.StatusDurations, models.TaskStatusDuration{
+		Status:    newStatus,
+		Duration:  0.0,
+		Timestamp: now,
+	})
+
+	analytics.TaskStatusDurations[taskID] = taskDurations
+
 	if err := s.repo.UpdateAnalytics(ctx, projectID, analytics); err != nil {
 		span.SetStatus(otelCodes.Error, err.Error())
 		return status.Error(codes.Internal, "Failed to update task status in analytics.")
@@ -150,27 +185,31 @@ func (s *AnalyticsService) UpdateTaskStatus(ctx context.Context, projectID, task
 	return nil
 }
 
-// AddMemberToTask assigns a member to a task and updates analytics
-func (s *AnalyticsService) AddMemberToTask(ctx context.Context, projectID, taskID, memberID string) error {
+func (s *AnalyticsService) AddMemberToTask(ctx context.Context, projectID, taskID, username string) error {
 	ctx, span := s.Tracer.Start(ctx, "s.AddMemberToTask")
 	defer span.End()
 
-	// Fetch the current analytics
-	analytics, err := s.repo.GetAnalyticsByProject(ctx, projectID)
+	analytics, err := s.ensureAnalyticsExists(ctx, projectID)
 	if err != nil {
 		span.SetStatus(otelCodes.Error, err.Error())
-		return status.Error(codes.Internal, "Failed to fetch analytics for project.")
+		return status.Error(codes.Internal, "Failed to ensure analytics for project.")
 	}
 
-	// Add the task to the member's assignments
 	if analytics.MemberTasks == nil {
 		analytics.MemberTasks = make(map[string]models.TaskAssignments)
 	}
-	memberTasks := analytics.MemberTasks[memberID]
-	memberTasks.Tasks = append(memberTasks.Tasks, taskID)
-	analytics.MemberTasks[memberID] = memberTasks
 
-	// Save the updated analytics back to the repository
+	memberAssignments := analytics.MemberTasks[username]
+
+	for _, existingTask := range memberAssignments.Tasks {
+		if existingTask == taskID {
+			return nil // već postoji, ne dodaj ponovo
+		}
+	}
+
+	memberAssignments.Tasks = append(memberAssignments.Tasks, taskID)
+	analytics.MemberTasks[username] = memberAssignments
+
 	if err := s.repo.UpdateAnalytics(ctx, projectID, analytics); err != nil {
 		span.SetStatus(otelCodes.Error, err.Error())
 		return status.Error(codes.Internal, "Failed to update member assignments in analytics.")
@@ -179,35 +218,65 @@ func (s *AnalyticsService) AddMemberToTask(ctx context.Context, projectID, taskI
 	return nil
 }
 
-// RemoveMemberFromTask removes a member from a task and updates analytics
-func (s *AnalyticsService) RemoveMemberFromTask(ctx context.Context, projectID, taskID, memberID string) error {
+func (s *AnalyticsService) RemoveMemberFromTask(ctx context.Context, projectID, taskID, username string) error {
 	ctx, span := s.Tracer.Start(ctx, "s.RemoveMemberFromTask")
 	defer span.End()
 
-	// Fetch the current analytics
-	analytics, err := s.repo.GetAnalyticsByProject(ctx, projectID)
+	analytics, err := s.ensureAnalyticsExists(ctx, projectID)
 	if err != nil {
 		span.SetStatus(otelCodes.Error, err.Error())
-		return status.Error(codes.Internal, "Failed to fetch analytics for project.")
+		return status.Error(codes.Internal, "Failed to ensure analytics for project.")
 	}
 
-	// Remove the task from the member's assignments
 	if analytics.MemberTasks != nil {
-		memberTasks := analytics.MemberTasks[memberID]
-		for i, task := range memberTasks.Tasks {
-			if task == taskID {
-				memberTasks.Tasks = append(memberTasks.Tasks[:i], memberTasks.Tasks[i+1:]...)
-				break
+		memberTasks, ok := analytics.MemberTasks[username]
+		if ok {
+			// Remove taskID from member's tasks
+			for i, task := range memberTasks.Tasks {
+				if task == taskID {
+					memberTasks.Tasks = append(memberTasks.Tasks[:i], memberTasks.Tasks[i+1:]...)
+					break
+				}
+			}
+
+			// If no more tasks, remove the member entirely
+			if len(memberTasks.Tasks) == 0 {
+				delete(analytics.MemberTasks, username)
+			} else {
+				analytics.MemberTasks[username] = memberTasks
 			}
 		}
-		analytics.MemberTasks[memberID] = memberTasks
 	}
 
-	// Save the updated analytics back to the repository
+	// Update analytics
 	if err := s.repo.UpdateAnalytics(ctx, projectID, analytics); err != nil {
 		span.SetStatus(otelCodes.Error, err.Error())
 		return status.Error(codes.Internal, "Failed to update member assignments in analytics.")
 	}
 
 	return nil
+}
+
+func (s *AnalyticsService) ensureAnalyticsExists(ctx context.Context, projectID string) (*models.Analytic, error) {
+	analytics, err := s.repo.GetAnalyticsByProject(ctx, projectID)
+	if err != nil {
+		return nil, err
+	}
+
+	if analytics == nil {
+		analytics = &models.Analytic{
+			ProjectID:           projectID,
+			TotalTasks:          0,
+			StatusCounts:        map[string]int32{"Pending": 0, "Working": 0, "Done": 0},
+			TaskStatusDurations: make(map[string]models.TaskDurations),
+			MemberTasks:         make(map[string]models.TaskAssignments),
+			FinishedEarly:       false, // ✅ bool vrednost umesto []string
+		}
+
+		if err := s.repo.UpdateAnalytics(ctx, projectID, analytics); err != nil {
+			return nil, err
+		}
+	}
+
+	return analytics, nil
 }

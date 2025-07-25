@@ -195,13 +195,13 @@ func (h ProjectHandler) GetAllProjects(ctx context.Context, req *proto.GetAllPro
 }
 
 func (h ProjectHandler) Delete(ctx context.Context, req *proto.DeleteProjectReq) (*proto.EmptyResponse, error) {
+	ctx, span := h.Tracer.Start(ctx, "h.deleteProject-esdb")
+	defer span.End()
+
 	err := h.DeleteProject(ctx)
 	if err != nil {
 		return nil, err
 	}
-
-	ctx, span := h.Tracer.Start(ctx, "h.deleteProject-esdb")
-	defer span.End()
 
 	headers := nats.Header{}
 	headers.Set(nats_helper.TRACE_ID, span.SpanContext().TraceID().String())

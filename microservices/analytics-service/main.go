@@ -67,7 +67,7 @@ func main() {
 	serviceAnalytics := service.NewAnalyticsService(*store, tp.Tracer("analytics-service"))
 
 	// Set up NATS subscribers
-	setupTaskEventSubscribers(ctx, natsConn, service.AnalyticsService{}, tp.Tracer("analytics-service"))
+	setupTaskEventSubscribers(ctx, natsConn, *serviceAnalytics, tp.Tracer("analytics-service"))
 
 	// Set up gRPC server
 	listener, err := net.Listen("tcp", cfg.Address)
@@ -126,9 +126,10 @@ func timeoutUnaryInterceptor(timeout time.Duration) grpc.UnaryServerInterceptor 
 		return resp, err
 	}
 }
+
 func getNATSParentSpanContext(msg *nats.Msg) (trace.SpanContext, error) {
-	traceID := msg.Header.Get("trace_id")
-	spanID := msg.Header.Get("span_id")
+	traceID := msg.Header.Get("TRACE_ID")
+	spanID := msg.Header.Get("SPAN_ID")
 
 	// Validate the IDs
 	tID, err := trace.TraceIDFromHex(traceID)
@@ -157,6 +158,7 @@ func setupTaskEventSubscribers(ctx context.Context, natsConn *nats.Conn, service
 		"create-task",
 		"add-to-task",
 		"remove-from-task",
+		"update-task",
 	}
 
 	// Loop over each subject and set up a corresponding subscriber
@@ -174,7 +176,7 @@ func subscribeToNATS(ctx context.Context, natsConn *nats.Conn, serviceAnalytics 
 			return
 		}
 
-		traceID, spanID := msg.Header.Get("trace_id"), msg.Header.Get("span_id")
+		traceID, spanID := msg.Header.Get("TRACE_ID"), msg.Header.Get("SPAN_ID")
 		if traceID == "" || spanID == "" {
 			log.Println("Missing tracing headers in NATS message")
 			return
@@ -201,19 +203,19 @@ func subscribeToNATS(ctx context.Context, natsConn *nats.Conn, serviceAnalytics 
 
 // Handle task-related events and update analytics accordingly
 func handleTaskEvent(ctx context.Context, message map[string]interface{}, serviceAnalytics service.AnalyticsService) {
-	projectID, _ := message["projectId"].(string)
+	projectID, _ := message["ProjectId"].(string)
 
 	switch message["event"] {
 	case "create-task":
 		// Task has been created
 		taskID, _ := message["TaskId"].(string)
-		serviceAnalytics.UpdateTaskCount(ctx, projectID, 1) // Increase task count
+		serviceAnalytics.UpdateTaskCount(ctx, projectID, taskID, 1) // Increase task count
 		log.Printf("Task created: %s for Project: %s", taskID, projectID)
 
-	case "task-status-changed":
+	case "update-task":
 		// Task status has changed
 		taskID, _ := message["TaskId"].(string)
-		newStatus, _ := message["newStatus"].(string)
+		newStatus, _ := message["TaskStatus"].(string)
 		serviceAnalytics.UpdateTaskStatus(ctx, projectID, taskID, newStatus)
 		log.Printf("Task status changed: %s to %s for Project: %s", taskID, newStatus, projectID)
 
@@ -221,15 +223,16 @@ func handleTaskEvent(ctx context.Context, message map[string]interface{}, servic
 		// A member has been added to a task
 		taskID, _ := message["TaskId"].(string)
 		memberID, _ := message["UserId"].(string)
-		serviceAnalytics.AddMemberToTask(ctx, projectID, taskID, memberID)
+		username, _ := message["UserName"].(string)
+		serviceAnalytics.AddMemberToTask(ctx, projectID, taskID, username)
 		log.Printf("Member added: %s to Task: %s for Project: %s", memberID, taskID, projectID)
 
 	case "remove-from-task":
 		// A member has been removed from a task
 		taskID, _ := message["TaskId"].(string)
-		memberID, _ := message["UserId"].(string)
-		serviceAnalytics.RemoveMemberFromTask(ctx, projectID, taskID, memberID)
-		log.Printf("Member removed: %s from Task: %s for Project: %s", memberID, taskID, projectID)
+		username, _ := message["Username"].(string)
+		serviceAnalytics.RemoveMemberFromTask(ctx, projectID, taskID, username)
+		log.Printf("Member removed: %s from Task: %s for Project: %s", username, taskID, projectID)
 
 	default:
 		log.Printf("Unknown event: %v", message["event"])
@@ -272,101 +275,101 @@ func newTraceProvider(exp *jaeger.Exporter) *sdktrace.TracerProvider {
 }
 
 ////// test code bellow
-
-func test() {
-	// Initialize mock repository and tracer (in a real application, use actual implementations)
-	mockRepo := repositories.AnalyticsRepo{}
-	mockTracer := trace.NewNoopTracerProvider().Tracer("")
-
-	// Create the AnalyticsService instance
-	analyticsService := service.NewAnalyticsService(mockRepo, mockTracer)
-
-	// Example data to use in service functions
-	analytic := &proto.Analytic{
-		ProjectId:    "project-1",
-		TotalTasks:   5,
-		StatusCounts: map[string]int32{"in-progress": 3, "completed": 2},
-	}
-
-	// Call Create and check if it was successful
-	if err := createAnalytics(analyticsService, analytic); err != nil {
-		log.Printf("Create failed: %v", err)
-	} else {
-		fmt.Println("Create successful")
-	}
-
-	// Call GetAnalytics and check if it was successful
-	if err := getAnalytics(analyticsService, "project-1"); err != nil {
-		log.Printf("GetAnalytics failed: %v", err)
-	} else {
-		log.Println("GetAnalytics successful")
-	}
-
-	// Call UpdateTaskCount and check if it was successful
-	if err := updateTaskCount(analyticsService, "project-1", 5); err != nil {
-		log.Printf("UpdateTaskCount failed: %v", err)
-	} else {
-		log.Println("UpdateTaskCount successful")
-	}
-
-	// Call UpdateTaskStatus and check if it was successful
-	if err := updateTaskStatus(analyticsService, "project-1", "task-1", "completed"); err != nil {
-		log.Printf("UpdateTaskStatus failed: %v", err)
-	} else {
-		log.Println("UpdateTaskStatus successful")
-	}
-
-	// Call AddMemberToTask and check if it was successful
-	if err := addMemberToTask(analyticsService, "project-1", "task-1", "member-1"); err != nil {
-		log.Printf("AddMemberToTask failed: %v", err)
-	} else {
-		log.Println("AddMemberToTask successful")
-	}
-
-	// Call RemoveMemberFromTask and check if it was successful
-	if err := removeMemberFromTask(analyticsService, "project-1", "task-1", "member-1"); err != nil {
-		log.Printf("RemoveMemberFromTask failed: %v", err)
-	} else {
-		log.Println("RemoveMemberFromTask successful")
-	}
-
-	anal := getAnalytics(analyticsService, "project-1")
-	log.Println(anal)
-
-}
-
-// createAnalytics calls the Create method of AnalyticsService
-func createAnalytics(service *service.AnalyticsService, analytic *proto.Analytic) error {
-	err := service.Create(context.Background(), analytic)
-	return err
-}
-
-// getAnalytics calls the GetAnalytics method of AnalyticsService
-func getAnalytics(service *service.AnalyticsService, projectID string) error {
-	_, err := service.GetAnalytics(context.Background(), projectID)
-	return err
-}
-
-// updateTaskCount calls the UpdateTaskCount method of AnalyticsService
-func updateTaskCount(service *service.AnalyticsService, projectID string, countDelta int) error {
-	err := service.UpdateTaskCount(context.Background(), projectID, countDelta)
-	return err
-}
-
-// updateTaskStatus calls the UpdateTaskStatus method of AnalyticsService
-func updateTaskStatus(service *service.AnalyticsService, projectID, taskID, newStatus string) error {
-	err := service.UpdateTaskStatus(context.Background(), projectID, taskID, newStatus)
-	return err
-}
-
-// addMemberToTask calls the AddMemberToTask method of AnalyticsService
-func addMemberToTask(service *service.AnalyticsService, projectID, taskID, memberID string) error {
-	err := service.AddMemberToTask(context.Background(), projectID, taskID, memberID)
-	return err
-}
-
-// removeMemberFromTask calls the RemoveMemberFromTask method of AnalyticsService
-func removeMemberFromTask(service *service.AnalyticsService, projectID, taskID, memberID string) error {
-	err := service.RemoveMemberFromTask(context.Background(), projectID, taskID, memberID)
-	return err
-}
+//
+//func test() {
+//	// Initialize mock repository and tracer (in a real application, use actual implementations)
+//	mockRepo := repositories.AnalyticsRepo{}
+//	mockTracer := trace.NewNoopTracerProvider().Tracer("")
+//
+//	// Create the AnalyticsService instance
+//	analyticsService := service.NewAnalyticsService(mockRepo, mockTracer)
+//
+//	// Example data to use in service functions
+//	analytic := &proto.Analytic{
+//		ProjectId:    "project-1",
+//		TotalTasks:   5,
+//		StatusCounts: map[string]int32{"in-progress": 3, "completed": 2},
+//	}
+//
+//	// Call Create and check if it was successful
+//	if err := createAnalytics(analyticsService, analytic); err != nil {
+//		log.Printf("Create failed: %v", err)
+//	} else {
+//		fmt.Println("Create successful")
+//	}
+//
+//	// Call GetAnalytics and check if it was successful
+//	if err := getAnalytics(analyticsService, "project-1"); err != nil {
+//		log.Printf("GetAnalytics failed: %v", err)
+//	} else {
+//		log.Println("GetAnalytics successful")
+//	}
+//
+//	// Call UpdateTaskCount and check if it was successful
+//	if err := updateTaskCount(analyticsService, "project-1", "task-2", 5); err != nil {
+//		log.Printf("UpdateTaskCount failed: %v", err)
+//	} else {
+//		log.Println("UpdateTaskCount successful")
+//	}
+//
+//	// Call UpdateTaskStatus and check if it was successful
+//	if err := updateTaskStatus(analyticsService, "project-1", "task-1", "completed"); err != nil {
+//		log.Printf("UpdateTaskStatus failed: %v", err)
+//	} else {
+//		log.Println("UpdateTaskStatus successful")
+//	}
+//
+//	// Call AddMemberToTask and check if it was successful
+//	if err := addMemberToTask(analyticsService, "project-1", "task-1", "member-1"); err != nil {
+//		log.Printf("AddMemberToTask failed: %v", err)
+//	} else {
+//		log.Println("AddMemberToTask successful")
+//	}
+//
+//	// Call RemoveMemberFromTask and check if it was successful
+//	if err := removeMemberFromTask(analyticsService, "project-1", "task-1", "member-1"); err != nil {
+//		log.Printf("RemoveMemberFromTask failed: %v", err)
+//	} else {
+//		log.Println("RemoveMemberFromTask successful")
+//	}
+//
+//	anal := getAnalytics(analyticsService, "project-1")
+//	log.Println(anal)
+//
+//}
+//
+//// createAnalytics calls the Create method of AnalyticsService
+//func createAnalytics(service *service.AnalyticsService, analytic *proto.Analytic) error {
+//	err := service.Create(context.Background(), analytic)
+//	return err
+//}
+//
+//// getAnalytics calls the GetAnalytics method of AnalyticsService
+//func getAnalytics(service *service.AnalyticsService, projectID string) error {
+//	_, err := service.GetAnalytics(context.Background(), projectID)
+//	return err
+//}
+//
+//// updateTaskCount calls the UpdateTaskCount method of AnalyticsService
+//func updateTaskCount(service *service.AnalyticsService, projectID string, taskId string, countDelta int) error {
+//	err := service.UpdateTaskCount(context.Background(), projectID, taskId, countDelta)
+//	return err
+//}
+//
+//// updateTaskStatus calls the UpdateTaskStatus method of AnalyticsService
+//func updateTaskStatus(service *service.AnalyticsService, projectID, taskID, newStatus string) error {
+//	err := service.UpdateTaskStatus(context.Background(), projectID, taskID, newStatus)
+//	return err
+//}
+//
+//// addMemberToTask calls the AddMemberToTask method of AnalyticsService
+//func addMemberToTask(service *service.AnalyticsService, projectID, taskID, memberID string) error {
+//	err := service.AddMemberToTask(context.Background(), projectID, taskID, memberID)
+//	return err
+//}
+//
+//// removeMemberFromTask calls the RemoveMemberFromTask method of AnalyticsService
+//func removeMemberFromTask(service *service.AnalyticsService, projectID, taskID, memberID string) error {
+//	err := service.RemoveMemberFromTask(context.Background(), projectID, taskID, memberID)
+//	return err
+//}

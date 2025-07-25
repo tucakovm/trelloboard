@@ -1,8 +1,9 @@
 package models
 
 type TaskStatusDuration struct {
-	Status   string  `json:"status"`
-	Duration float64 `json:"duration"`
+	Status    string  `json:"status"`
+	Duration  float64 `json:"duration"`
+	Timestamp int64   `json:"timestamp"`
 }
 
 type TaskDurations struct {
