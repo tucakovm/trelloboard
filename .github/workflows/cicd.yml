@@ -27,61 +27,61 @@ jobs:
           push: true
           tags: mtucakov/angular:latest
 
-      - name: build and push api-gateway
-        uses: docker/build-push-action@v5
-        with:
-          context: ./microservices/api-gateway
-          push: true
-          tags: mtucakov/api-gateway:latest
-
-      - name: build and push api-composer
-        uses: docker/build-push-action@v5
-        with:
-          context: ./microservices/api-composer
-          push: true
-          tags: mtucakov/api-composer:latest
-
-      - name: build and push notifications-service
-        uses: docker/build-push-action@v5
-        with:
-          context: ./microservices/notifications-service
-          push: true
-          tags: mtucakov/notifications-server:latest
-
-      - name: build and push projects-service
-        uses: docker/build-push-action@v5
-        with:
-          context: ./microservices/projects-service
-          push: true
-          tags: mtucakov/projects-server:latest
-
-      - name: build and push tasks-service
-        uses: docker/build-push-action@v5
-        with:
-          context: ./microservices/tasks-service
-          push: true
-          tags: mtucakov/tasks-server:latest
-
-      - name: build and push users-service
-        uses: docker/build-push-action@v5
-        with:
-          context: ./microservices/users-service
-          push: true
-          tags: mtucakov/users-server:latest
-
-      - name: build and push workflow-service
-        uses: docker/build-push-action@v5
-        with:
-          context: ./microservices/workflow-service
-          push: true
-          tags: mtucakov/workflow-server:latest
-
-      - name: build and push analytics-service
-        uses: docker/build-push-action@v5
-        with:
-          context: ./microservices/analytics-service
-          push: true
-          tags: mtucakov/analytics-server:latest
+#      - name: build and push api-gateway
+#        uses: docker/build-push-action@v5
+#        with:
+#          context: ./microservices/api-gateway
+#          push: true
+#          tags: mtucakov/api-gateway:latest
+#
+#      - name: build and push api-composer
+#        uses: docker/build-push-action@v5
+#        with:
+#          context: ./microservices/api-composer
+#          push: true
+#          tags: mtucakov/api-composer:latest
+#
+#      - name: build and push notifications-service
+#        uses: docker/build-push-action@v5
+#        with:
+#          context: ./microservices/notifications-service
+#          push: true
+#          tags: mtucakov/notifications-server:latest
+#
+#      - name: build and push projects-service
+#        uses: docker/build-push-action@v5
+#        with:
+#          context: ./microservices/projects-service
+#          push: true
+#          tags: mtucakov/projects-server:latest
+#
+#      - name: build and push tasks-service
+#        uses: docker/build-push-action@v5
+#        with:
+#          context: ./microservices/tasks-service
+#          push: true
+#          tags: mtucakov/tasks-server:latest
+#
+#      - name: build and push users-service
+#        uses: docker/build-push-action@v5
+#        with:
+#          context: ./microservices/users-service
+#          push: true
+#          tags: mtucakov/users-server:latest
+#
+#      - name: build and push workflow-service
+#        uses: docker/build-push-action@v5
+#        with:
+#          context: ./microservices/workflow-service
+#          push: true
+#          tags: mtucakov/workflow-server:latest
+#
+#      - name: build and push analytics-service
+#        uses: docker/build-push-action@v5
+#        with:
+#          context: ./microservices/analytics-service
+#          push: true
+#          tags: mtucakov/analytics-server:latest
 
   deploy:
     runs-on: ubuntu-latest
@@ -106,11 +106,11 @@ jobs:
       - name: Run kubectl Commands
         run: |
           kubectl rollout restart deployment angular --insecure-skip-tls-verify
-          kubectl rollout restart deployment api-gateway --insecure-skip-tls-verify
-          kubectl rollout restart deployment api-composer --insecure-skip-tls-verify
-          kubectl rollout restart deployment tasks-server --insecure-skip-tls-verify
-          kubectl rollout restart deployment projects-server --insecure-skip-tls-verify
-          kubectl rollout restart deployment notifications-server --insecure-skip-tls-verify
-          kubectl rollout restart deployment users-server --insecure-skip-tls-verify
-          kubectl rollout restart deployment workflow-server --insecure-skip-tls-verify
-          kubectl rollout restart deployment analytics-server --insecure-skip-tls-verify
+#          kubectl rollout restart deployment api-gateway --insecure-skip-tls-verify
+#          kubectl rollout restart deployment api-composer --insecure-skip-tls-verify
+#          kubectl rollout restart deployment tasks-server --insecure-skip-tls-verify
+#          kubectl rollout restart deployment projects-server --insecure-skip-tls-verify
+#          kubectl rollout restart deployment notifications-server --insecure-skip-tls-verify
+#          kubectl rollout restart deployment users-server --insecure-skip-tls-verify
+#          kubectl rollout restart deployment workflow-server --insecure-skip-tls-verify
+#          kubectl rollout restart deployment analytics-server --insecure-skip-tls-verify

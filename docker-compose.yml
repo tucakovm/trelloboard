@@ -1,6 +1,6 @@
 services:
   angular:
-    image: angular:latest
+    image: mtucakov/angular:latest
     build:
       context: ./frontend
       dockerfile: Dockerfile
@@ -14,7 +14,7 @@ services:
 
 
   api-gateway:
-    image: api-gateway:latest
+    image: mtucakov/api-gateway:latest
     container_name: "api-gateway"
     hostname: "api-gateway"
     build:
@@ -42,7 +42,7 @@ services:
       - ./microservices/api-gateway/cert2:/api-gateway/cert2
 
   projects-server:
-    image: projects-server:latest
+    image: mtucakov/projects-server:latest
     build:
       context: microservices/projects-service
       dockerfile: Dockerfile
@@ -62,7 +62,7 @@ services:
         condition: service_healthy
 
   tasks-server:
-    image: tasks-server:latest
+    image: mtucakov/tasks-server:latest
     build:
       context: microservices/tasks-service
       dockerfile: Dockerfile
@@ -82,7 +82,7 @@ services:
         condition: service_healthy
 
   users-server:
-    image: users-server:latest
+    image: mtucakov/users-server:latest
     build:
       context: microservices/users-service
       dockerfile: Dockerfile
@@ -107,7 +107,7 @@ services:
       - ./microservices/users-service/app.log:/app.log
 
   notifications-server:
-    image: notifications-server:latest
+    image: mtucakov/notifications-server:latest
     build:
       context: microservices/notifications-service
       dockerfile: Dockerfile
@@ -125,7 +125,7 @@ services:
         condition: service_healthy
 
   workflow-server:
-    image: workflow-server:latest
+    image: mtucakov/workflow-server:latest
     build:
       context: microservices/workflow-service
       dockerfile: Dockerfile
@@ -143,7 +143,7 @@ services:
         condition: service_started
 
   api-composer:
-    image: api-composer:latest
+    image: mtucakov/api-composer:latest
     build:
       context: microservices/api-composer
       dockerfile: Dockerfile
@@ -156,7 +156,7 @@ services:
       .env
 
   analytics-server:
-    image: analytics-server:latest
+    image: mtucakov/analytics-server:latest
     build:
       context: microservices/analytics-service
       dockerfile: Dockerfile
