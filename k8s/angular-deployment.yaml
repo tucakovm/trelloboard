@@ -24,9 +24,9 @@ spec:
         - envFrom:
             - configMapRef:
                 name: env
-          image: angular:latest
+          image: mtucakov/angular:latest
           name: angular
-          imagePullPolicy: IfNotPresent
+          imagePullPolicy: Always
           ports:
             - containerPort: 4200
               protocol: TCP

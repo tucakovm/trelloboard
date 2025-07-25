@@ -24,8 +24,8 @@ spec:
         - envFrom:
             - configMapRef:
                 name: env
-          image: users-server:latest
-          imagePullPolicy: IfNotPresent
+          image: mtucakov/users-server:latest
+          imagePullPolicy: Always
           name: users-server
           ports:
             - containerPort: 8003
